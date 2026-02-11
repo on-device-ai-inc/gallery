@@ -1,0 +1,126 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>1</storyId>
+    <title>Task Registration & Device Capability Check</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>sprint status/7-1-task-registration-device-capability-check.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see if my device supports image generation before downloading the model</iWant>
+    <soThat>I don't waste bandwidth on an incompatible device</soThat>
+    <tasks>
+- [ ] Task 1: Add IMAGE_GENERATION task ID to BuiltInTaskId (AC: #3)
+- [ ] Task 2: Create ImageGenerationTask class (AC: #3, #4)
+- [ ] Task 3: Register task via Hilt module (AC: #3, #4)
+- [ ] Task 4: Implement device capability checking (AC: #1, #2)
+- [ ] Task 5: Validation testing (AC: #1, #2, #3, #4)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. **AC1:** Device compatibility info displayed: "Requires 8GB+ RAM, Android 12+"
+2. **AC2:** Warning shown if device has <6GB RAM
+3. **AC3:** IMAGE_GENERATION task ID registered in Tasks.kt
+4. **AC4:** Image Generation tile appears on home screen
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 7: AI Image Generation</title>
+        <section>Story 7.1: Task Registration & Device Capability Check</section>
+        <snippet>Add IMAGE_GENERATION task ID, check RAM >= 6GB, Android 12+. Follow LlmAskImageTask pattern. Register via Hilt @IntoSet.</snippet>
+      </doc>
+      <doc>
+        <path>sprint status/7-0-foundation-manifest-model-path-setup.md</path>
+        <title>Previous Story Learnings</title>
+        <section>Completion Notes</section>
+        <snippet>OpenCL declarations added. MODEL_IMAGE_GENERATION_STABLE_DIFFUSION already defined in Model.kt. Extraction path verified.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/data/Tasks.kt</path>
+        <kind>data</kind>
+        <symbol>BuiltInTaskId</symbol>
+        <lines>103-116</lines>
+        <reason>Need to add IMAGE_GENERATION constant here and update allBuiltInTaskIds set</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/data/Model.kt</path>
+        <kind>data</kind>
+        <symbol>MODELS_IMAGE_GENERATION</symbol>
+        <lines>455-456</lines>
+        <reason>Already contains MODEL_IMAGE_GENERATION_STABLE_DIFFUSION - use this for task models list</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/data/Tasks.kt</path>
+        <kind>data</kind>
+        <symbol>Task</symbol>
+        <lines>34-101</lines>
+        <reason>Task data class definition - use for creating ImageGenerationTask instance</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <android>
+        <package>androidx.hilt</package>
+        <purpose>Dependency injection for task registration</purpose>
+      </android>
+      <android>
+        <package>android.app.ActivityManager</package>
+        <purpose>Device RAM capability checking</purpose>
+      </android>
+      <android>
+        <package>android.os.Build</package>
+        <purpose>Android version checking</purpose>
+      </android>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Follow existing task registration patterns in Tasks.kt</constraint>
+    <constraint>Use MODELS_IMAGE_GENERATION list from Model.kt (already defined)</constraint>
+    <constraint>Minimum 6GB RAM for warning threshold, 8GB+ recommended</constraint>
+    <constraint>Android 12+ (API 31) required for OpenCL support</constraint>
+    <constraint>Register task via Hilt dependency injection with @IntoSet</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>isBuiltInTask</name>
+      <kind>function</kind>
+      <signature>fun isBuiltInTask(id: String): Boolean</signature>
+      <path>app/src/main/java/ai/ondevice/app/data/Tasks.kt:118-120</path>
+      <purpose>Checks if a task ID is a built-in task - must recognize IMAGE_GENERATION after adding it</purpose>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Manual testing on physical device. Verify task tile appears, model info displays correctly, compatibility warnings show for low-RAM devices.</standards>
+    <locations>
+      - Manual testing on device
+      - Verify home screen shows Image Generation tile
+      - Check model management for compatibility info
+    </locations>
+    <ideas>
+      <test id="AC3-test">
+        <ac>AC3</ac>
+        <description>Verify IMAGE_GENERATION added to BuiltInTaskId and allBuiltInTaskIds set</description>
+      </test>
+      <test id="AC4-test">
+        <ac>AC4</ac>
+        <description>Build app, install on device, verify Image Generation tile appears on home screen</description>
+      </test>
+      <test id="AC1-AC2-test">
+        <ac>AC1, AC2</ac>
+        <description>Navigate to model management, check compatibility info display and RAM warnings</description>
+      </test>
+    </ideas>
+  </tests>
+</story-context>

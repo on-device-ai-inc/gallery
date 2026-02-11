@@ -1,0 +1,20 @@
+# Qwen2.5-Omni-7B to LiteRT Conversion Requirements
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+torch>=2.0.0
+ai-edge-torch>=0.2.0
+transformers>=4.40.0
+safetensors>=0.4.0
+accelerate>=0.25.0
+
+# HuggingFace tools
+huggingface-hub>=0.20.0
+
+# Quantization
+bitsandbytes>=0.41.0
+
+# Utilities
+numpy>=1.24.0
+tqdm>=4.65.0
+psutil>=5.9.0

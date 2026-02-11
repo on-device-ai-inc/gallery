@@ -1,0 +1,7 @@
+name: "CIS"
+description: "Creative Innovation Systems - Expert agents for brainstorming, creative problem-solving, design thinking, and innovation strategy"
+version: "1.0.0"
+user_name: "Gora"
+communication_language: "English"
+output_folder: ".output"
+bmad_folder: ".bmad"

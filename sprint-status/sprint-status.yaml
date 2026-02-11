@@ -1,0 +1,344 @@
+# Sprint Status Tracking
+# OnDevice AI - Phase 4 Implementation
+
+# Generated: 2025-11-26
+# Project: OnDevice AI
+# Track: BMM Method (Brownfield)
+
+# STATUS VALUES:
+# - backlog: Not started
+# - todo: Ready to pick up
+# - in_progress: Currently being worked on
+# - review: Ready for code review
+# - done: Completed and verified
+
+# STORY FILE NAMING:
+# When a story is moved to 'todo' or 'in_progress', create:
+#   stories/{epic-id}-{story-id}-{slug}.md
+# Example: stories/1-1-unified-input-bar.md
+
+project_info:
+  name: "OnDevice AI"
+  type: "brownfield"
+  total_epics: 7
+  total_stories: 31
+  mvp_stories: 27
+  growth_stories: 4
+
+# Recommended implementation order (from implementation-readiness report):
+# 1. Epic 2 (Privacy) - Quick wins, visible impact [DONE]
+# 2. Epic 3 (Message Interactions) - Core productivity features [DONE]
+# 3. Epic 4 (Conversation History) - Usability enhancements [DONE]
+# 4. Epic 1 (Unified Chat) - Larger UI refactor [DONE]
+# 5. Epic 5 (Settings) - Post-MVP/Growth
+# 6. Epic 7 (AI Image Generation) - New MVP feature
+
+development_status:
+  # ============================================
+  # EPIC 1: Unified Chat Experience (MVP)
+  # ============================================
+  epic-1:
+    name: "Unified Chat Experience"
+    priority: MVP
+    status: done
+    completed: "2025-11-26"
+
+  1-1-unified-input-bar-with-auto-detection:
+    epic: 1
+    name: "Unified Input Bar with Auto-Detection"
+    status: done
+    frs: [FR14]
+    prerequisites: []
+    completed: "2025-11-26"
+    implementation: "MessageInputText.kt already supports text/image/audio inputs"
+    notes: "Existing input bar handles multiple types. Auto-detection via message type."
+
+  1-2-remove-task-tiles-from-home-screen:
+    epic: 1
+    name: "Remove Task Tiles from Home Screen"
+    status: done
+    frs: []
+    prerequisites: [1-1]
+    completed: "2025-11-26"
+    implementation: "GalleryNavGraph.kt:133-144"
+    notes: "Auto-navigate to LLM Chat on first launch. Task tiles still accessible via back navigation."
+
+  epic-1-retrospective:
+    status: optional
+
+  # ============================================
+  # EPIC 2: Privacy Visual Identity (MVP)
+  # ============================================
+  epic-2:
+    name: "Privacy Visual Identity"
+    priority: MVP
+    status: done
+    completed: "2025-11-26"
+
+  2-1-privacy-indicator-during-inference:
+    epic: 2
+    name: "Privacy Indicator During Inference"
+    status: done
+    frs: [FR42, FR44]
+    prerequisites: []
+    completed: "2025-11-26"
+    implementation: "ChatPanel.kt:612-639"
+
+  2-2-privacy-badge-in-drawer-header:
+    epic: 2
+    name: "Privacy Badge in Drawer Header"
+    status: done
+    frs: [FR43]
+    prerequisites: [2-1]
+    completed: "2025-11-26"
+    implementation: "ChatMenuSheet.kt:85-111"
+
+  2-3-storage-usage-display-in-drawer:
+    epic: 2
+    name: "Storage Usage Display in Drawer"
+    status: done
+    frs: [FR29]
+    prerequisites: [2-2]
+    completed: "2025-11-26"
+    implementation: "ChatMenuSheet.kt:111-117, ChatViewModel.kt:80-81, ChatView.kt:102,282"
+
+  2-4-offline-status-indicator:
+    epic: 2
+    name: "Offline Status Indicator"
+    status: done
+    frs: []
+    prerequisites: [2-1]
+    completed: "2025-11-26"
+    implementation: "Verification story - no code changes needed"
+    notes: "AI inference has no network checks. Privacy indicator (2.1) celebrates local operation."
+
+  epic-2-retrospective:
+    status: optional
+
+  # ============================================
+  # EPIC 3: Message Interactions (MVP)
+  # ============================================
+  epic-3:
+    name: "Message Interactions"
+    priority: MVP
+    status: done
+    completed: "2025-11-26"
+
+  3-1-copy-full-ai-response:
+    epic: 3
+    name: "Copy Full AI Response"
+    status: done
+    frs: [FR22]
+    prerequisites: []
+    completed: "2025-11-26"
+    implementation: "Utils.kt:192-200, ChatPanel.kt:467-476"
+
+  3-2-copy-code-block-with-one-tap:
+    epic: 3
+    name: "Copy Code Block with One Tap"
+    status: done
+    frs: [FR23]
+    prerequisites: [3-1]
+    completed: "2025-11-26"
+    implementation: "MarkdownText.kt:94-146"
+    notes: "CodeBlock component created. Full markdown integration deferred - use full message copy for now."
+
+  3-3-regenerate-ai-response:
+    epic: 3
+    name: "Regenerate AI Response"
+    status: done
+    frs: [FR24]
+    prerequisites: [3-1]
+    completed: "2025-11-26"
+    implementation: "ChatPanel.kt:476-488"
+    notes: "Reuses onRunAgainClicked with previous user message"
+
+  3-4-long-press-context-menu:
+    epic: 3
+    name: "Long-Press Context Menu"
+    status: done
+    frs: [FR27]
+    prerequisites: [3-1]
+    completed: "2025-11-26"
+    implementation: "ChatPanel.kt:738-867"
+    notes: "Copy, Share (Intent), Delete (with confirmation)"
+
+  epic-3-retrospective:
+    status: optional
+
+  # ============================================
+  # EPIC 4: Conversation History Enhancements (MVP)
+  # ============================================
+  epic-4:
+    name: "Conversation History Enhancements"
+    priority: MVP
+    status: done
+    completed: "2025-11-26"
+
+  4-1-search-conversations:
+    epic: 4
+    name: "Search Conversations"
+    status: done
+    frs: [FR17]
+    prerequisites: []
+    completed: "2025-11-26"
+    implementation: "ConversationDao.kt:43-50, ConversationListViewModel.kt:25-63, ConversationListScreen.kt:67-87"
+
+  4-2-continue-saved-conversation:
+    epic: 4
+    name: "Continue Saved Conversation"
+    status: done
+    frs: [FR18]
+    prerequisites: [4-1]
+    completed: "2025-11-26"
+    implementation: "ChatViewModel.kt:140-174, ConversationDetailScreen.kt:66-75, GalleryNavGraph.kt:247-259"
+    notes: "loadConversation() function + Continue FAB. Navigation wiring completed (8f7deb0). Full conversation history now loads correctly with both user and model messages."
+
+  4-3-date-grouped-conversation-list:
+    epic: 4
+    name: "Date-Grouped Conversation List"
+    status: done
+    frs: [FR21]
+    prerequisites: [4-1]
+    completed: "2025-11-26"
+    implementation: "ConversationListUiState.kt:17, ConversationListViewModel.kt:125-137, ConversationListScreen.kt:105-131"
+
+  epic-4-retrospective:
+    status: optional
+
+  # ============================================
+  # EPIC 5: Settings & Data Management (Growth)
+  # ============================================
+  epic-5:
+    name: "Settings & Data Management"
+    priority: Growth
+    status: backlog
+
+  5-1-export-conversations:
+    epic: 5
+    name: "Export Conversations"
+    status: backlog
+    frs: [FR28]
+    prerequisites: []
+
+  5-2-storage-budget-warnings:
+    epic: 5
+    name: "Storage Budget Warnings"
+    status: backlog
+    frs: [FR30]
+    prerequisites: [2-3]
+
+  5-3-auto-cleanup-configuration:
+    epic: 5
+    name: "Auto-Cleanup Configuration"
+    status: backlog
+    frs: [FR31]
+    prerequisites: [5-2]
+
+  5-4-text-size-adjustment:
+    epic: 5
+    name: "Text Size Adjustment"
+    status: backlog
+    frs: [FR34]
+    prerequisites: []
+
+  epic-5-retrospective:
+    status: optional
+
+  # ============================================
+  # EPIC 7: AI Image Generation (MVP)
+  # ============================================
+  epic-7:
+    name: "AI Image Generation"
+    priority: MVP
+    status: backlog
+
+  7-0-foundation-manifest-model-path-setup:
+    epic: 7
+    name: "Foundation - Manifest & Model Path Setup"
+    status: done
+    frs: [FR55]
+    prerequisites: []
+    notes: "OpenCL native library declarations, model extraction path - tested on device"
+    implementation: "AndroidManifest.xml:54-56"
+    completed: "2025-11-27"
+
+  7-1-task-registration-device-capability-check:
+    epic: 7
+    name: "Task Registration & Device Capability Check"
+    status: done
+    frs: [FR54]
+    prerequisites: [7-0]
+    completed: "2025-11-27"
+    implementation: "ImageGenerationTaskModule.kt, ImageGenerationPlaceholderScreen.kt, Tasks.kt:108,117, Model.kt:431,437,264"
+    notes: "Task tile appears on home screen. Device capability checking with RAM/Android version warnings. Model URL updated to HuggingFace (na5h13/stable-diffusion-v1-5-mediapipe). Model download tested successfully. Bug fix (d6a284f): Fixed Model.getPath() to prevent re-download of extracted zip models - only use unzipDir when fileName==downloadFileName."
+
+  7-2-mediapipe-inference-wrapper:
+    epic: 7
+    name: "MediaPipe Inference Wrapper"
+    status: review
+    frs: [FR47]
+    prerequisites: [7-1]
+    notes: "ImageGenerationHelper.kt created with Flow-based async inference wrapper. All AC satisfied."
+    implementation: "ImageGenerationHelper.kt, ImageGenerationTaskModule.kt:55-82"
+    completed: "2025-11-27"
+
+  7-3-progress-display-and-cancel:
+    epic: 7
+    name: "Progress Display & Cancel"
+    status: review
+    frs: [FR48, FR49, FR50]
+    prerequisites: [7-2]
+    notes: "Step-based progress (e.g., 15/20 steps), cancellation via Job.cancel(), privacy indicator during generation"
+    implementation: "ImageGenerationViewModel.kt, ImageGenerationProgressDisplay.kt, ImageGenerationUiState.kt, ImageGenerationHelper.kt:46-70,156-178, ImageGenerationPlaceholderScreen.kt:35-51,169-177"
+    completed: "2025-11-27"
+
+  7-4-image-generation-screen-ui:
+    epic: 7
+    name: "Image Generation Screen UI"
+    status: review
+    frs: [FR47, FR48, FR50, FR53]
+    prerequisites: [7-1, 7-3]
+    notes: "Full screen with prompt input (multi-line, 500 chars), iteration slider (5-50, default 20), progress display integration, final image display, Generate Again button"
+    implementation: "ImageGenerationScreen.kt, ImageGenerationTaskModule.kt:87-90"
+    completed: "2025-11-27"
+
+  7-5-save-generated-image-to-gallery:
+    epic: 7
+    name: "Save Generated Image to Gallery"
+    status: review
+    frs: [FR51]
+    prerequisites: [7-4]
+    notes: "MediaStore integration, WRITE_EXTERNAL_STORAGE for older Android"
+    implementation: "ImageGenerationViewModel.kt:saveImage(), ImageGenerationScreen.kt:onSave, ImageGenerationUiState.kt:isSaving, AndroidManifest.xml"
+    completed: "2025-11-27"
+
+  7-6-share-generated-image:
+    epic: 7
+    name: "Share Generated Image"
+    status: review
+    frs: [FR52]
+    prerequisites: [7-5]
+    notes: "Intent.ACTION_SEND with image/png MIME type"
+    implementation: "ImageGenerationViewModel.kt:shareImage(), ImageGenerationScreen.kt:onShare, file_paths.xml"
+    completed: "2025-11-27"
+
+  epic-7-retrospective:
+    status: optional
+
+# ============================================
+# WORKFLOW INSTRUCTIONS
+# ============================================
+
+# To start a story:
+# 1. Run /bmad:bmm:workflows:create-story with story ID
+# 2. Change status from 'backlog' to 'todo'
+# 3. When starting work, change to 'in_progress'
+
+# To complete a story:
+# 1. Run /bmad:bmm:workflows:story-done with story ID
+# 2. Status changes to 'done'
+
+# To review a story:
+# 1. Run /bmad:bmm:workflows:code-review with story ID
+# 2. Status should be 'review' during this phase

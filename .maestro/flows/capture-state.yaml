@@ -1,0 +1,52 @@
+appId: ai.ondevice.app
+name: Capture Current State
+tags:
+  - utility
+  - verification
+---
+# Generic flow to capture app state after sending a message
+# Use for ANY feature verification - Claude Vision analyzes the result
+# 
+# Usage: maestro test .maestro/flows/capture-state.yaml
+# Screenshots saved to: ~/.maestro/tests/[timestamp]/
+
+- launchApp:
+    clearState: false
+
+- takeScreenshot: "01-launched"
+
+# Wait for app ready
+- extendedWaitUntil:
+    visible: ".*Ask.*|.*message.*"
+    timeout: 30000
+
+# Tap input
+- tapOn:
+    text: ".*Ask.*"
+    optional: true
+
+# Type message (can override with env var)
+- inputText: "hi"
+
+- takeScreenshot: "02-typed"
+
+# Send using working selector
+- tapOn:
+    text: "Message send prompt button"
+
+- takeScreenshot: "03-sent"
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 90000
+
+# Capture final state for Claude Vision analysis
+- takeScreenshot: "04-final-state"
+
+# Scroll to see more if needed
+- swipe:
+    direction: UP
+    duration: 300
+
+- takeScreenshot: "05-scrolled"

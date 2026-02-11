@@ -1,0 +1,73 @@
+appId: ai.ondevice.app
+name: Quick Feature Verification
+tags:
+  - verification
+  - quick
+---
+# Quick verification flow for testing features after changes
+# Assumes: Model already downloaded, app previously set up
+# Goal: Send message → Get response → Screenshot
+
+# ============================================
+# STEP 1: Launch app (preserve state)
+# ============================================
+
+- launchApp:
+    clearState: false
+
+- takeScreenshot: 01-app-launched
+
+# Wait for app to be ready
+- extendedWaitUntil:
+    visible: ".*Ask.*|.*message.*"
+    timeout: 30000
+
+- takeScreenshot: 02-ready
+
+# ============================================
+# STEP 2: Send message
+# ============================================
+
+# Tap input field
+- tapOn:
+    text: ".*Ask.*"
+    optional: true
+
+# Type test message
+- inputText: "hi"
+
+- takeScreenshot: 03-message-typed
+
+# Send message using accessibility label (THE WORKING SOLUTION!)
+- tapOn:
+    text: "Message send prompt button"
+
+- takeScreenshot: 04-message-sent
+
+# ============================================
+# STEP 3: Wait for AI response
+# ============================================
+
+# Wait for response (90s timeout for slower models)
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 90000
+
+# Extra wait to ensure full response
+- swipe:
+    direction: UP
+    duration: 300
+
+- takeScreenshot: 05-ai-response
+
+# ============================================
+# STEP 4: Verify disclaimer (if testing disclaimer feature)
+# ============================================
+
+# Check for disclaimer text
+- extendedWaitUntil:
+    visible: "OnDevice can make mistakes"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: 06-final-state

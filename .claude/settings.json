@@ -1,0 +1,36 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "thinking": false,
+  "permissions": {
+    "allow": ["*"],
+    "deny": []
+  },
+  "hooks": {
+    "PreToolUse": [],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ktlint -F **/*.kt 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '📸 Capturing verification screenshot...' && adb exec-out screencap -p > /tmp/stop-verify-$(date +%Y%m%d-%H%M%S).png 2>/dev/null && echo '✅ Screenshot saved' || echo '⚠️ No device connected'"
+          },
+          {
+            "type": "command",
+            "command": "echo '📋 Checking OpenSpec compliance...' && [ -d openspec/changes ] && ls openspec/changes/ 2>/dev/null | head -5 || echo 'No active OpenSpec changes'"
+          }
+        ]
+      }
+    ]
+  }
+}

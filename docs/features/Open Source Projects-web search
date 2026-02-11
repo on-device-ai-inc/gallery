@@ -1,0 +1,320 @@
+# Open-source projects for LLM web search integration
+
+**Over 150 open-source projects** now enable LLM systems to search the web, ranging from full orchestration frameworks to specialized reranking libraries. This comprehensive catalog covers every major category: orchestration frameworks like LangChain and CrewAI, self-hosted AI search engines like Perplexica, supporting tools like Firecrawl and Crawl4AI, and search API clients for Tavily, Exa, and dozens more. The ecosystem has matured significantly, with production-ready options available for every component of an LLM search pipeline.
+
+-----
+
+## 1. Orchestration frameworks with web search support
+
+These frameworks provide the foundation for building LLM applications with integrated search capabilities. Most support multiple search providers through modular tool systems.
+
+### Tier 1: Industry-standard frameworks (>40k stars)
+
+|Project       |GitHub                             |Stars|Language |License|Key Search Features                                                         |Status             |
+|--------------|-----------------------------------|-----|---------|-------|----------------------------------------------------------------------------|-------------------|
+|**LangChain** |github.com/langchain-ai/langchain  |~125k|Python/JS|MIT    |Tavily, SerpAPI, Google, DuckDuckGo, WebBrowser tool, Web Research Retriever|Stable, Very Active|
+|**MetaGPT**   |github.com/FoundationAgents/MetaGPT|~50k |Python   |MIT    |Web research phases, DataInterpreter, AFlow workflows                       |Stable, ICLR 2025  |
+|**Langflow**  |github.com/langflow-ai/langflow    |~50k |Python/TS|MIT    |Full LangChain tools access, visual builder, MCP server                     |Stable, Very Active|
+|**AutoGen**   |github.com/microsoft/autogen       |~45k |Python   |MIT    |MultimodalWebSurfer agent, Apify integration, Selenium browsing             |Stable, Very Active|
+|**CrewAI**    |github.com/crewAIInc/crewAI        |~42k |Python   |MIT    |WebsiteSearchTool, GitHubSearchTool, SerperDevTool, RAG tools               |Stable, Very Active|
+|**LlamaIndex**|github.com/run-llama/llama_index   |~40k |Python/TS|MIT    |Google, DuckDuckGo via LlamaHub, web data connectors                        |Stable, Very Active|
+
+### Tier 2: Major frameworks (15k-40k stars)
+
+|Project            |GitHub                                |Stars |Language      |License    |Key Search Features                                |Status                  |
+|-------------------|--------------------------------------|------|--------------|-----------|---------------------------------------------------|------------------------|
+|**Flowise**        |github.com/FlowiseAI/Flowise          |~35k  |JavaScript    |Apache-2.0 |LangChainJS integrations, drag-drop search agents  |Stable, Very Active     |
+|**Semantic Kernel**|github.com/microsoft/semantic-kernel  |~27k  |C#/Python/Java|MIT        |Microsoft.SemanticKernel.Plugins.Web, Azure Search |Stable, Enterprise-ready|
+|**ChatDev**        |github.com/OpenBMB/ChatDev            |~26k  |Python        |Apache-2.0 |CAMEL-based web research                           |Experimental            |
+|**DSPy**           |github.com/stanfordnlp/dspy           |~25k  |Python        |MIT        |ColBERTv2 retrieval, search_wikipedia via ReAct    |Stable, ICLR 2025       |
+|**Haystack**       |github.com/deepset-ai/haystack        |~23k  |Python        |Apache-2.0 |WebSearch components, SerperDev, LinkFetcher       |Stable, Production-ready|
+|**Guidance**       |github.com/guidance-ai/guidance       |~21k  |Python        |MIT        |Custom function integration for search             |Stable                  |
+|**BabyAGI**        |github.com/yoheinakajima/babyagi      |~20.5k|Python/JS     |MIT        |Pinecone/vector search, Tavily integration         |Experimental            |
+|**Phidata/Agno**   |github.com/agno-agi/agno              |~20k  |Python        |MPL-2.0    |DuckDuckGo, web agent in 10 lines                  |Stable, Very Active     |
+|**OpenAI Swarm**   |github.com/openai/swarm               |~18k  |Python        |MIT        |Function calling for search                        |Educational (Deprecated)|
+|**SuperAGI**       |github.com/TransformerOptimus/SuperAGI|~15k  |Python        |MIT        |DuckDuckGo, Google toolkits, marketplace           |Beta                    |
+
+### Tier 3: Specialized frameworks (3k-15k stars)
+
+|Project         |GitHub                         |Stars|Language  |License   |Key Search Features                       |Status             |
+|----------------|-------------------------------|-----|----------|----------|------------------------------------------|-------------------|
+|**CAMEL**       |github.com/camel-ai/camel      |~10k |Python    |Apache-2.0|SEARCH_FUNCS built-in, RepoAgent, GraphRAG|Stable, Very Active|
+|**PromptFlow**  |github.com/microsoft/promptflow|~10k |Python    |MIT       |Azure OpenAI, flow-based development      |Stable             |
+|**TaskWeaver**  |github.com/microsoft/TaskWeaver|~5.4k|Python    |MIT       |Plugin-based search architecture          |Stable             |
+|**Agency Swarm**|github.com/VRSEN/agency-swarm  |~4.5k|Python    |MIT       |Multi-model support via LiteLLM           |Stable             |
+|**Rivet**       |github.com/Ironclad/rivet      |~3k  |TypeScript|MIT       |Visual node-based editor, multi-LLM       |Stable             |
+
+-----
+
+## 2. Self-hosted search engines and AI search applications
+
+### Perplexity-style open-source alternatives
+
+These projects replicate Perplexity’s conversational AI search experience with local deployment options.
+
+|Project               |GitHub                                       |Stars    |Language         |License   |Key Features                                                                                                              |Status          |
+|----------------------|---------------------------------------------|---------|-----------------|----------|--------------------------------------------------------------------------------------------------------------------------|----------------|
+|**Perplexica**        |github.com/ItzCrazyKns/Perplexica            |**27.7k**|TypeScript       |MIT       |SearXNG backend, 6 focus modes (Academic, YouTube, Reddit, Wolfram),  multi-LLM (Ollama/OpenAI/Claude), Docker deployment |Production-ready|
+|**Scira** (MiniPerplx)|github.com/zaidmukaddam/scira                |~11k     |TypeScript       |Open      |Minimal interface, Vercel AI SDK, Grok support                                                                            |Active          |
+|**MindSearch**        |github.com/InternLM/MindSearch               |~10k     |Python           |Apache-2.0|Multi-agent framework, dynamic graph construction, DuckDuckGo/Brave/Google support                                        |Research-grade  |
+|**LLocalSearch**      |github.com/nilsherzig/LLocalSearch           |~7k      |Go               |MIT       |Completely local, no API keys, consumer GPU                                                                               |Active          |
+|**Farfalle**          |github.com/rashadphz/farfalle                |~3k      |TypeScript/Python|Open      |SearXNG/Tavily/Serper support, local LLMs via Ollama                                                                      |Active          |
+|**MiniSearch**        |github.com/felladrin/MiniSearch              |~1.5k    |TypeScript       |Open      |Runs entirely in browser via WebLLM                                                                                       |Active          |
+|**LLM Answer Engine** |github.com/developersdigest/llm-answer-engine|~1k      |TypeScript       |Open      |Brave/Serper, follow-up generation                                                                                        |Active          |
+
+### Metasearch engines with LLM integration
+
+|Project           |GitHub                            |Stars    |Language|License |Description                                                                                          |Status             |
+|------------------|----------------------------------|---------|--------|--------|-----------------------------------------------------------------------------------------------------|-------------------|
+|**SearXNG**       |github.com/searxng/searxng        |**22.6k**|Python  |AGPL-3.0|Privacy-focused metasearch, **210+ engines**, JSON API,  used as backend by Perplexica and Open WebUI|Production-ready   |
+|**Whoogle Search**|github.com/benbusby/whoogle-search|~11k     |Python  |MIT     |Ad-free Google proxy, JSON API  (facing Google JS challenges in 2025)                                |Active with caveats|
+|**Araa Search**   |GitHub                            |~314     |Python  |Open    |Privacy search with full API support                                                                 |Active             |
+
+### Complete RAG platforms with web search
+
+|Project           |GitHub                               |Stars    |Language  |License   |Key Features                                                                                |Status          |
+|------------------|-------------------------------------|---------|----------|----------|--------------------------------------------------------------------------------------------|----------------|
+|**AnythingLLM**   |github.com/Mintplex-Labs/anything-llm|**51.6k**|JavaScript|MIT       |Desktop/Docker, multi-document RAG, no-code agent builder,  MCP compatible                  |Production-ready|
+|**Open WebUI**    |github.com/open-webui/open-webui     |**45k+** |Python/TS |MIT       |**15+ search providers** (SearXNG, Google, Brave, Tavily), **9 vector DBs**, enterprise auth|Production-ready|
+|**RAGFlow**       |github.com/infiniflow/ragflow        |High     |Python    |Apache-2.0|Deep document understanding, “needle in haystack”, pre-built agents                         |Production-ready|
+|**Onyx** (Danswer)|onyx.app                             |~17k     |Python    |Open      |Deep research, MCP, 40+ connectors (Slack, Notion, Google Drive)                            |Enterprise-ready|
+|**R2R**           |github.com/SciPhi-AI/R2R             |Growing  |Python    |Open      |RESTful API, multimodal ingestion, Deep Research agent                                      |Active          |
+|**Verba**         |github.com/weaviate/Verba            |Growing  |Python    |Open      |Weaviate-powered RAG chatbot                                                                |Active          |
+
+-----
+
+## 3. Search infrastructure and vector databases
+
+### Full-text search engines
+
+|Project        |GitHub                                  |Stars    |Language|License   |LLM-Relevant Features                                                                               |Status          |
+|---------------|----------------------------------------|---------|--------|----------|----------------------------------------------------------------------------------------------------|----------------|
+|**Meilisearch**|github.com/meilisearch/meilisearch      |**51.2k**|Rust    |MIT       |Sub-50ms responses, **hybrid search (full-text + semantic)**, vector search, AI-powered features    |Production-ready|
+|**Typesense**  |github.com/typesense/typesense          |~23k     |C++     |GPL-3.0   |**Built-in RAG (Conversational Search)**, semantic/hybrid search,  image search (CLIP), voice search|Production-ready|
+|**OpenSearch** |github.com/opensearch-project/OpenSearch|~10.7k   |Java    |Apache-2.0|Neural search plugin, ML Commons, distributed architecture                                          |Enterprise-grade|
+
+### Vector databases
+
+|Project     |GitHub                       |Stars   |Language|License     |Key Features                                                                                 |Status           |
+|------------|-----------------------------|--------|--------|------------|---------------------------------------------------------------------------------------------|-----------------|
+|**Milvus**  |github.com/milvus-io/milvus  |**~42k**|Go/C++  |Apache-2.0  |Trillion-scale similarity search, multiple index types (HNSW, IVF, DiskANN), GPU acceleration|Production-ready |
+|**Qdrant**  |github.com/qdrant/qdrant     |~20k    |Rust    |Apache-2.0  |High-performance, payload filtering, sparse vectors, 97% RAM reduction via quantization      |Production-ready |
+|**Weaviate**|github.com/weaviate/weaviate |~10k    |Go      |BSD-3-Clause|GraphQL interface, built-in modules (OpenAI, Cohere, HuggingFace)                            |Production-ready |
+|**Chroma**  |github.com/chroma-core/chroma|~6k     |Python  |Apache-2.0  |Simple Python API, great for prototyping, LangChain integration                              |Development-ready|
+
+-----
+
+## 4. Web scraping and content extraction tools
+
+### LLM-optimized web scrapers
+
+|Project          |GitHub                                 |Stars   |Language  |License   |Key Features                                                                                               |Status          |
+|-----------------|---------------------------------------|--------|----------|----------|-----------------------------------------------------------------------------------------------------------|----------------|
+|**Firecrawl**    |github.com/firecrawl/firecrawl         |**~70k**|TypeScript|AGPL-3.0  |LLM-ready markdown output, media parsing, smart JS wait, stealth mode, Actions API, MCP server             |Production-ready|
+|**Crawl4AI**     |github.com/unclecode/crawl4ai          |**~50k**|Python    |Apache-2.0|#1 trending, Fit Markdown with noise filtering,  BM25 filtering, LLM-driven extraction, chunking strategies|Production-ready|
+|**ScrapeGraphAI**|github.com/ScrapeGraphAI/Scrapegraph-ai|~22k    |Python    |MIT       |Natural language prompts, graph logic pipelines, MCP server, visual workflow builder                       |Production-ready|
+|**Browserless**  |github.com/browserless/browserless     |~10k    |TypeScript|SSPL-1.0  |Headless browser Docker deployment, Puppeteer/Playwright/Selenium support                                  |Production-ready|
+|**Jina Reader**  |github.com/jina-ai/reader              |~9.7k   |TypeScript|Apache-2.0|URL prefix API (r.jina.ai), PDF extraction, streaming, web search endpoint (s.jina.ai)                     |Production-ready|
+|**LLM Scraper**  |github.com/mishushakov/llm-scraper     |~2k     |TypeScript|MIT       |Zod/JSON Schema extraction, TypeScript type-safety, streaming objects                                      |Production-ready|
+
+### Content extraction libraries
+
+|Project        |GitHub                                      |Stars      |Language|License   |Description                                                                                                                                 |Status          |
+|---------------|--------------------------------------------|-----------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------|----------------|
+|**Trafilatura**|github.com/adbar/trafilatura                |~3.5k      |Python  |Apache-2.0|**Best-in-class** text extraction, multiple output formats (TXT/JSON/XML/Markdown), metadata extraction, used by HuggingFace/IBM/Microsoft  |Production-ready|
+|**Newspaper4k**|github.com/AndyTheFactory/newspaper4k       |Fork of 14k|Python  |MIT       |Article extraction, NLP features, 10+ languages, Google News integration                                                                    |Active          |
+|**html2text**  |github.com/Alir3z4/html2text                |~2k        |Python  |GPL-3.0   |HTML to clean Markdown                                                                                                                      |Production-ready|
+|**Markdownify**|github.com/matthewwithanm/python-markdownify|~1.5k      |Python  |MIT       |Customizable HTML to Markdown                                                                                                               |Production-ready|
+
+-----
+
+## 5. Reranking and retrieval libraries
+
+### Reranking libraries
+
+|Project                  |GitHub                                      |Stars   |Language|License   |Key Features                                                                                            |Status          |
+|-------------------------|--------------------------------------------|--------|--------|----------|--------------------------------------------------------------------------------------------------------|----------------|
+|**Sentence-Transformers**|github.com/huggingface/sentence-transformers|**~16k**|Python  |Apache-2.0|Cross-Encoder reranking, 15k+ pretrained models, multi-GPU support                                      |Production-ready|
+|**FlagEmbedding/BGE**    |github.com/FlagOpen/FlagEmbedding           |~8k     |Python  |MIT       |bge-reranker-v2-m3, 100+ languages, state-of-the-art on BEIR                                            |Production-ready|
+|**FlashRank**            |github.com/PrithivirajDamodaran/FlashRank   |~1.5k   |Python  |Apache-2.0|Ultra-lite (~4MB), CPU-only, no Torch dependency, serverless-friendly,  LangChain integration           |Production-ready|
+|**rerankers**            |github.com/AnswerDotAI/rerankers            |~1k     |Python  |Apache-2.0|Unified API for Cross-Encoders, T5, ColBERT, FlashRank, RankGPT, API rerankers (Cohere, Jina, Pinecone) |Production-ready|
+|**RankLLM**              |github.com/castorini/rank_llm               |~300    |Python  |Apache-2.0|Pointwise/Pairwise/Listwise reranking, vLLM/SGLang support, RankZephyr/RankVicuna                       |Research-grade  |
+
+### Semantic search and hybrid retrieval
+
+|Project           |GitHub                                |Stars   |Language|License   |Key Features                                                           |Status          |
+|------------------|--------------------------------------|--------|--------|----------|-----------------------------------------------------------------------|----------------|
+|**LightRAG**      |github.com/HKUDS/LightRAG             |**~30k**|Python  |MIT       |EMNLP 2025, hybrid search, knowledge graph integration, async support  |Production-ready|
+|**txtai**         |github.com/neuml/txtai                |~9k     |Python  |Apache-2.0|All-in-one semantic search, LLM orchestration, workflows, hybrid search|Production-ready|
+|**Neo4j GraphRAG**|github.com/neo4j/neo4j-graphrag-python|~500    |Python  |Apache-2.0|Vector/graph hybrid retrieval, Text2Cypher                             |Production-ready|
+
+-----
+
+## 6. Standalone search integration libraries
+
+### LLM-specific search wrappers
+
+|Project              |GitHub                                                 |Stars|Language|License   |Key Features                                                                    |Status|
+|---------------------|-------------------------------------------------------|-----|--------|----------|--------------------------------------------------------------------------------|------|
+|**MindSearch**       |github.com/InternLM/MindSearch                         |~4.5k|Python  |Apache-2.0|Multi-agent web search, DuckDuckGo/Brave/Google/Bing, React frontend            |Active|
+|**LLM_Web_search**   |github.com/mamei16/LLM_Web_search                      |~1k  |Python  |AGPL-3.0  |text-generation-webui extension, SPLADE/BM25, semantic chunking, SearXNG backend|Active|
+|**Web-LLM-Assistant**|github.com/TheBlewish/Web-LLM-Assistant-Llamacpp-Ollama|~500 |Python  |MIT       |Llama.cpp/Ollama integration, self-improving search                             |Active|
+
+### General search abstraction libraries
+
+|Project                     |GitHub                            |Stars|Language     |License|Description                                                                                          |Status          |
+|----------------------------|----------------------------------|-----|-------------|-------|-----------------------------------------------------------------------------------------------------|----------------|
+|**duckduckgo-search (ddgs)**|github.com/deedy5/ddgs            |~4.8k|Python       |MIT    |Metasearch aggregator,  text/image/video/news, async, multiple backends (Bing, Brave, Google, Yahoo) |Production-ready|
+|**googlesearch-python**     |github.com/Nv7-GitHub/googlesearch|~1.8k|Python       |MIT    |BeautifulSoup4 scraper, multi-language, proxy support                                                |Active          |
+|**serpapi-python**          |github.com/serpapi/serpapi-python |~116 |Python       |MIT    |Official SerpAPI client, 40+ search engines                                                          |Official        |
+|**yagooglesearch**          |github.com/opsdisk/yagooglesearch |~200 |Python       |BSD-3  |SOCKS5 proxy, rate-limit awareness                                                                   |Active          |
+|**Semantra**                |github.com/freedmand/semantra     |~2.5k|Python/Svelte|MIT    |Semantic document search (PDFs, text), local operation                                               |Active          |
+
+-----
+
+## 7. Search provider client libraries
+
+### AI-native search API clients
+
+|Provider   |Package       |GitHub                            |Stars|Language  |Official|Status|
+|-----------|--------------|----------------------------------|-----|----------|--------|------|
+|**Tavily** |tavily-python |github.com/tavily-ai/tavily-python|~958 |Python    |✅ Yes   |Active|
+|**Tavily** |@tavily/core  |npm                               |-    |TypeScript|✅ Yes   |Active|
+|**Exa**    |exa-py        |github.com/exa-labs/exa-py        |~187 |Python    |✅ Yes   |Active|
+|**Exa**    |exa-js        |github.com/exa-labs/exa-js        |~112 |TypeScript|✅ Yes   |Active|
+|**Exa MCP**|exa-mcp-server|github.com/exa-labs/exa-mcp-server|~3.6k|TypeScript|✅ Yes   |Active|
+
+### Traditional search API clients
+
+|Provider      |Package                   |GitHub                               |Stars|Language  |Official   |Status     |
+|--------------|--------------------------|-------------------------------------|-----|----------|-----------|-----------|
+|**SerpAPI**   |serpapi-python            |github.com/serpapi/serpapi-python    |~116 |Python    |✅ Yes      |Active     |
+|**SerpAPI**   |serpapi-javascript        |github.com/serpapi/serpapi-javascript|~74  |JavaScript|✅ Yes      |Active     |
+|**SerpAPI**   |serpapi-ruby              |github.com/serpapi/serpapi-ruby      |~16  |Ruby      |✅ Yes      |Active     |
+|**SerpAPI**   |serpapi-golang            |github.com/serpapi/serpapi-golang    |~10  |Go        |✅ Yes      |Active     |
+|**Kagi**      |kagiapi                   |github.com/kagisearch/kagiapi        |-    |Python    |✅ Yes      |Active     |
+|**Kagi**      |kagi-api-rust             |github.com/kagisearch/kagi-api-rust  |-    |Rust      |✅ Yes      |Active     |
+|**DuckDuckGo**|duckduckgo-search         |github.com/deedy5/ddgs               |~4.8k|Python    |❌ Community|Very Active|
+|**Brave**     |brave-search-python-client|GitHub                               |-    |Python    |❌ Community|Active     |
+
+### Specialized search clients
+
+|Provider            |Package        |GitHub                                 |Stars  |Language|Official|Description                                       |
+|--------------------|---------------|---------------------------------------|-------|--------|--------|--------------------------------------------------|
+|**Semantic Scholar**|semanticscholar|github.com/danielnsilva/semanticscholar|~200   |Python  |❌       |Academic paper search, citations, recommendations |
+|**arXiv**           |arxiv          |github.com/lukasschwab/arxiv.py        |Popular|Python  |❌       |1M+ papers,  PDF download, rate limiting          |
+|**Wikipedia**       |Wikipedia-API  |github.com/martin-majlis/Wikipedia-API |Popular|Python  |❌       |Multilingual, sections, links, categories         |
+|**News API**        |newsapi-python |github.com/mattlisiv/newsapi-python    |~458   |Python  |❌       |Headlines, full search, sources                   |
+|**Reddit**          |praw           |github.com/praw-dev/praw               |~3.1k  |Python  |❌       |De facto standard, full API access                |
+
+-----
+
+## 8. Query processing and decomposition tools
+
+Query decomposition is primarily implemented within frameworks rather than standalone libraries:
+
+|Framework     |Feature                  |Description                               |
+|--------------|-------------------------|------------------------------------------|
+|**LangChain** |Query analysis           |Sub-question routing, decomposition, HyDE |
+|**Haystack**  |Query decomposition      |Pipeline-based with Pydantic schemas      |
+|**LlamaIndex**|Sub-question query engine|Graph Index traversals, post-processors   |
+|**DSPy**      |Modules                  |Declarative retrieval modules             |
+
+### Research implementations
+
+|Project           |Paper           |Description                                    |
+|------------------|----------------|-----------------------------------------------|
+|**RT-RAG**        |arXiv:2601.11255|Reasoning Tree RAG for multi-hop QA            |
+|**HopRAG**        |arXiv:2502.12442|Graph-structured RAG for multi-hop reasoning   |
+|**Multi-Meta-RAG**|arXiv:2406.13213|Database filtering with LLM-extracted metadata |
+
+-----
+
+## 9. Embedding models and retrieval tools
+
+|Project                  |GitHub                                      |Stars|Language|Key Features                                        |Status          |
+|-------------------------|--------------------------------------------|-----|--------|----------------------------------------------------|----------------|
+|**Sentence-Transformers**|github.com/huggingface/sentence-transformers|~16k |Python  |15k+ models, multilingual, CLIP, SPLADE             |Production-ready|
+|**FlagEmbedding/BGE-M3** |github.com/FlagOpen/FlagEmbedding           |~8k  |Python  |Multi-linguality, 8192 tokens, dense/lexical/ColBERT|Production-ready|
+|**Jina Embeddings**      |github.com/jina-ai                          |-    |Python  |jina-embeddings-v4, jina-colbert-v2, multilingual   |Production-ready|
+
+-----
+
+## 10. Rust and Go alternatives
+
+### Rust LLM ecosystem
+
+|Project                      |GitHub                               |Description                                      |Status     |
+|-----------------------------|-------------------------------------|-------------------------------------------------|-----------|
+|**langchain-rust**           |github.com/Abraxas-365/langchain-rust|Rust port of LangChain concepts                  |Active     |
+|**Rig**                      |github.com/0xPlaygrounds/rig         |Modular LLM framework                            |Active     |
+|**pgvecto.rs**               |GitHub                               |Postgres vector plugin (20x faster than pgvector)|Active     |
+|**Tabby**                    |github.com/TabbyML/tabby             |Self-hosted AI coding assistant                  |Very Active|
+|**text-generation-inference**|HuggingFace                          |High-performance text generation in Rust         |Very Active|
+|**rag-toolchain**            |crates.io                            |RAG Pipeline toolkit                             |Active     |
+
+### Go LLM ecosystem
+
+|Project         |GitHub                            |Description                         |Status|
+|----------------|----------------------------------|------------------------------------|------|
+|**LLocalSearch**|github.com/nilsherzig/LLocalSearch|Local search aggregator             |Active|
+|**Eino**        |-                                 |Golang AI framework (LangChain-like)|Active|
+|**intellichunk**|github.com/cckalen/intellichunk   |Lightweight RAG/LLM Tool            |Active|
+
+-----
+
+## 11. Regional and international projects
+
+### Japanese LLM resources
+
+|Project                           |GitHub                                            |Stars|Description                                   |
+|----------------------------------|--------------------------------------------------|-----|----------------------------------------------|
+|**awesome-japanese-llm**          |github.com/llm-jp/awesome-japanese-llm            |~1.3k|Comprehensive Japanese LLM overview           |
+|**awesome-japanese-nlp-resources**|github.com/taishi-i/awesome-japanese-nlp-resources|High |NLP libraries, LLMs, dictionaries for Japanese|
+
+### Chinese LLM resources
+
+|Project                |GitHub                                   |Description                        |
+|-----------------------|-----------------------------------------|-----------------------------------|
+|**Awesome-Chinese-LLM**|github.com/HqWu-HITCS/Awesome-Chinese-LLM|Comprehensive Chinese LLM resources|
+|**Taiwan-LLM**         |github.com/MiuLab/Taiwan-LLM             |Traditional Mandarin LLMs          |
+
+-----
+
+## 12. Curated awesome lists
+
+### Essential awesome lists
+
+|List                     |GitHub                                    |Stars    |Focus                         |
+|-------------------------|------------------------------------------|---------|------------------------------|
+|**Awesome-LLM**          |github.com/Hannibal046/Awesome-LLM        |~25.5k   |Comprehensive LLM resources   |
+|**awesome-ai-agents**    |github.com/e2b-dev/awesome-ai-agents      |Very High|AI autonomous agents          |
+|**awesome-langchain**    |github.com/kyrolabs/awesome-langchain     |High     |LangChain ecosystem           |
+|**awesome-ai-web-search**|github.com/felladrin/awesome-ai-web-search|~500     |AI-powered web search software|
+
+### RAG-focused lists
+
+|List                       |GitHub                                        |Focus                  |
+|---------------------------|----------------------------------------------|-----------------------|
+|**Awesome-RAG**            |github.com/Danielskry/Awesome-RAG             |RAG applications       |
+|**Awesome-LLM-RAG**        |github.com/jxzhangjhu/Awesome-LLM-RAG         |Advanced RAG techniques|
+|**Awesome-Trustworthy-RAG**|github.com/Arstanley/Awesome-Trustworthy-RAG  |Security and robustness|
+|**awesome-vector-database**|github.com/dangkhoasdc/awesome-vector-database|Vector search resources|
+
+-----
+
+## Recommended technology stacks
+
+For different use cases, these combinations provide battle-tested production paths:
+
+**Privacy-focused local AI search**: Perplexica + SearXNG + Ollama provides a fully local alternative to Perplexity with no data leaving your infrastructure.  
+
+**Enterprise document search**: Open WebUI + OpenSearch + Qdrant combines a polished UI with enterprise-grade search infrastructure and vector capabilities.
+
+**Lightweight development stack**: LangChain + Tavily + Chroma offers the fastest path to a working prototype with minimal configuration.
+
+**High-performance production**: Haystack + Meilisearch + BGE Reranker provides industrial-strength search with state-of-the-art reranking at scale.
+
+**Web scraping pipeline**: Crawl4AI + Trafilatura + FlashRank delivers high-quality content extraction with efficient reranking for cost-effective RAG systems.
+
+The ecosystem continues to evolve rapidly, with **GraphRAG** approaches and **agentic RAG** representing the cutting edge. Projects combining knowledge graphs with traditional retrieval (Neo4j GraphRAG, LightRAG) are gaining significant traction for complex reasoning tasks requiring multi-hop retrieval.

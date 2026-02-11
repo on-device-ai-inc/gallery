@@ -1,0 +1,46 @@
+Week Ending,Innovation/Project,Hours Worked,SR&ED Eligible,Description,Technical Notes,SR&ED Percentage
+2026-01-03,Token Monitoring System,0,Y,Context-aware resource optimization - Initial planning,Planning persona variant system with 5 token levels (110-620 tokens),
+2026-01-03,Hybrid Web Search,0,Y,Brave Search API integration planning,Researching rate limiting strategies (5/day without backend),
+2026-01-03,Business Planning,0,N,Incorporation research and planning,Non-technical - business structure analysis,
+2026-01-03,WEEKLY TOTAL,0,,,,0%
+
+Instructions for Use:
+"1. Log hours every Friday (15 minutes)"
+"2. Review Git commits from the week"
+"3. Categorize work: SR&ED eligible (Y) vs routine (N)"
+"4. Track 4 main innovations:"
+"   - Token Monitoring System (context-aware resource optimization)"
+"   - Hybrid Web Search Integration (privacy-first Brave API)"
+"   - Conversation Persistence (multimodal Room database)"
+"   - Secure Model Distribution (SHA-256 verification, resume capability)"
+"5. Target: 60-75% SR&ED (don't exceed 75% as founder)"
+"6. Be specific in descriptions - reference files, commits, experiments"
+"7. Save technical notes for CRA audit defense"
+
+Example Entries (when you start development):
+"2026-01-10,Token Monitoring System,18,Y,Experimented with 3/4/5 chars per token ratios. Tested against actual Gemini consumption,Best result: 4 chars = 92% accuracy. Implemented in TokenMonitor.kt"
+"2026-01-10,Hybrid Web Search,12,Y,Implemented Brave API rate limiting using DataStore. Tested prompt engineering for result prioritization,5/day limit working. Created SearchRepository.kt"
+"2026-01-10,UI Design,8,N,Refined chat interface styling and color scheme,Non-technical aesthetic work. Updated Compose UI components"
+"2026-01-10,Business Planning,2,N,Planned go-to-market strategy,Marketing planning - not R&D"
+"2026-01-10,WEEKLY TOTAL,40,,,,75%"
+
+SR&ED Eligible Work Examples:
+"✅ Solving technical uncertainties (How to estimate tokens without official tokenizer?)"
+"✅ Systematic experimentation (Testing 3 vs 4 vs 5 chars/token)"
+"✅ Novel algorithms (Persona variant system with dynamic switching)"
+"✅ Technical problem-solving (Rate limiting without backend server)"
+"✅ Architecture decisions requiring investigation (Room database schema for multimodal)"
+
+NOT SR&ED Eligible:
+"❌ UI styling and visual design"
+"❌ Marketing and business planning"
+"❌ Routine bug fixes (known solutions)"
+"❌ Administrative tasks"
+"❌ Documentation writing (unless technical specs for SR&ED claim)"
+
+Key Reminders:
+"- Start logging NOW even though pre-revenue (no salary to claim against yet)"
+"- Contemporaneous documentation = strongest evidence for future claims"
+"- When revenue arrives, you'll have complete audit-proof history"
+"- 180-day payment rule: Accrued wages must be paid within 180 days of year-end"
+"- Keep detailed technical notes - CRA may audit 3-5 years later"

@@ -1,0 +1,38 @@
+appId: ai.ondevice.app
+---
+# Basic chat flow - send message, capture AI response
+# Timeout: 90 seconds for AI response
+
+- launchApp:
+    clearState: false
+
+- takeScreenshot: "01-app-ready"
+
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+
+- tapOn:
+    id: "message_input"
+    optional: true
+
+- inputText: "Hello, can you help me?"
+
+- tapOn:
+    id: "send_button"
+    optional: true
+
+- tapOn:
+    text: "Send"
+    optional: true
+
+- pressKey: Enter
+
+- takeScreenshot: "02-message-sent"
+
+# Wait for AI response - 90 second timeout
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 90000
+
+- takeScreenshot: "03-chat-response"

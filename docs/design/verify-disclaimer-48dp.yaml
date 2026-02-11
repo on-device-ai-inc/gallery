@@ -1,0 +1,33 @@
+appId: ai.ondevice.app
+---
+# Accept ToS if shown
+- tapOn:
+    text: "Accept and Continue"
+    optional: true
+
+- extendedWaitUntil:
+    visible: ".*Ask.*"
+    timeout: 10000
+
+# Navigate to chat if not already there
+- tapOn:
+    text: "Chat"
+    optional: true
+
+# Type a test message
+- tapOn:
+    text: ".*Ask.*"
+
+- inputText: "Hello, how are you?"
+
+# Send message
+- tapOn:
+    id: "send_prompt_button"
+
+# Wait for AI response
+- extendedWaitUntil:
+    visible: "OnDevice can make mistakes"
+    timeout: 120000
+
+# Take screenshot showing larger disclaimer logo
+- takeScreenshot: disclaimer-logo-48dp-final

@@ -1,0 +1,193 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>7.4</storyId>
+    <title>Image Generation Screen UI</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>sprint status/7-4-image-generation-screen-ui.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>a screen to enter prompts and see generated images</iWant>
+    <soThat>I can create images from text</soThat>
+    <tasks>
+      - Task 1: Create ImageGenerationScreen composable
+      - Task 2: Integrate progress display from Story 7.3
+      - Task 3: Display final generated image
+      - Task 4: Model availability check and error handling
+      - Task 5: Navigation integration
+      - Task 6: Integration testing and validation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">Given I tap the Image Generation tile on home screen, when the screen loads, then I see a prompt input field and Generate button</criterion>
+    <criterion id="AC2">Given I am on the image generation screen, when I enter a prompt (multi-line, max 500 chars), then I can adjust iterations via slider (5-50, default 20)</criterion>
+    <criterion id="AC3">Given I have entered a prompt and tap Generate, when generation starts, then I see the progress display from Story 7.3 (step count, intermediate previews, cancel button, privacy indicator)</criterion>
+    <criterion id="AC4">Given generation completes successfully, when the final image is ready, then it displays at 512x512 resolution with "Generate Again" button</criterion>
+    <criterion id="AC5">Given I tap "Generate Again", when regeneration starts, then a new seed is used (produces different result from same prompt)</criterion>
+    <criterion id="AC6">Given I am a first-time user without the model downloaded, when I open the screen, then I see: "Generate images from text, completely offline. Download the 1.9GB model to get started."</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/epics.md</path>
+        <title>Epic 7: AI Image Generation</title>
+        <section>Story 7.4: Image Generation Screen UI</section>
+        <snippet>As a user, I want a screen to enter prompts and see generated images. Screen includes: prompt field (multi-line, 500 chars), iteration slider (5-50, default 20), Generate button, progress display, final image with Generate Again option.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture.md</path>
+        <title>OnDevice AI Architecture</title>
+        <section>Project Structure - Task Screens</section>
+        <snippet>Task screens follow pattern: Scaffold with TopAppBar, Column layout for input/output, ViewModel for state management, Hilt injection. Reference LlmChatScreen for task screen structure.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR47: On-Device Image Generation</section>
+        <snippet>Generate images from text prompts entirely on-device using Stable Diffusion. User enters prompt, adjusts iterations (quality vs speed tradeoff), sees progress during generation, views 512x512 result.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR53: Regenerate with same prompt (new seed)</section>
+        <snippet>"Generate Again" button allows users to regenerate image with same prompt but different random seed, producing varied results from identical text input.</snippet>
+      </artifact>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationViewModel.kt</path>
+        <kind>viewmodel</kind>
+        <symbol>ImageGenerationViewModel</symbol>
+        <lines>1-191</lines>
+        <reason>Created in Story 7.3 - provides state management for generation. Screen will use this ViewModel to start generation, observe progress, handle cancellation. Already implements all necessary functionality.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationProgressDisplay.kt</path>
+        <kind>composable</kind>
+        <symbol>ImageGenerationProgressDisplay</symbol>
+        <lines>1-138</lines>
+        <reason>Created in Story 7.3 - ready-to-use progress UI component. Story 7.4 screen will show this composable when uiState.isGenerating=true. Includes privacy indicator, progress text, intermediate previews, cancel button.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationUiState.kt</path>
+        <kind>data-class</kind>
+        <symbol>ImageGenerationUiState</symbol>
+        <lines>1-52</lines>
+        <reason>UI state model from Story 7.3. Screen observes: isGenerating, currentStep, totalSteps, intermediateBitmap, finalBitmap, errorMessage, cancelled fields.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatScreen.kt</path>
+        <kind>screen</kind>
+        <symbol>LlmChatScreen</symbol>
+        <lines>1-200</lines>
+        <reason>Reference pattern for task screens - shows Scaffold with TopAppBar, Column layout, TextField for input, Button for submission, result display. ImageGenerationScreen should follow similar structure.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationTaskModule.kt</path>
+        <kind>task-module</kind>
+        <symbol>ImageGenerationTask</symbol>
+        <lines>84-94</lines>
+        <reason>MainScreen composable currently shows ImageGenerationPlaceholderScreen. Story 7.4 will replace this with full ImageGenerationScreen implementation.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/data/Model.kt</path>
+        <kind>data-model</kind>
+        <symbol>MODEL_IMAGE_GENERATION_STABLE_DIFFUSION</symbol>
+        <lines>425-438</lines>
+        <reason>Stable Diffusion model definition. Screen needs to check if model is downloaded, get model path via model.getPath(context), pass to viewModel.startGeneration().</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <android>
+        <package name="androidx.compose.material3:material3" version="1.2+" />
+        <package name="androidx.lifecycle:lifecycle-viewmodel-compose" version="2.7+" />
+        <package name="org.jetbrains.kotlinx:kotlinx-coroutines-core" version="1.8+" />
+        <package name="androidx.compose.foundation:foundation" version="1.6+" />
+      </android>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Prompt input: Multi-line OutlinedTextField with maxLines=5, character limit 500 with counter display</constraint>
+    <constraint>Iteration slider: Slider component with valueRange=5f..50f, steps=44, default value=20</constraint>
+    <constraint>Display current iteration value: "Iterations: X" label above slider</constraint>
+    <constraint>Generate button: Disabled when prompt is blank or model not downloaded</constraint>
+    <constraint>Progress display: Reuse ImageGenerationProgressDisplay from Story 7.3 - show when isGenerating=true</constraint>
+    <constraint>Final image display: Card with Image composable, aspectRatio(1f) for 512x512, show when finalBitmap != null</constraint>
+    <constraint>Generate Again button: Generates new random seed using kotlin.random.Random.nextInt(), calls clearResult() then startGeneration()</constraint>
+    <constraint>Model path: Get from model.getPath(context), pass to viewModel.startGeneration(context, modelPath, prompt, iterations, seed)</constraint>
+    <constraint>State management: Collect viewModel.uiState.collectAsState(), observe isGenerating, finalBitmap, errorMessage</constraint>
+    <constraint>Navigation: Follow task screen pattern - Scaffold with TopAppBar, back button calls navigateUp()</constraint>
+    <constraint>Model availability: Check modelManagerViewModel to determine if Stable Diffusion model is downloaded</constraint>
+    <constraint>First-time user message: Show if model not available - prompt to download 1.9GB model from Model Manager</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ImageGenerationScreen</name>
+      <kind>composable</kind>
+      <signature>@Composable fun ImageGenerationScreen(modelManagerViewModel: ModelManagerViewModel, navigateUp: () -> Unit, imageGenerationViewModel: ImageGenerationViewModel = viewModel())</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationScreen.kt (to be created)</path>
+      <note>Main screen composable for image generation. Replaces ImageGenerationPlaceholderScreen in ImageGenerationTaskModule.MainScreen().</note>
+    </interface>
+    <interface>
+      <name>ImageGenerationViewModel.startGeneration</name>
+      <kind>viewmodel-function</kind>
+      <signature>fun startGeneration(context: Context, modelPath: String, prompt: String, iterations: Int, seed: Int)</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationViewModel.kt</path>
+      <note>Implemented in Story 7.3. Screen calls this when Generate button is tapped. Seed is random int generated in screen.</note>
+    </interface>
+    <interface>
+      <name>ImageGenerationViewModel.cancelGeneration</name>
+      <kind>viewmodel-function</kind>
+      <signature>fun cancelGeneration()</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationViewModel.kt</path>
+      <note>Implemented in Story 7.3. Called by ImageGenerationProgressDisplay cancel button.</note>
+    </interface>
+    <interface>
+      <name>ImageGenerationViewModel.clearResult</name>
+      <kind>viewmodel-function</kind>
+      <signature>fun clearResult()</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationViewModel.kt</path>
+      <note>Implemented in Story 7.3. Called before "Generate Again" to clear previous bitmap.</note>
+    </interface>
+    <interface>
+      <name>ImageGenerationProgressDisplay</name>
+      <kind>composable</kind>
+      <signature>@Composable fun ImageGenerationProgressDisplay(currentStep: Int, totalSteps: Int, intermediateBitmap: Bitmap?, onCancel: () -> Unit)</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationProgressDisplay.kt</path>
+      <note>Implemented in Story 7.3. Screen shows this when uiState.isGenerating=true. Pass uiState fields directly.</note>
+    </interface>
+    <interface>
+      <name>Model.getPath</name>
+      <kind>function</kind>
+      <signature>fun getPath(context: Context): String</signature>
+      <path>app/src/main/java/ai/ondevice/app/data/Model.kt</path>
+      <note>Returns absolute path to model directory (e.g., externalFilesDir/Stable_diffusion/_/sd15/). Pass to viewModel.startGeneration().</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Follow existing Compose UI testing patterns. Use createComposeRule() for Compose tests. Test user interactions (input, button clicks, slider changes). Verify ViewModel state updates. Mock ViewModel for isolated UI tests. Integration tests require actual model download (1.9GB). Test navigation flow from task tile to screen. Verify error states and model availability checks.
+    </standards>
+    <locations>
+      - app/src/test/java/ai/ondevice/app/ui/imagegeneration/ (unit tests)
+      - app/src/androidTest/java/ai/ondevice/app/ui/imagegeneration/ (UI tests)
+    </locations>
+    <ideas>
+      <test-idea ac="AC1">Navigate to screen - assert prompt TextField and Generate button are visible and enabled/disabled correctly.</test-idea>
+      <test-idea ac="AC2">Enter prompt text - assert character counter updates. Adjust slider - assert iteration value label updates.</test-idea>
+      <test-idea ac="AC3">Tap Generate with valid input - assert ViewModel.startGeneration() called, ImageGenerationProgressDisplay becomes visible.</test-idea>
+      <test-idea ac="AC4">Mock ViewModel with finalBitmap - assert Image composable displays bitmap, "Generate Again" button visible.</test-idea>
+      <test-idea ac="AC5">Tap "Generate Again" - assert clearResult() called, new seed generated, startGeneration() called again.</test-idea>
+      <test-idea ac="AC6">Mock model as not downloaded - assert first-time user message displayed with model download prompt.</test-idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,16 @@
+appId: ai.ondevice.app
+---
+# Download model and test disclaimer
+- tapOn: "Download"
+- tapOn: "I Accept"
+- extendedWaitUntil:
+    visible: "Chat"
+    timeout: 180000
+- tapOn: "Chat"
+- takeScreenshot: screenshot-02-chat-empty
+- inputText: "Hello, tell me a joke"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: "OnDevice can make mistakes"
+    timeout: 60000
+- takeScreenshot: screenshot-03-with-disclaimer

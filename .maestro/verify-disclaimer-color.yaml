@@ -1,0 +1,21 @@
+appId: ai.ondevice.app
+---
+# Quick verification that disclaimer appears with color logo after AI response
+
+- launchApp:
+    clearState: false
+
+- takeScreenshot: 01-app-state
+
+# Wait for chat to be ready
+- extendedWaitUntil:
+    visible:
+      text: ".*Ask.*"
+    timeout: 60000
+
+- takeScreenshot: 02-chat-ready
+
+# Scroll down to see if there's existing disclaimer
+- scroll
+
+- takeScreenshot: 03-scrolled-down

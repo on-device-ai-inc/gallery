@@ -1,0 +1,67 @@
+appId: ai.ondevice.app
+---
+# Generic feature verification flow
+# Sends a message, waits for AI response, captures screenshots
+
+- launchApp:
+    clearState: false
+
+- takeScreenshot: "01-app-launched"
+
+# Wait for app to be ready
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+
+# Tap message input (try multiple selectors)
+- tapOn:
+    id: "message_input"
+    optional: true
+
+- tapOn:
+    text: "Type a message"
+    optional: true
+
+- tapOn:
+    text: "Message"
+    optional: true
+
+# Type a simple message
+- inputText: "hi"
+
+- takeScreenshot: "02-message-typed"
+
+# Send message (try multiple selectors)
+- tapOn:
+    id: "send_button"
+    optional: true
+
+- tapOn:
+    text: "Send"
+    optional: true
+
+# THE WORKING SOLUTION - accessibility label
+- tapOn:
+    text: "Message send prompt button"
+    optional: true
+
+- takeScreenshot: "03-message-sent"
+
+# Wait for AI response - IMPORTANT: 90 second timeout for slow models
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 90000
+
+# Extra wait to ensure response is complete
+- swipe:
+    direction: UP
+    duration: 500
+
+- takeScreenshot: "04-ai-response"
+
+# Scroll to see full response if needed
+- swipe:
+    direction: UP
+    duration: 500
+
+- takeScreenshot: "05-scrolled-view"

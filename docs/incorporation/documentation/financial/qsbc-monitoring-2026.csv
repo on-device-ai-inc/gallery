@@ -1,0 +1,101 @@
+Quarter Ending,Total Assets (FMV),Active Assets,Passive Assets,Active %,Status,Actions Needed,Notes
+2026-03-31,11006,11006,0,100.0%,PASS,None,Initial state: DGX $6000 + Software $5000 + Cash $6 = $11006 active. No passive assets.
+2026-06-30,,,,,,,To be filled after Q2 review
+2026-09-30,,,,,,,To be filled after Q3 review
+2026-12-31,,,,,,,To be filled after Q4 review
+
+QSBC Qualification Tests:
+"Test 1: At Time of Sale - Must have ≥90% active assets (by FMV)"
+"Test 2: Throughout 24-Month Lookback - Must have >50% active assets for all 24 months"
+"FAILURE = LCGE DENIED (no retroactive fixes available!)"
+
+Status Thresholds:
+"✅ PASS: Active % ≥60% (safe buffer above 50% minimum)"
+"⚠️ WARNING: Active % = 55-59% (approaching danger zone - plan purification)"
+"❌ FAIL: Active % <55% (purify IMMEDIATELY!)"
+
+Asset Classification Guide:
+
+ACTIVE BUSINESS ASSETS (Count Toward Qualification):
+"✅ DGX Spark workstation - Equipment used in R&D"
+"✅ Developed software (OnDevice AI codebase) - Intellectual property"
+"✅ Work-in-progress code - IP development"
+"✅ Operating cash (<3 months expenses) - Working capital"
+"✅ Prepaid cloud hosting (annual) - Prepaid expenses"
+"✅ Office equipment actively used - Equipment"
+"✅ Accounts receivable from customers - Working capital"
+
+PASSIVE ASSETS (Count AGAINST Qualification):
+"❌ Excess cash (>3-6 months operating expenses)"
+"❌ GICs, bonds, term deposits"
+"❌ Public company stocks, mutual funds, ETFs"
+"❌ Cryptocurrency (unless business is crypto-related)"
+"❌ Rental properties"
+"❌ Loans to shareholders (unless repayment imminent)"
+
+Initial Asset Breakdown (Q1 2026):
+"DGX Spark workstation: $6,000 (declining FMV - 25% annual depreciation)"
+"Developed software (OnDevice AI): $5,000 (conservative pre-revenue valuation)"
+"Operating cash: $6 (share consideration + DGX transfer)"
+"Work in progress: $0 (will increase as development continues)"
+"Prepaid expenses: $0 (will increase when subscriptions purchased)"
+"Total Active Assets: $11,006"
+"Total Passive Assets: $0"
+"Active Percentage: 100%"
+
+24-Month QSBC Clock:
+"Incorporation date: [FILL IN AFTER INCORPORATION]"
+"Share issuance date: [FILL IN - THIS STARTS THE CLOCK]"
+"24-month period: [DATE] to [DATE + 24 months]"
+"QSBC eligible date: [DATE + 24 months]"
+"LCGE claimable: Anytime after 24-month period (assuming continuous >50% active)"
+
+Quarterly Review Checklist:
+"1. Update asset values (use declining FMV for equipment)"
+"2. Categorize each asset (active vs passive)"
+"3. Calculate total assets"
+"4. Calculate active asset percentage"
+"5. Compare to thresholds (60%+ = safe, 55-59% = warning, <55% = critical)"
+"6. If <60%, create purification plan immediately"
+"7. Document everything (save snapshot for audit trail)"
+
+Purification Strategies (if Active % falls below 60%):
+"1. Accelerate planned spending (equipment, prepaid subscriptions, cloud credits)"
+"2. Hire contractors for planned work (converts cash to active WIP)"
+"3. Repay shareholder loans (reduces total assets, improves ratio)"
+"4. Invest in R&D/marketing (active business expenses)"
+"5. Pay salary (reduces corporate cash, creates shareholder loan)"
+
+Common Mistakes to Avoid:
+"❌ Holding excess cash 'for emergencies' (use LOC or shareholder loan instead)"
+"❌ Parking money in GICs/investments (passive assets kill QSBC status)"
+"❌ Waiting until year-end to check (too late if you failed in Q2!)"
+"❌ Thinking you can purify retroactively (you CANNOT - 24-month clock resets)"
+"❌ Assuming accountant will catch this (many don't monitor quarterly)"
+
+Revenue Windfall Warning:
+"If OnDevice AI suddenly gets $100K in sales:"
+"- Cash jumps from $6 to $100,006"
+"- Active assets stay ~$11,000"
+"- Passive assets become ~$89,000 (excess cash)"
+"- Active % drops to 11% ❌ MASSIVE FAIL"
+"Solution: Within 90 days, pay salary, accelerate spending, purify to restore >60%"
+
+Valuation Guidelines:
+"Equipment: Use declining fair market value (25% annual depreciation)"
+"  - DGX Spark: $6,000 (Y1) → $4,500 (Y2) → $3,375 (Y3)"
+"Intellectual Property: Conservative estimate"
+"  - Pre-revenue: $1,000-$10,000 (minimal value)"
+"  - Post-revenue: 1-3x annual revenue (use lower end)"
+"Working Capital: Actual bank balance"
+"Cash: Actual amount in bank"
+"Accounts receivable: Actual amounts owed"
+
+Set Calendar Reminders:
+"March 31, 2026 - Q1 QSBC Review"
+"June 30, 2026 - Q2 QSBC Review"
+"September 30, 2026 - Q3 QSBC Review"
+"December 31, 2026 - Q4 QSBC Review"
+"(Repeat annually for 2 years minimum)"
+
+This template protects $167K-$625K+ in LCGE tax savings. Do not skip quarterly monitoring!

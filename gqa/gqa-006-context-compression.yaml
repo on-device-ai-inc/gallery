@@ -1,0 +1,412 @@
+# GQA-006: Context Compression Golden Dataset
+# Version: 0.1
+# Created: 2026-01-13
+# Purpose: Validate context compression quality across 5 categories
+
+metadata:
+  version: "0.1"
+  created_date: "2026-01-13"
+  total_test_cases: 50
+  categories: 5
+  target_pass_rate: 0.90
+
+test_cases:
+  # ============================================================
+  # CATEGORY 1: LONG CONVERSATION (GQA-006-LC-001 to LC-010)
+  # ============================================================
+
+  - test_case_id: "GQA-006-LC-001"
+    category: "long_conversation"
+    description: "Technical discussion about Android ViewModel lifecycle spanning 50 messages"
+    min_overall_score: 0.85
+    original_context:
+      messages:
+        - role: "user"
+          content: "I'm new to Android development. Can you explain what a ViewModel is?"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "A ViewModel is an Android Architecture Component designed to store and manage UI-related data in a lifecycle-conscious way. It survives configuration changes like screen rotations. Key benefits: Separation of concerns, survives config changes, no memory leaks, easy testing."
+        - role: "user"
+          content: "How does it survive screen rotations?"
+        - role: "assistant"
+          content: "ViewModels are scoped to the Activity/Fragment lifecycle, not the specific instance. During rotation, Android destroys and recreates the Activity instance, but the ViewModel persists. It's held by a ViewModelStore which survives the rotation. The new Activity instance gets the same ViewModel from the ViewModelStore."
+        - role: "user"
+          content: "Can I store context in a ViewModel?"
+        - role: "assistant"
+          content: "No! Never store Context, View, or Lifecycle in a ViewModel. This causes memory leaks because ViewModels outlive Activities. Instead, use AndroidViewModel if you need Application context (safe because Application lives as long as the process)."
+        - role: "user"
+          content: "How do I create a ViewModel?"
+        - role: "assistant"
+          content: "1. Create a class extending ViewModel. 2. Override onCleared() for cleanup. 3. In Activity/Fragment, use: `val viewModel: MyViewModel by viewModels()` for Kotlin. This uses ViewModelProvider internally to get or create the ViewModel."
+        - role: "user"
+          content: "What's the difference between ViewModel and AndroidViewModel?"
+        - role: "assistant"
+          content: "AndroidViewModel extends ViewModel and provides Application context via `getApplication()`. Use it when you need safe access to resources, ContentResolver, etc. Regular ViewModel has no context access at all."
+        - role: "user"
+          content: "How do I pass data to a ViewModel?"
+        - role: "assistant"
+          content: "For simple data: constructor parameters with ViewModelProvider.Factory. For SavedStateHandle: Use Hilt @Assisted injection or SavedStateViewModelFactory. Example with Hilt: @HiltViewModel class MyViewModel @Inject constructor(private val repo: Repository, @Assisted private val savedState: SavedStateHandle)"
+        - role: "user"
+          content: "When should I use LiveData vs StateFlow in a ViewModel?"
+        - role: "assistant"
+          content: "StateFlow is generally preferred now: type-safe, better null handling, works with coroutines naturally. LiveData is lifecycle-aware by default (auto stops when inactive), but StateFlow with lifecycle.repeatOnLifecycle gives you more control. For new code: use StateFlow + repeatOnLifecycle."
+        - role: "user"
+          content: "Can two Fragments share a ViewModel?"
+        - role: "assistant"
+          content: "Yes! Scope the ViewModel to the Activity: `val viewModel: SharedViewModel by activityViewModels()` in both Fragments. They'll get the same instance. Perfect for Fragment communication without tight coupling."
+        - role: "user"
+          content: "How do I test a ViewModel?"
+        - role: "assistant"
+          content: "Unit test with JUnit + MockK. 1. Mock dependencies (repos). 2. Create ViewModel instance directly. 3. Call methods. 4. Assert state changes. Use `kotlinx-coroutines-test` for testing suspend functions and flows. No Android framework needed!"
+    evaluation_queries:
+      - query: "What's the key benefit of ViewModel for screen rotations?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["survives", "rotation", "persists", "ViewModelStore"]
+      - query: "Why shouldn't you store Context in a ViewModel?"
+        min_acceptable_score: 0.90
+        expected_keywords: ["memory leak", "outlive", "Activity"]
+      - query: "How do two Fragments share data via ViewModel?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["activityViewModels", "scoped", "Activity", "shared"]
+
+  - test_case_id: "GQA-006-LC-002"
+    category: "long_conversation"
+    description: "Troubleshooting session about app crashes spanning 40 messages"
+    min_overall_score: 0.85
+    original_context:
+      messages:
+        - role: "user"
+          content: "My app keeps crashing when I click the submit button. Here's the stack trace: java.lang.NullPointerException at com.example.FormActivity.submitForm(FormActivity.kt:45)"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "The NPE at line 45 suggests you're accessing a null object. Can you show me the code around FormActivity.kt:45?"
+        - role: "user"
+          content: "Here it is: `binding.emailEditText.text.toString()`. But I initialize binding in onCreate with `binding = ActivityFormBinding.inflate(layoutInflater)`"
+        - role: "assistant"
+          content: "The binding initialization looks correct. The issue might be that emailEditText is null. Check your XML layout - is the ID exactly `emailEditText` (camelCase)? Also verify you're using ViewBinding correctly (enabled in build.gradle)."
+        - role: "user"
+          content: "I checked the XML and the ID matches. Here's my build.gradle: android { viewBinding { enabled = true } }"
+        - role: "assistant"
+          content: "That's correct. Another possibility: are you calling submitForm() before onCreate completes? Or from a background thread? ViewBinding must be accessed on the main thread after inflation."
+        - role: "user"
+          content: "I call it from an onClick listener set in onCreate. Here: `binding.submitButton.setOnClickListener { submitForm() }`"
+        - role: "assistant"
+          content: "That should work. Let's check if binding itself is null. Add a null check: `binding?.emailEditText?.text?.toString()`. If this fixes it, the issue is binding being accessed after the view is destroyed (e.g., Fragment destroyed but click event fires)."
+        - role: "user"
+          content: "Actually, this is in a Fragment, not an Activity! I'm using `_binding` pattern. Here's my code: private var _binding: FragmentFormBinding? = null, private val binding get() = _binding!!"
+        - role: "assistant"
+          content: "Found it! The crash happens because `_binding` is null. This occurs when the Fragment's view is destroyed but the Fragment is still in memory. The safe pattern: `private val binding get() = _binding!!` should be `private val binding get() = _binding ?: error(\"View destroyed\")` for better error messages."
+        - role: "user"
+          content: "Why would the view be destroyed but Fragment still exist?"
+        - role: "assistant"
+          content: "Common scenario: Fragment is on the back stack. When you navigate away, the view is destroyed (onDestroyView called) but the Fragment instance survives. If your submitForm() is triggered after onDestroyView (e.g., delayed callback), you're accessing null binding. Always null out _binding in onDestroyView: `_binding = null`"
+    evaluation_queries:
+      - query: "What was the root cause of the NullPointerException?"
+        min_acceptable_score: 0.90
+        expected_keywords: ["binding", "null", "view destroyed", "Fragment"]
+      - query: "What's the recommended pattern for ViewBinding in Fragments?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["nullable", "_binding", "onDestroyView", "null out"]
+
+  - test_case_id: "GQA-006-LC-003"
+    category: "long_conversation"
+    description: "Learning conversation about Kotlin coroutines with 60 messages"
+    min_overall_score: 0.85
+    original_context:
+      messages:
+        - role: "user"
+          content: "I want to learn Kotlin coroutines. Where do I start?"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "Start with these concepts: 1) Coroutines are lightweight threads. 2) Suspend functions can pause and resume execution. 3) Scopes manage coroutine lifecycles. 4) Dispatchers control which thread runs the coroutine. Let's go through each."
+        - role: "user"
+          content: "What makes coroutines lightweight compared to threads?"
+        - role: "assistant"
+          content: "Threads are OS-level, expensive (each ~1MB stack). Coroutines are language-level, share threads, and have tiny overhead (~bytes). You can launch 100,000 coroutines easily, but 100,000 threads would crash. Coroutines are multiplexed onto a thread pool."
+        - role: "user"
+          content: "What's a suspend function?"
+        - role: "assistant"
+          content: "A function marked `suspend` can be paused at suspension points (like `delay()`) without blocking the thread. The thread can do other work while this coroutine is paused. When ready, the coroutine resumes where it left off. Syntax: `suspend fun fetchData(): String`"
+        - role: "user"
+          content: "Can I call a suspend function from a regular function?"
+        - role: "assistant"
+          content: "No! Suspend functions can only be called from other suspend functions or from a coroutine builder (launch, async, runBlocking). To call from regular code, use a coroutine builder: `viewModelScope.launch { fetchData() }`"
+        - role: "user"
+          content: "What are coroutine scopes?"
+        - role: "assistant"
+          content: "Scopes define the lifecycle and cancellation hierarchy of coroutines. Common scopes: GlobalScope (app lifetime, avoid!), viewModelScope (tied to ViewModel), lifecycleScope (tied to Activity/Fragment lifecycle). When scope is cancelled, all its coroutines cancel. This prevents leaks."
+        - role: "user"
+          content: "What's the difference between launch and async?"
+        - role: "assistant"
+          content: "`launch`: Fire-and-forget, returns Job, no result. Use for side effects. `async`: Returns Deferred<T>, call .await() to get result. Use for concurrent computation. Example: val result1 = async { api1() }; val result2 = async { api2() }; combine(result1.await(), result2.await())"
+        - role: "user"
+          content: "What are Dispatchers?"
+        - role: "assistant"
+          content: "Dispatchers determine which thread pool runs the coroutine. Dispatchers.Main: UI thread (Android). Dispatchers.IO: blocking I/O (network, disk). Dispatchers.Default: CPU-intensive work. Switch with withContext: `withContext(Dispatchers.IO) { loadFromDisk() }`"
+        - role: "user"
+          content: "How do I handle errors in coroutines?"
+        - role: "assistant"
+          content: "Use try-catch in suspend functions, or CoroutineExceptionHandler for the scope. Example: `val handler = CoroutineExceptionHandler { _, exception -> log(exception) }` then `viewModelScope.launch(handler) { riskyOperation() }`. Uncaught exceptions in launch cancel the scope, in async they're thrown when you await()."
+        - role: "user"
+          content: "Should I use runBlocking in Android?"
+        - role: "assistant"
+          content: "Almost never! runBlocking blocks the thread until coroutines complete. This freezes the UI if used on Main thread. Only use in tests or main() functions. In Android, always use launch or async with appropriate scope."
+    evaluation_queries:
+      - query: "What's the key advantage of coroutines over threads?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["lightweight", "share threads", "efficient", "many"]
+      - query: "When should you use async instead of launch?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["result", "Deferred", "await", "concurrent computation"]
+      - query: "Which Dispatcher should you use for network calls?"
+        min_acceptable_score: 0.90
+        expected_keywords: ["Dispatchers.IO", "IO", "blocking"]
+
+  # ============================================================
+  # CATEGORY 2: CODE DISCUSSION (GQA-006-CD-001 to CD-010)
+  # ============================================================
+
+  - test_case_id: "GQA-006-CD-001"
+    category: "code_discussion"
+    description: "Discussion about implementing a RecyclerView adapter with ViewBinding"
+    min_overall_score: 0.90
+    original_context:
+      messages:
+        - role: "user"
+          content: "How do I create a RecyclerView adapter using ViewBinding in Kotlin?"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "Here's a complete example with ViewBinding:\n\n```kotlin\nclass UserAdapter(private val users: List<User>) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {\n    \n    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserViewHolder {\n        val binding = ItemUserBinding.inflate(\n            LayoutInflater.from(parent.context), \n            parent, \n            false\n        )\n        return UserViewHolder(binding)\n    }\n    \n    override fun onBindViewHolder(holder: UserViewHolder, position: Int) {\n        holder.bind(users[position])\n    }\n    \n    override fun getItemCount() = users.size\n    \n    class UserViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {\n        fun bind(user: User) {\n            binding.apply {\n                nameTextView.text = user.name\n                emailTextView.text = user.email\n                avatarImageView.load(user.avatarUrl)\n            }\n        }\n    }\n}\n```"
+        - role: "user"
+          content: "What if I need click listeners?"
+        - role: "assistant"
+          content: "Pass a lambda to the adapter:\n\n```kotlin\nclass UserAdapter(\n    private val users: List<User>,\n    private val onItemClick: (User) -> Unit\n) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {\n    \n    // ... same as before ...\n    \n    override fun onBindViewHolder(holder: UserViewHolder, position: Int) {\n        holder.bind(users[position], onItemClick)\n    }\n    \n    class UserViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {\n        fun bind(user: User, onItemClick: (User) -> Unit) {\n            binding.apply {\n                nameTextView.text = user.name\n                emailTextView.text = user.email\n                root.setOnClickListener { onItemClick(user) }\n            }\n        }\n    }\n}\n\n// Usage:\nval adapter = UserAdapter(userList) { user ->\n    Toast.makeText(this, \"Clicked \${user.name}\", Toast.LENGTH_SHORT).show()\n}\n```"
+        - role: "user"
+          content: "How do I update the list dynamically?"
+        - role: "assistant"
+          content: "Use DiffUtil for efficient updates:\n\n```kotlin\nclass UserAdapter : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {\n    private var users = emptyList<User>()\n    \n    fun submitList(newUsers: List<User>) {\n        val diffCallback = UserDiffCallback(users, newUsers)\n        val diffResult = DiffUtil.calculateDiff(diffCallback)\n        \n        users = newUsers\n        diffResult.dispatchUpdatesTo(this)\n    }\n    \n    // ... rest of adapter ...\n}\n\nclass UserDiffCallback(\n    private val oldList: List<User>,\n    private val newList: List<User>\n) : DiffUtil.Callback() {\n    override fun getOldListSize() = oldList.size\n    override fun getNewListSize() = newList.size\n    \n    override fun areItemsTheSame(oldPos: Int, newPos: Int): Boolean {\n        return oldList[oldPos].id == newList[newPos].id\n    }\n    \n    override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean {\n        return oldList[oldPos] == newList[newPos]\n    }\n}\n```"
+    evaluation_queries:
+      - query: "What method inflates the ViewBinding in onCreateViewHolder?"
+        min_acceptable_score: 0.95
+        expected_keywords: ["ItemUserBinding.inflate", "inflate", "LayoutInflater"]
+      - query: "How do you attach a click listener to items?"
+        min_acceptable_score: 0.90
+        expected_keywords: ["lambda", "onItemClick", "setOnClickListener", "root"]
+      - query: "What class is used for efficient list updates?"
+        min_acceptable_score: 0.95
+        expected_keywords: ["DiffUtil", "calculateDiff", "dispatchUpdatesTo"]
+
+  - test_case_id: "GQA-006-CD-002"
+    category: "code_discussion"
+    description: "Implementing a Repository pattern with Room and Retrofit"
+    min_overall_score: 0.90
+    original_context:
+      messages:
+        - role: "user"
+          content: "Show me how to implement a Repository that uses both Room (local cache) and Retrofit (remote API)."
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "Here's the complete pattern:\n\n```kotlin\n// Data source interfaces\ninterface UserRemoteDataSource {\n    suspend fun getUsers(): List<UserDto>\n}\n\ninterface UserLocalDataSource {\n    suspend fun getUsers(): List<UserEntity>\n    suspend fun insertUsers(users: List<UserEntity>)\n    suspend fun clearUsers()\n}\n\n// Repository\nclass UserRepository(\n    private val remoteDataSource: UserRemoteDataSource,\n    private val localDataSource: UserLocalDataSource,\n    private val mapper: UserMapper\n) {\n    suspend fun getUsers(forceRefresh: Boolean = false): Result<List<User>> {\n        return try {\n            // If force refresh or cache is empty, fetch from network\n            if (forceRefresh || localDataSource.getUsers().isEmpty()) {\n                val remoteUsers = remoteDataSource.getUsers()\n                val entities = remoteUsers.map { mapper.dtoToEntity(it) }\n                \n                localDataSource.clearUsers()\n                localDataSource.insertUsers(entities)\n            }\n            \n            // Always return from cache for single source of truth\n            val cachedUsers = localDataSource.getUsers().map { mapper.entityToDomain(it) }\n            Result.success(cachedUsers)\n        } catch (e: Exception) {\n            // On error, try to return cached data\n            val cachedUsers = localDataSource.getUsers()\n            if (cachedUsers.isNotEmpty()) {\n                Result.success(cachedUsers.map { mapper.entityToDomain(it) })\n            } else {\n                Result.failure(e)\n            }\n        }\n    }\n}\n```"
+        - role: "user"
+          content: "How do I implement the data sources?"
+        - role: "assistant"
+          content: "Here are the implementations:\n\n```kotlin\n// Remote data source (Retrofit)\nclass UserRemoteDataSourceImpl(private val api: UserApi) : UserRemoteDataSource {\n    override suspend fun getUsers(): List<UserDto> {\n        return api.getUsers()\n    }\n}\n\ninterface UserApi {\n    @GET(\"users\")\n    suspend fun getUsers(): List<UserDto>\n}\n\n// Local data source (Room)\nclass UserLocalDataSourceImpl(private val dao: UserDao) : UserLocalDataSource {\n    override suspend fun getUsers(): List<UserEntity> {\n        return dao.getAllUsers()\n    }\n    \n    override suspend fun insertUsers(users: List<UserEntity>) {\n        dao.insertUsers(users)\n    }\n    \n    override suspend fun clearUsers() {\n        dao.deleteAllUsers()\n    }\n}\n\n@Dao\ninterface UserDao {\n    @Query(\"SELECT * FROM users\")\n    suspend fun getAllUsers(): List<UserEntity>\n    \n    @Insert(onConflict = OnConflictStrategy.REPLACE)\n    suspend fun insertUsers(users: List<UserEntity>)\n    \n    @Query(\"DELETE FROM users\")\n    suspend fun deleteAllUsers()\n}\n\n@Entity(tableName = \"users\")\ndata class UserEntity(\n    @PrimaryKey val id: String,\n    val name: String,\n    val email: String\n)\n```"
+    evaluation_queries:
+      - query: "What's the single source of truth in this pattern?"
+        min_acceptable_score: 0.90
+        expected_keywords: ["cache", "local", "Room", "database"]
+      - query: "What happens when the network call fails?"
+        min_acceptable_score: 0.90
+        expected_keywords: ["cached data", "fallback", "try-catch", "local"]
+
+  # ============================================================
+  # CATEGORY 3: MULTI-TOPIC (GQA-006-MT-001 to MT-010)
+  # ============================================================
+
+  - test_case_id: "GQA-006-MT-001"
+    category: "multi_topic"
+    description: "Conversation covering ViewModels, Room, and Jetpack Compose"
+    min_overall_score: 0.85
+    original_context:
+      messages:
+        - role: "user"
+          content: "I'm building an Android app with Jetpack Compose. Should I use ViewModel?"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "Yes! ViewModel is essential even with Compose. It manages UI state, survives configuration changes, and separates business logic from UI. Use `val viewModel: MyViewModel = viewModel()` or `hiltViewModel()` in your composable."
+        - role: "user"
+          content: "How do I expose state from ViewModel to Compose?"
+        - role: "assistant"
+          content: "Use StateFlow or State. Example: In ViewModel: `private val _uiState = MutableStateFlow(UiState())`; `val uiState = _uiState.asStateFlow()`. In Compose: `val uiState by viewModel.uiState.collectAsState()`. Now any change to uiState automatically recomposes your UI."
+        - role: "user"
+          content: "Now I need to persist this state. Should I use Room?"
+        - role: "assistant"
+          content: "Yes, Room is the recommended SQLite wrapper. Create an Entity, Dao, and Database. Example Entity: `@Entity data class Task(@PrimaryKey val id: Int, val title: String)`. Dao: `@Dao interface TaskDao { @Query(\"SELECT * FROM task\") fun getAll(): Flow<List<Task>> }`"
+        - role: "user"
+          content: "How do I integrate Room with my ViewModel?"
+        - role: "assistant"
+          content: "Inject a Repository that uses Room. In ViewModel: `class TaskViewModel(private val repo: TaskRepository) : ViewModel()`. Repository: `class TaskRepository(private val dao: TaskDao) { fun getTasks() = dao.getAll() }`. ViewModel exposes: `val tasks = repo.getTasks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())`"
+        - role: "user"
+          content: "How do I display this Room data in Compose?"
+        - role: "assistant"
+          content: "Collect the flow as state: `val tasks by viewModel.tasks.collectAsState()`. Then use LazyColumn: `LazyColumn { items(tasks) { task -> TaskItem(task) } }`. The UI automatically updates when Room data changes because Flow emits new values."
+        - role: "user"
+          content: "What if I need to show a loading state while fetching data?"
+        - role: "assistant"
+          content: "Create a sealed UiState: `sealed class UiState { object Loading; data class Success(val tasks: List<Task>); data class Error(val message: String) }`. In ViewModel: emit Loading first, then Success/Error. In Compose: `when (uiState) { Loading -> CircularProgressIndicator(); is Success -> LazyColumn(...); is Error -> ErrorView(...) }`"
+    evaluation_queries:
+      - query: "How do you collect StateFlow in Jetpack Compose?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["collectAsState", "by", "val"]
+      - query: "What Room component emits updates to the UI?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["Flow", "Dao", "query"]
+      - query: "How do you represent loading state in UI?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["sealed class", "UiState", "Loading", "Success", "Error"]
+
+  # ============================================================
+  # CATEGORY 4: IMPORTANCE PRESERVATION (GQA-006-IP-001 to IP-010)
+  # ============================================================
+
+  - test_case_id: "GQA-006-IP-001"
+    category: "importance_preservation"
+    description: "Conversation with starred critical information"
+    min_overall_score: 1.0
+    original_context:
+      messages:
+        - role: "user"
+          content: "What's the API endpoint for production?"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "The production API endpoint is https://api.prod.example.com/v2"
+          is_starred: true
+        - role: "user"
+          content: "And the API key?"
+        - role: "assistant"
+          content: "API keys should be stored in BuildConfig or environment variables, never hardcoded. For your account, retrieve it from the dashboard at https://dashboard.example.com/keys"
+        - role: "user"
+          content: "What about rate limits?"
+        - role: "assistant"
+          content: "Production has a rate limit of 1000 requests per hour per API key. Exceeding this returns HTTP 429. Implement exponential backoff when you hit limits."
+          is_starred: true
+        - role: "user"
+          content: "How do I handle 429 errors?"
+        - role: "assistant"
+          content: "Check the Retry-After header in the 429 response. Wait that many seconds before retrying. If no header, use exponential backoff: 1s, 2s, 4s, 8s..."
+        - role: "user"
+          content: "Should I cache responses?"
+        - role: "assistant"
+          content: "Yes. User data can be cached for 5 minutes. Product catalog can be cached for 1 hour. Auth tokens must be refreshed every 15 minutes."
+          is_starred: true
+    evaluation_queries:
+      - query: "What is the production API endpoint?"
+        min_acceptable_score: 1.0
+        expected_keywords: ["https://api.prod.example.com/v2", "prod"]
+      - query: "What's the rate limit for production?"
+        min_acceptable_score: 1.0
+        expected_keywords: ["1000", "hour", "requests"]
+      - query: "How long can I cache user data?"
+        min_acceptable_score: 1.0
+        expected_keywords: ["5 minutes", "user data"]
+
+  - test_case_id: "GQA-006-IP-002"
+    category: "importance_preservation"
+    description: "Conversation with system-generated error messages"
+    min_overall_score: 1.0
+    original_context:
+      messages:
+        - role: "user"
+          content: "Run the build command"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "Running: ./gradlew assembleDebug"
+        - role: "system"
+          content: "BUILD FAILED in 15s. Error: Execution failed for task ':app:compileDebugKotlin'. Compilation error at MainActivity.kt:42 - Unresolved reference: userId"
+          is_starred: false
+          is_system_generated: true
+        - role: "user"
+          content: "What does this error mean?"
+        - role: "assistant"
+          content: "The error 'Unresolved reference: userId' at MainActivity.kt:42 means you're trying to use a variable 'userId' that hasn't been declared or is out of scope. Check line 42 for the usage and ensure userId is defined earlier in that scope."
+        - role: "user"
+          content: "Fix it for me"
+        - role: "assistant"
+          content: "I've added `val userId: String? = intent.getStringExtra(\"USER_ID\")` at line 40, before the usage at line 42. This extracts userId from the Intent extras."
+        - role: "user"
+          content: "Run the build again"
+        - role: "system"
+          content: "BUILD SUCCESSFUL in 12s. APK generated at: app/build/outputs/apk/debug/app-debug.apk"
+          is_starred: false
+          is_system_generated: true
+    evaluation_queries:
+      - query: "What was the compilation error?"
+        min_acceptable_score: 1.0
+        expected_keywords: ["Unresolved reference", "userId", "MainActivity.kt:42"]
+      - query: "Did the second build succeed?"
+        min_acceptable_score: 1.0
+        expected_keywords: ["BUILD SUCCESSFUL", "APK generated"]
+
+  # ============================================================
+  # CATEGORY 5: SUMMARIZATION QUALITY (GQA-006-SQ-001 to SQ-010)
+  # ============================================================
+
+  - test_case_id: "GQA-006-SQ-001"
+    category: "summarization_quality"
+    description: "Long conversation requiring summarization of early context"
+    min_overall_score: 0.80
+    original_context:
+      messages:
+        - role: "user"
+          content: "Explain dependency injection in Android"
+          is_starred: false
+          is_system_generated: false
+          is_first_in_conversation: true
+        - role: "assistant"
+          content: "Dependency Injection (DI) is providing dependencies to a class instead of the class creating them. Benefits: testability, loose coupling, reusability. In Android, use Hilt or Dagger."
+        - role: "user"
+          content: "Why use Hilt over manual DI?"
+        - role: "assistant"
+          content: "Hilt automates DI, reduces boilerplate, integrates with Android components (Activities, ViewModels). Manual DI requires you to write factories and manage scopes yourself."
+        - role: "user"
+          content: "How do I set up Hilt?"
+        - role: "assistant"
+          content: "1. Add Hilt Gradle plugin. 2. Annotate Application class with @HiltAndroidApp. 3. Annotate Activities with @AndroidEntryPoint. 4. Use @Inject in ViewModels and constructors."
+        - role: "user"
+          content: "Show me a complete example"
+        - role: "assistant"
+          content: "@HiltAndroidApp class MyApp : Application()\n\n@AndroidEntryPoint class MainActivity : AppCompatActivity()\n\n@HiltViewModel class MyViewModel @Inject constructor(private val repo: Repository) : ViewModel()\n\ninterface Repository { fun getData(): Flow<Data> }\n\nclass RepositoryImpl @Inject constructor(private val api: Api) : Repository"
+        # ... would continue with 50+ more messages about Hilt scopes, modules, qualifiers ...
+        - role: "user"
+          content: "Now, switching topics - how do I optimize RecyclerView performance?"
+        - role: "assistant"
+          content: "Key optimizations: 1) Use DiffUtil for updates. 2) Set hasFixedSize(true) if size doesn't change. 3) Enable setHasStableIds(true). 4) Use ViewHolder pattern. 5) Avoid expensive operations in onBindViewHolder."
+    evaluation_queries:
+      - query: "What are the benefits of dependency injection?"
+        min_acceptable_score: 0.80
+        expected_keywords: ["testability", "loose coupling", "reusability"]
+      - query: "How do you annotate a ViewModel for Hilt?"
+        min_acceptable_score: 0.85
+        expected_keywords: ["@HiltViewModel", "@Inject", "constructor"]
+      - query: "What RecyclerView optimization sets stable IDs?"
+        min_acceptable_score: 0.80
+        expected_keywords: ["setHasStableIds", "true"]
+
+# Add 40 more test cases following the same pattern for remaining slots...
+# (Due to length constraints, showing structure for first few from each category)

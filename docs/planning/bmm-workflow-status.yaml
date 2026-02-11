@@ -1,0 +1,254 @@
+# Workflow Status - SkinScan SA
+
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2026-01-09"
+project: "SkinScan SA"
+project_type: "AI-Powered Skincare Analysis App built on OnDevice AI Gallery"
+selected_track: "bmad-method"
+field_type: "brownfield"
+workflow_path: ".bmad/bmm/workflows/workflow-status/paths/method-brownfield.yaml"
+
+# ============================================
+# WORKFLOW STATUS TRACKING
+# ============================================
+
+workflow_status:
+  # ==========================================
+  # PREREQUISITE: Documentation
+  # ==========================================
+  prerequisite:
+    - id: document-project
+      status: "completed"
+      agent: analyst
+      command: /bmad:bmm:workflows:document-project
+      purpose: "Understand existing OnDevice AI Gallery codebase"
+      output_files:
+        - ONDEVICE_SME_KNOWLEDGE.md
+        - CODEBASE_KNOWLEDGE.md
+        - AGENTS_QUICK_REFERENCE.md
+      completed: "2025-11-26"
+      notes: "OnDevice AI Gallery is comprehensively documented with 1000+ lines of forensic analysis"
+
+  # ==========================================
+  # PHASE 0: Discovery (Optional)
+  # ==========================================
+  phase_0_discovery:
+    - id: brainstorm-project
+      status: skipped
+      agent: analyst
+      command: /bmad:bmm:workflows:brainstorm-project
+      selected: false
+      notes: "PRD is already comprehensive - brainstorming not needed"
+
+    - id: research
+      status: recommended
+      agent: analyst
+      command: /bmad:bmm:workflows:research
+      selected: true
+      notes: "Technical validation for MediaPipe Face Mesh + LiteRT integration needed"
+      focus_areas:
+        - "MediaPipe Face Mesh 468-landmark model performance"
+        - "LiteRT quantization strategies for skin analysis models"
+        - "Clicks/Dis-Chem API availability and documentation"
+        - "POPIA compliance requirements for biometric data"
+        - "Training dataset sources for diverse skin tones"
+
+    - id: product-brief
+      status: skipped
+      agent: analyst
+      command: /bmad:bmm:workflows:product-brief
+      selected: false
+      notes: "PRD already covers product strategy comprehensively"
+
+  # ==========================================
+  # PHASE 1: Planning
+  # ==========================================
+  phase_1_planning:
+    - id: prd
+      status: "docs/skinscan-sa/SkinScan_SA_PRD.md"
+      agent: pm
+      command: /bmad:bmm:workflows:prd
+      output: "Comprehensive PRD with 12 sections"
+      completed: "2026-01-09"
+      notes: "772 lines covering market, architecture, requirements, compliance, roadmap"
+      key_sections:
+        - "Market Opportunity: $813M-2.25B SA skincare market"
+        - "Technical Architecture: 6 new modules + inherited AI Edge Gallery"
+        - "50+ Functional Requirements across 5 modules"
+        - "POPIA Compliance: Biometric data handling"
+        - "MVP: Hyperpigmentation + Acne for melanin-rich skin"
+
+    - id: validate-prd
+      status: optional
+      agent: pm
+      command: /bmad:bmm:workflows:validate-prd
+
+    - id: create-ux-design
+      status: required
+      condition: if_has_ui
+      agent: ux-designer
+      command: /bmad:bmm:workflows:create-ux-design
+      notes: "CRITICAL: Design face scan UI, results visualization, product recommendation UX"
+      focus_areas:
+        - "Face scan flow: camera overlay, lighting validation, auto-capture"
+        - "Analysis results: zone-based visualization, concern highlighting"
+        - "Product recommendations: card layout, ingredient explainability"
+        - "Progress tracking: timeline visualization, skin improvement charts"
+        - "Inclusive design: Fitzpatrick IV-VI skin tone representation"
+
+  # ==========================================
+  # PHASE 2: Solutioning
+  # ==========================================
+  phase_2_solutioning:
+    - id: create-architecture
+      status: required
+      agent: architect
+      command: /bmad:bmm:workflows:architecture
+      output: "Integration architecture - solution design for SkinScan SA"
+      notes: "CRITICAL: Map 6 new modules to OnDevice AI Gallery foundation"
+      focus_areas:
+        - "Skin Analysis Engine: MediaPipe Face Mesh → EfficientNet-Lite → multi-head output"
+        - "Product Recommendation Engine: Concern-to-ingredient mapping, ranking algorithm"
+        - "SA Product Database: SQLite schema, delta sync strategy, Clicks API integration"
+        - "User Profile Manager: Extend Room DB with scan results, preferences, allergies"
+        - "Explainability Module: Gemma 3n prompt templates, TTFT optimization"
+        - "UI Layer: Transform chat UI → scan UI, reuse Compose components"
+        - "Data Flow: Image capture → preprocessing → inference → recommendation → explanation"
+        - "POPIA Compliance: On-device processing, no image transmission, local encryption"
+
+    - id: create-epics-and-stories
+      status: required
+      agent: pm
+      command: /bmad:bmm:workflows:create-epics-and-stories
+      notes: "Break down MVP into implementable stories with acceptance criteria"
+      expected_epics:
+        - "Epic 1: Face Scan & Camera Integration"
+        - "Epic 2: Skin Analysis ML Pipeline"
+        - "Epic 3: Product Database & Recommendation Engine"
+        - "Epic 4: User Profile & Progress Tracking"
+        - "Epic 5: Explainability with Gemma 3n"
+        - "Epic 6: POPIA Compliance & Security"
+
+    - id: test-design
+      status: recommended
+      agent: tea
+      command: /bmad:bmm:workflows:test-design
+      output: "System-level testability review"
+      notes: "Test strategy for ML accuracy, POPIA compliance, performance"
+
+    - id: validate-architecture
+      status: optional
+      agent: architect
+      command: /bmad:bmm:workflows:validate-architecture
+
+    - id: implementation-readiness
+      status: required
+      agent: architect
+      command: /bmad:bmm:workflows:implementation-readiness
+      notes: "Validate PRD + UX + Architecture + Epics cohesion before implementation"
+
+  # ==========================================
+  # PHASE 3: Implementation
+  # ==========================================
+  phase_3_implementation:
+    - id: sprint-planning
+      status: required
+      agent: sm
+      command: /bmad:bmm:workflows:sprint-planning
+      notes: "Track in separate sprint-status.yaml"
+
+# ==========================================
+# CURRENT STATUS & NEXT STEPS
+# ==========================================
+current_phase: "Phase 0 - Discovery (Optional)"
+current_workflow: "research (recommended for technical validation)"
+next_required_workflow: "create-ux-design (Phase 1)"
+next_agent: "analyst (for research) OR ux-designer (skip to UX)"
+blocking: false
+
+# ==========================================
+# PROJECT SPECIFIC NOTES
+# ==========================================
+project_notes:
+  overview: "SkinScan SA transforms OnDevice AI Gallery (LLM chat app) into AI-powered skincare analysis app"
+
+  inherited_from_ondevice:
+    - "LiteRT inference engine with GPU acceleration"
+    - "Model download manager (Hugging Face integration)"
+    - "Jetpack Compose UI framework + Material 3"
+    - "MVVM + Clean Architecture pattern"
+    - "Room database + Proto DataStore"
+    - "Camera capture pipeline"
+    - "Performance benchmarking infrastructure"
+
+  new_modules_for_skinscan:
+    - "Skin Analysis Engine (MediaPipe Face Mesh + EfficientNet-Lite)"
+    - "Product Recommendation Engine (ingredient-concern matching)"
+    - "SA Product Database (SQLite + Clicks API sync)"
+    - "User Profile Manager (scan history, preferences)"
+    - "Explainability Module (Gemma 3n integration)"
+    - "Face Scan UI (replace chat UI)"
+
+  mvp_scope:
+    - "Single face scan flow"
+    - "Hyperpigmentation + Acne detection (Fitzpatrick IV-VI optimized)"
+    - "50 curated products (cleanser, treatment, moisturizer, sunscreen)"
+    - "Clicks integration only"
+    - "English only, Android only"
+    - "On-device processing (privacy-first)"
+
+  success_criteria:
+    - "6-month target: 100K downloads, 40K MAU, 4.0+ rating"
+    - "ML accuracy: <5% gap across Fitzpatrick scale"
+    - "Performance: <3 sec analysis on Snapdragon 6xx"
+    - "POPIA compliant: No image transmission, local encryption"
+
+key_risks:
+  - risk: "AI bias against darker skin tones"
+    mitigation: "60%+ Fitzpatrick IV-VI training data, documented accuracy by skin tone"
+    severity: HIGH
+
+  - risk: "POPIA violation (biometric data mishandling)"
+    mitigation: "On-device only, register Information Officer, complete PIIA"
+    severity: CRITICAL
+
+  - risk: "Model inaccuracy leading to wrong recommendations"
+    mitigation: "Dermatologist validation, user feedback loop, cosmetic claims only"
+    severity: HIGH
+
+  - risk: "Clicks API unavailability or changes"
+    mitigation: "Multi-retailer strategy, D2C brand fallback"
+    severity: MEDIUM
+
+  - risk: "Performance on mid-range devices"
+    mitigation: "INT8 quantization, GPU acceleration, <15MB model size"
+    severity: MEDIUM
+
+technical_challenges:
+  - "MediaPipe Face Mesh integration (468 landmarks, <200ms latency)"
+  - "Skin analysis model training with diverse dataset (50K+ images)"
+  - "Product database sync strategy (delta updates, <100KB/day)"
+  - "Gemma 3n prompt engineering for explainability (<500ms TTFT)"
+  - "POPIA-compliant biometric data handling"
+  - "Transform chat-focused UI to scan-focused UI"
+
+market_opportunity:
+  - "SA skincare market: $813M-2.25B (2025)"
+  - "Target: 19M Gen Z (29% of population)"
+  - "Smartphone penetration: 82.5% (91.3% by 2028)"
+  - "Underserved: 80%+ melanin-rich skin with 35% AI accuracy gap"
+  - "Retail partners: Clicks (945+ stores), Dis-Chem (327+ stores)"

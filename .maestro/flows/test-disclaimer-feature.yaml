@@ -1,0 +1,43 @@
+appId: ai.ondevice.app
+---
+# Test disclaimer appears after AI response
+- launchApp:
+    clearState: false
+
+- assertVisible:
+    text: ".*"
+
+- takeScreenshot: "01-app-ready"
+
+# Send a test message
+- tapOn:
+    id: "message_input"
+    optional: true
+
+- inputText: "Hello, tell me a short joke"
+
+- tapOn:
+    id: "send_button"
+    optional: true
+
+- tapOn:
+    text: "Send"
+    optional: true
+
+- takeScreenshot: "02-message-sent"
+
+# Wait for AI response to complete
+- extendedWaitUntil:
+    visible: ".*"
+
+- takeScreenshot: "03-response-received"
+
+# Verify disclaimer appears
+- scrollUntilVisible:
+    element: "OnDevice can make mistakes"
+    direction: DOWN
+
+- assertVisible:
+    text: "OnDevice can make mistakes"
+
+- takeScreenshot: "04-disclaimer-visible"

@@ -1,0 +1,157 @@
+appId: ai.ondevice.app
+name: E2E - Fresh Install to First Chat
+tags:
+  - e2e
+  - critical
+  - onboarding
+---
+# End-to-End Flow: Complete app setup from fresh install to working chat
+# Assumes: APK just installed (via CI or manual), app never launched before
+# Goal: Accept TOS → Download model → Navigate to chat → Send first message
+
+# ============================================
+# STEP 1: Launch app and accept TOS
+# ============================================
+
+- launchApp:
+    clearState: true
+
+- takeScreenshot: 01-app-launched
+
+# Wait for TOS dialog (should appear on first launch)
+- extendedWaitUntil:
+    visible: ".*Terms.*|.*Service.*|.*Privacy.*|.*Accept.*"
+    timeout: 10000
+
+- takeScreenshot: 02-tos-dialog
+
+# Scroll through TOS if needed
+- scrollUntilVisible:
+    element:
+      text: ".*Accept.*|.*Agree.*|.*Continue.*"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+# Accept TOS
+- tapOn:
+    text: ".*Accept.*|.*Agree.*|.*Continue.*"
+
+- takeScreenshot: 03-tos-accepted
+
+# A second, detailed TOS dialog may appear
+- extendedWaitUntil:
+    visible: "Accept and Continue"
+    timeout: 10000
+    optional: true
+
+- takeScreenshot: 03b-detailed-tos
+
+- tapOn:
+    text: "Accept and Continue"
+    optional: true
+
+- takeScreenshot: 03c-detailed-tos-accepted
+
+# ============================================
+# STEP 2: Select and download model
+# ============================================
+
+# Should land on model selection screen
+- extendedWaitUntil:
+    visible: ".*model.*|.*Gemma.*|.*Download.*"
+    timeout: 15000
+
+- takeScreenshot: 04-model-selection
+
+# Tap Download on first model (multimodal model - supports all features)
+- tapOn:
+    text: "Download"
+    index: 0
+
+- takeScreenshot: 05-download-initiated
+
+# Accept Gemma Terms if they appear (detailed dialog with "I Accept" button)
+- extendedWaitUntil:
+    visible: ".*Gemma.*Terms.*|I Accept"
+    timeout: 10000
+    optional: true
+
+- takeScreenshot: 06-gemma-terms
+
+- tapOn:
+    text: "I Accept"
+    optional: true
+
+- takeScreenshot: 07-terms-accepted
+
+# Wait for download to complete
+# Multimodal model can take 5-15 minutes depending on connection
+# We'll wait up to 20 minutes to be safe
+# Look specifically for "Try it" button that appears when model is ready
+- extendedWaitUntil:
+    visible: "Try it"
+    timeout: 1200000
+
+- takeScreenshot: 08-download-complete
+
+# ============================================
+# STEP 3: Navigate to chat screen
+# ============================================
+
+# Tap "Try it" button to enter chat screen with the downloaded model
+- tapOn:
+    text: "Try it"
+    index: 0
+
+- takeScreenshot: 09-navigating-to-chat
+
+# Wait for model initialization (can take 30-120 seconds on first load)
+# Look for input field to appear
+- extendedWaitUntil:
+    visible:
+      text: ".*Ask.*"
+    timeout: 120000
+
+- takeScreenshot: 10-chat-screen-ready
+
+# Dismiss any tutorial/onboarding overlays
+- tapOn:
+    text: ".*Got it.*|.*OK.*|.*Dismiss.*|.*Skip.*"
+    optional: true
+
+# ============================================
+# STEP 4: Send first message and verify chat works
+# ============================================
+
+# Tap input field
+- tapOn:
+    text: ".*Ask.*"
+
+# Type test message
+- inputText: "Say the word 'ready' and nothing else."
+
+- takeScreenshot: 11-first-message-typed
+
+# Send message using accessibility label (THE WORKING SOLUTION!)
+- tapOn:
+    text: "Message send prompt button"
+
+- takeScreenshot: 12-message-sent
+
+# Wait for AI response (inference can take 30-90s on first message)
+- extendedWaitUntil:
+    visible: ".*ready.*|.*Ready.*|.*READY.*"
+    timeout: 120000
+
+- takeScreenshot: 13-first-response-received
+
+# Verify chat is still functional (input field ready for next message)
+- assertVisible:
+    text: ".*Ask.*"
+
+# ============================================
+# SUCCESS! App is fully set up and working
+# ============================================
+
+- takeScreenshot: 14-e2e-complete

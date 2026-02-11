@@ -1,0 +1,6 @@
+appId: ai.ondevice.app
+---
+# Accept TOS
+- tapOn: "Accept and Continue"
+- assertVisible: "How can I help"
+- takeScreenshot: screenshot-01-chat-ready

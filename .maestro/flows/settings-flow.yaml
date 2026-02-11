@@ -1,0 +1,23 @@
+appId: ai.ondevice.app
+---
+- launchApp:
+    clearState: false
+
+- assertVisible:
+    text: ".*"
+    timeout: 10000
+
+- tapOn:
+    id: "settings_button"
+    optional: true
+
+- tapOn:
+    text: "Settings"
+    optional: true
+
+- takeScreenshot: "settings_screen"
+
+# Navigate back
+- pressKey: back
+
+- takeScreenshot: "back_to_main"

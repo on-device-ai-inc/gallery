@@ -1,0 +1,209 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>7.3</storyId>
+    <title>Progress Display & Cancel</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>sprint status/7-3-progress-display-and-cancel.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see generation progress and cancel if needed</iWant>
+    <soThat>I know it's working and can abort mistakes</soThat>
+    <tasks>
+      - Task 1: Create ViewModel state for progress tracking
+      - Task 2: Implement progress UI display
+      - Task 3: Implement cancellation logic
+      - Task 4: Add privacy indicator during generation
+      - Task 5: Integration testing and validation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">Given I start image generation, when generation is in progress, then I see: "Generating... Step 5 of 20"</criterion>
+    <criterion id="AC2">Given generation is in progress, when intermediate results are available, then I see preview images updated every 5 steps</criterion>
+    <criterion id="AC3">Given generation is in progress, when I look at the UI, then I see a Cancel button</criterion>
+    <criterion id="AC4">Given I tap the Cancel button, when cancellation is processed, then generation stops within 2 seconds and partial result is discarded</criterion>
+    <criterion id="AC5">Given generation is in progress, when I look at the status indicator, then I see "Running privately on your device" indicator (reusing Epic 2 privacy pattern)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/epics.md</path>
+        <title>Epic 7: AI Image Generation</title>
+        <section>Story 7.3: Progress Display & Cancel</section>
+        <snippet>As a user, I want to see generation progress and cancel if needed, so that I know it's working and can abort mistakes. Progress displays step count (e.g., "Step 5 of 20"), intermediate previews every 5 steps, cancel button, and privacy indicator.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture.md</path>
+        <title>OnDevice AI Architecture</title>
+        <section>4. Privacy Indicator Pattern</section>
+        <snippet>Show privacy indicator during inference: Row with Lock icon + "Running privately on your device" text using MaterialTheme.colorScheme.tertiary (green). Conditional display when isGenerating == true. Location: ChatPanel.kt pattern to reuse.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture.md</path>
+        <title>OnDevice AI Architecture</title>
+        <section>Project Structure - ViewModel Pattern</section>
+        <snippet>ViewModels extend base ViewModel, use MutableStateFlow for UI state, collect flows for async operations, manage coroutine Jobs for cancellation. Follow ChatViewModel pattern: viewModelScope.launch for async work, Job storage for cancellation.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR49: View generation progress with intermediate results</section>
+        <snippet>Display step-based progress during image generation (e.g., "Step 15/20"). Show intermediate preview images as they become available. Update UI smoothly without blocking user interaction.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR50: Cancel image generation in progress</section>
+        <snippet>Provide Cancel button during generation. Cancellation must stop within 2 seconds. Discard partial results on cancel. Return to ready state for new generation.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Privacy Indicator During Inference</section>
+        <snippet>Show "🔒 Running privately on your device" during AI operations. Use tertiary color scheme (green). Appears below messages area, above input. Pattern established in Epic 2, Story 2.1.</snippet>
+      </artifact>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt</path>
+        <kind>helper</kind>
+        <symbol>ImageGenerationHelper</symbol>
+        <lines>98-180</lines>
+        <reason>Created in Story 7.2 - provides generateImage() function returning Flow&lt;GenerationResult&gt;. Story 7.3 needs to collect this flow to track progress. Currently only emits final result - may need modification to emit intermediate progress.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt</path>
+        <kind>data-class</kind>
+        <symbol>GenerationResult</symbol>
+        <lines>46-58</lines>
+        <reason>Sealed class with Success(bitmap) and Error(message) variants. Flow emissions will be collected in ViewModel to update UI state.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/common/chat/ChatViewModel.kt</path>
+        <kind>viewmodel</kind>
+        <symbol>ChatViewModel</symbol>
+        <lines>66-143</lines>
+        <reason>Base ViewModel pattern - shows MutableStateFlow&lt;UiState&gt; pattern, viewModelScope.launch usage, state management. ImageGenerationViewModel should follow similar pattern.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatViewModel.kt</path>
+        <kind>viewmodel</kind>
+        <symbol>LlmChatViewModelBase</symbol>
+        <lines>56-150</lines>
+        <reason>Example of managing long-running AI operations with progress tracking (firstRun, timeToFirstToken, decodeTokens). Shows pattern for setInProgress(true/false) during async operations. Provides cancellation pattern via viewModelScope.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationTaskModule.kt</path>
+        <kind>task-module</kind>
+        <symbol>ImageGenerationTask</symbol>
+        <lines>42-94</lines>
+        <reason>Task module created in Story 7.1 with placeholder screen. Story 7.3 will need to create ImageGenerationViewModel and update UI to show progress instead of placeholder.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationPlaceholderScreen.kt</path>
+        <kind>screen</kind>
+        <symbol>ImageGenerationPlaceholderScreen</symbol>
+        <lines>1-200</lines>
+        <reason>Placeholder screen from Story 7.1 - needs to be replaced or augmented with progress display UI (progress text, LinearProgressIndicator, intermediate image preview, Cancel button).</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <android>
+        <package name="androidx.compose.material3:material3" version="1.2+" />
+        <package name="androidx.lifecycle:lifecycle-viewmodel-compose" version="2.7+" />
+        <package name="org.jetbrains.kotlinx:kotlinx-coroutines-core" version="1.8+" />
+        <package name="com.google.mediapipe:tasks-vision-image-generator" version="0.10.21" />
+      </android>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Progress text format: "Generating... Step X of Y" where X is currentStep, Y is totalSteps</constraint>
+    <constraint>Use LinearProgressIndicator with progress = currentStep.toFloat() / totalSteps.toFloat()</constraint>
+    <constraint>Display intermediate bitmaps using Compose Image(bitmap.asImageBitmap(), ...) or AsyncImage from Coil</constraint>
+    <constraint>Cancel button must call job.cancel() on generation coroutine Job stored in ViewModel</constraint>
+    <constraint>Cancellation must complete within 2 seconds (AC requirement) - coroutine cancellation is cooperative</constraint>
+    <constraint>Privacy indicator reuses pattern from ChatPanel.kt: Row with Lock icon + Text, tertiary color, show when isGenerating</constraint>
+    <constraint>Store generation Job in ViewModel: private var generationJob: Job? = null</constraint>
+    <constraint>Collect Flow&lt;GenerationResult&gt; from ImageGenerationHelper.generateImage() in ViewModel</constraint>
+    <constraint>Update UI state on each Flow emission (intermediate steps + final result)</constraint>
+    <constraint>Intermediate images available every 5 steps (Story 7.2 pattern) - extract from flow emissions</constraint>
+    <constraint>Clear intermediate state and show "Generation cancelled" message on cancel</constraint>
+    <constraint>Follow MVVM pattern: ViewModel manages state, Screen observes StateFlow and renders UI</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ImageGenerationHelper.generateImage</name>
+      <kind>suspend-function</kind>
+      <signature>suspend fun generateImage(context: Context, modelPath: String, prompt: String, iterations: Int, seed: Int): Flow&lt;GenerationResult&gt;</signature>
+      <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt</path>
+      <note>Created in Story 7.2. Returns Flow of GenerationResult. Story 7.3 ViewModel will collect this flow to track progress. May need to modify to emit progress updates instead of only final result.</note>
+    </interface>
+    <interface>
+      <name>GenerationResult.Success</name>
+      <kind>data-class</kind>
+      <signature>data class Success(val bitmap: Bitmap) : GenerationResult()</signature>
+      <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt</path>
+      <note>Final result type with generated Bitmap. Emitted by Flow when generation completes.</note>
+    </interface>
+    <interface>
+      <name>GenerationResult.Error</name>
+      <kind>data-class</kind>
+      <signature>data class Error(val message: String) : GenerationResult()</signature>
+      <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt</path>
+      <note>Error result type with error message. Emitted by Flow when generation fails.</note>
+    </interface>
+    <interface>
+      <name>ImageGenerationViewModel (to be created)</name>
+      <kind>viewmodel</kind>
+      <signature>class ImageGenerationViewModel(conversationDao: ConversationDao) : ChatViewModel(conversationDao)</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationViewModel.kt (to be created)</path>
+      <note>ViewModel to manage generation state. Should expose StateFlow&lt;ImageGenerationUiState&gt; with currentStep, totalSteps, intermediateBitmap, isGenerating, errorMessage fields.</note>
+    </interface>
+    <interface>
+      <name>ImageGenerationUiState (to be created)</name>
+      <kind>data-class</kind>
+      <signature>data class ImageGenerationUiState(val isGenerating: Boolean, val currentStep: Int, val totalSteps: Int, val intermediateBitmap: Bitmap?, val finalBitmap: Bitmap?, val errorMessage: String?)</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationUiState.kt (to be created)</path>
+      <note>UI state data class for progress display. ViewModel updates this state as Flow emissions arrive.</note>
+    </interface>
+    <interface>
+      <name>startGeneration</name>
+      <kind>viewmodel-function</kind>
+      <signature>fun startGeneration(context: Context, modelPath: String, prompt: String, iterations: Int, seed: Int)</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationViewModel.kt (to be created)</path>
+      <note>Launches generation coroutine, stores Job, collects Flow from ImageGenerationHelper.generateImage(), updates UI state on each emission.</note>
+    </interface>
+    <interface>
+      <name>cancelGeneration</name>
+      <kind>viewmodel-function</kind>
+      <signature>fun cancelGeneration()</signature>
+      <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationViewModel.kt (to be created)</path>
+      <note>Calls generationJob?.cancel(), clears intermediate state, shows "Generation cancelled" message.</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Follow existing MediaPipe helper testing patterns from LlmChatModelHelper. Use JUnit5 for unit tests, Espresso for UI tests. Mock MediaPipe dependencies where possible. Integration tests require actual model download (1.9GB) - run on device/emulator with 8GB+ RAM. Test ViewModel state updates using Turbine for Flow testing. Verify UI updates with Compose test rules (createComposeRule). Test cancellation timing with delay assertions.
+    </standards>
+    <locations>
+      - app/src/test/java/ai/ondevice/app/ui/imagegeneration/ (unit tests)
+      - app/src/androidTest/java/ai/ondevice/app/ui/imagegeneration/ (integration tests)
+    </locations>
+    <ideas>
+      <test-idea ac="AC1">Mock generateImage() Flow - emit multiple results with increasing step counts. Assert ViewModel UiState updates progress text to "Generating... Step X of Y" format.</test-idea>
+      <test-idea ac="AC2">Mock generateImage() Flow - emit intermediate bitmaps at steps 5, 10, 15. Assert ViewModel UiState.intermediateBitmap updates every 5 steps.</test-idea>
+      <test-idea ac="AC3">Render Screen with isGenerating=true - assert Cancel button is visible and clickable.</test-idea>
+      <test-idea ac="AC4">Call cancelGeneration() mid-generation - assert Job.isActive becomes false within 2 seconds, UiState shows cancellation message.</test-idea>
+      <test-idea ac="AC5">Set isGenerating=true - assert privacy indicator appears with "Running privately on your device" text and Lock icon in tertiary color.</test-idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,179 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>0</storyId>
+    <title>Foundation - Manifest & Model Path Setup</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>sprint status/7-0-foundation-manifest-model-path-setup.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>the app configured for MediaPipe image generation</iWant>
+    <soThat>the ImageGenerator can initialize without crashes</soThat>
+    <tasks>
+- [ ] Task 1: Add OpenCL native library declarations to AndroidManifest.xml (AC: #2, #4)
+  - [ ] 1.1: Add `<uses-native-library>` entries inside `<application>` tag
+  - [ ] 1.2: Verify build compiles without errors
+  - [ ] 1.3: Test on device with Android 12+ to confirm no runtime warnings
+
+- [ ] Task 2: Verify model definition exists and is correct (AC: #1)
+  - [ ] 2.1: Confirm `MODEL_IMAGE_GENERATION_STABLE_DIFFUSION` in `Model.kt` has correct URL
+  - [ ] 2.2: Verify download filename is `sd15.zip`
+  - [ ] 2.3: Verify size is approximately 1.9GB (1906219565 bytes)
+
+- [ ] Task 3: Implement model unzip path handling (AC: #1, #3)
+  - [ ] 3.1: Verify `DownloadWorker.kt` extracts zip to correct path
+  - [ ] 3.2: Ensure extraction creates `sd15/` subdirectory structure
+  - [ ] 3.3: Add error handling for zip extraction failures
+  - [ ] 3.4: Verify extracted model files match MediaPipe expected structure
+
+- [ ] Task 4: Validation testing (AC: #1, #3, #4)
+  - [ ] 4.1: Build and install app on test device
+  - [ ] 4.2: Verify model download completes without errors
+  - [ ] 4.3: Verify extracted files are in correct location
+  - [ ] 4.4: Verify no OpenCL-related crashes on app launch
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. **AC1:** Given a fresh app install, when the image generation model is downloaded, then model files are unzipped to the correct path for MediaPipe (`/data/data/{package}/files/sd15/`)
+
+2. **AC2:** AndroidManifest.xml contains OpenCL native library declarations:
+   ```xml
+   <uses-native-library android:name="libOpenCL.so" android:required="false" />
+   <uses-native-library android:name="libOpenCL-car.so" android:required="false"/>
+   <uses-native-library android:name="libOpenCL-pixel.so" android:required="false" />
+   ```
+
+3. **AC3:** Model extraction validates zip structure and handles extraction errors gracefully
+
+4. **AC4:** App compiles successfully with all OpenCL declarations (no build errors)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 7: AI Image Generation</title>
+        <section>Story 7.0: Foundation - Manifest & Model Path Setup (lines 527-554)</section>
+        <snippet>Model already defined: MODEL_IMAGE_GENERATION_STABLE_DIFFUSION in Model.kt. URL: storage.googleapis.com/tfweb/app_gallery_models/sd15.zip (1.9GB). Requires OpenCL native library declarations in AndroidManifest.xml for Android 12+ GPU acceleration.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Error Handling Pattern (lines 311-324)</section>
+        <snippet>Standard try-catch pattern with Log.e() and user-friendly Toast messages. Always use withContext(Dispatchers.Main) for UI updates.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Logging Strategy (lines 326-336)</section>
+        <snippet>Use Android Log with consistent TAG. Pattern: private const val TAG = "ClassName". Use Log.d for debug, Log.e for errors with exception.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Technical Constraints (lines 316-337)</section>
+        <snippet>Minimum Android Version: Android 8.0 (API 26) or higher. Known limitation: Stable Diffusion image generation is currently broken (future fix). Model constraints table shows RAM requirements for models.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/src/main/AndroidManifest.xml</path>
+        <kind>manifest</kind>
+        <symbol>application</symbol>
+        <lines>40-124</lines>
+        <reason>Target location for adding OpenCL native library declarations. Currently missing the required uses-native-library entries for libOpenCL.so, libOpenCL-car.so, and libOpenCL-pixel.so</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/data/Model.kt</path>
+        <kind>data</kind>
+        <symbol>MODEL_IMAGE_GENERATION_STABLE_DIFFUSION</symbol>
+        <lines>425-438</lines>
+        <reason>Image generation model already defined with correct URL (storage.googleapis.com/tfweb/app_gallery_models/sd15.zip), size (1906219565 bytes), isZip=true, unzipDir="sd15". Needs verification that definition is correct.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/data/Model.kt</path>
+        <kind>data</kind>
+        <symbol>Model.getPath</symbol>
+        <lines>240-267</lines>
+        <reason>Determines actual extraction path for model files. For IMAGE_GENERATION model returns: /data/data/{package}/files/Stable_diffusion/_/sd15/. This is where MediaPipe will look for the model.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/worker/DownloadWorker.kt</path>
+        <kind>worker</kind>
+        <symbol>doWork (unzip section)</symbol>
+        <lines>259-308</lines>
+        <reason>Handles zip file extraction. Creates destDir at externalFilesDir/modelDir/version/unzippedDir. Extracts all entries from zip. Need to verify this correctly extracts sd15/ directory structure with bins/ and weights/ subdirectories.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <android>
+        <package>androidx.work</package>
+        <purpose>Background model download and extraction (DownloadWorker)</purpose>
+      </android>
+      <android>
+        <package>androidx.core</package>
+        <purpose>FileProvider for secure file access</purpose>
+      </android>
+      <android>
+        <package>kotlinx.coroutines</package>
+        <purpose>Async operations (Dispatchers.IO, Dispatchers.Default)</purpose>
+      </android>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>OpenCL native libraries must have android:required="false" to allow app to work on devices without OpenCL support</constraint>
+    <constraint>Model extraction must handle zip structure correctly - sd15/ directory with bins/ and weights/ subdirectories</constraint>
+    <constraint>Follow architecture.md error handling pattern: try-catch + Log.e + Toast for user feedback</constraint>
+    <constraint>Use standard Android logging pattern with TAG constant per file</constraint>
+    <constraint>Minimum Android API 31 (Android 12) required for OpenCL support</constraint>
+    <constraint>Model path determined by Model.getPath() - use this method to get correct path for MediaPipe initialization</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Model.getPath(Context, String)</name>
+      <kind>function</kind>
+      <signature>fun getPath(context: Context, fileName: String = downloadFileName): String</signature>
+      <path>app/src/main/java/ai/ondevice/app/data/Model.kt:240-267</path>
+      <purpose>Returns the file system path where model files are located after download/extraction</purpose>
+    </interface>
+    <interface>
+      <name>DownloadWorker.doWork()</name>
+      <kind>coroutine worker</kind>
+      <signature>override suspend fun doWork(): Result</signature>
+      <path>app/src/main/java/ai/ondevice/app/worker/DownloadWorker.kt:93-318</path>
+      <purpose>Downloads and extracts model zip files. Already handles MODEL_IMAGE_GENERATION_STABLE_DIFFUSION model type</purpose>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>No existing test files found in codebase. For this foundational story, testing will be primarily manual verification on device. Future stories should follow Android testing best practices: use JUnit 4 for unit tests, Espresso for UI tests, and MockK for mocking.</standards>
+    <locations>
+      - app/src/test/ (for unit tests)
+      - app/src/androidTest/ (for instrumented tests)
+    </locations>
+    <ideas>
+      <test id="AC2-test">
+        <ac>AC2</ac>
+        <description>Verify OpenCL declarations exist in AndroidManifest.xml - can be verified by reading the manifest file after implementation</description>
+      </test>
+      <test id="AC4-test">
+        <ac>AC4</ac>
+        <description>Build verification test - run ./gradlew :app:assembleDebug to verify app compiles without errors after adding OpenCL declarations</description>
+      </test>
+      <test id="AC1-AC3-test">
+        <ac>AC1, AC3</ac>
+        <description>Manual device testing - Download sd15.zip model, verify extraction completes, check file system at /data/data/ai.ondevice.app/files/Stable_diffusion/_/sd15/ for bins/ and weights/ directories</description>
+      </test>
+      <test id="runtime-test">
+        <ac>AC2</ac>
+        <description>Manual runtime test - Install on Android 12+ device, launch app, verify no OpenCL-related crashes in logcat</description>
+      </test>
+    </ideas>
+  </tests>
+</story-context>

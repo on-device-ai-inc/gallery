@@ -1,0 +1,125 @@
+CHART OF ACCOUNTS
+
+Account Code,Account Name,Account Type,Description
+1000,Corporate Bank Account,Asset,Main operating account
+1100,DGX Spark Workstation,Asset,Equipment - Computer hardware for R&D
+1200,Developed Software - OnDevice AI,Asset,Intellectual property
+1300,Accounts Receivable,Asset,Money owed by customers (when revenue starts)
+1400,Prepaid Expenses,Asset,Annual subscriptions paid in advance
+2000,Accounts Payable,Liability,Money owed to suppliers
+2100,Accrued Wages Payable,Liability,Salary owed but not yet paid
+3000,Share Capital - Class A,Equity,100 Class A Common Shares
+3100,Share Capital - Class B,Equity,400 Class B Common Shares
+3200,Retained Earnings,Equity,Accumulated profits/losses
+4000,App Sales Revenue,Revenue,OnDevice AI app purchases
+4100,Subscription Revenue,Revenue,Premium subscription fees (if applicable)
+5000,Salaries and Wages,Expense,Employee compensation
+5100,Cloud Hosting,Expense,Google Cloud Platform costs
+5200,API Costs,Expense,Brave Search API and other APIs
+5300,Professional Fees,Expense,Lawyer and accountant fees
+5400,Office Supplies,Expense,General office expenses
+5500,Software Subscriptions,Expense,Development tools and services
+5600,Marketing and Advertising,Expense,App promotion costs
+5700,Bank Fees,Expense,Transaction and account fees
+5800,Depreciation,Expense,Equipment depreciation (DGX)
+
+TRANSACTION LOG
+
+Date,Description,Account Debited,Account Credited,Amount,Reference,Category
+2026-01-XX,Share issuance - Class A,1000 Bank,3000 Share Capital - Class A,1.00,Certificate A-1,Equity
+2026-01-XX,Share issuance - Class B,1000 Bank,3100 Share Capital - Class B,4.00,Certificate B-1,Equity
+2026-01-XX,DGX transfer from founder,1100 DGX Workstation,1000 Bank,1.00,Bill of Sale,Asset Purchase
+2026-01-XX,Initial trust funding,1000 Bank,2000 Payable to Trust,10.00,Trust Deed,Liability
+,,,,,,
+,,,,,,Add transactions as they occur
+
+Opening Balances (After Incorporation):
+
+ASSETS:
+"Bank Account: $6.00 ($1 Class A + $4 Class B + $1 DGX)"
+"DGX Workstation: $6,000.00 (at cost, will depreciate)"
+"Developed Software: $5,000.00 (conservative pre-revenue valuation)"
+"Total Assets: $11,006.00"
+
+LIABILITIES:
+"None initially (unless trust funding creates payable)"
+"Total Liabilities: $0.00"
+
+EQUITY:
+"Share Capital - Class A: $1.00"
+"Share Capital - Class B: $4.00"
+"Retained Earnings: $11,001.00 (balancing entry - includes DGX and software value)"
+"Total Equity: $11,006.00"
+
+Balance Sheet Check: Assets ($11,006) = Liabilities ($0) + Equity ($11,006) ✓
+
+Monthly Bank Reconciliation:
+
+Month,Opening Balance,Deposits,Withdrawals,Closing Balance,Bank Statement Balance,Difference,Reconciled
+Jan 2026,0.00,6.00,0.00,6.00,6.00,0.00,Yes
+Feb 2026,6.00,0.00,0.00,6.00,6.00,0.00,Yes
+Mar 2026,,,,,,,
+,,,,,,,"Fill in monthly"
+
+Monthly P&L (Profit & Loss):
+
+Month,Revenue,Total Expenses,Net Income/(Loss),Notes
+Jan 2026,0.00,0.00,0.00,Pre-revenue - no operations yet
+Feb 2026,0.00,0.00,0.00,Pre-revenue - development phase
+Mar 2026,,,,Fill in when revenue/expenses start
+,,,,
+
+When Revenue Starts - Sample Transactions:
+
+"Date,App sale revenue,1000 Bank,4000 Revenue,29.99,Google Play Transaction #12345,Revenue"
+"Date,Google Play fee (30%),5600 Marketing,1000 Bank,9.00,Google Play Fee,Expense"
+"Date,Cloud hosting bill,5100 Cloud Hosting,1000 Bank,50.00,GCP Invoice #ABC,Expense"
+"Date,Brave Search API,5200 API Costs,1000 Bank,25.00,Brave Invoice,Expense"
+"Date,QuickBooks subscription,5500 Software,1000 Bank,30.00,Intuit,Expense"
+
+When Paying Salary - Sample Transactions:
+
+"Date,Salary accrued,5000 Salaries,2100 Accrued Wages,5000.00,Payroll Period,Expense"
+"Date,CPP/EI/Tax remitted to CRA,2100 Accrued Wages,1000 Bank,1500.00,CRA Remittance,Liability Payment"
+"Date,Net pay to shareholder loan,2100 Accrued Wages,2000 Shareholder Loan,3500.00,Loan to Shareholder,Liability"
+
+SR&ED Claim Tracking:
+
+"Keep separate records of SR&ED eligible expenses:"
+"- Salaries (only the SR&ED % from time tracking)"
+"- Related overhead (55% of eligible salaries)"
+"- Materials directly consumed (cloud costs for R&D)"
+
+Year-End Tasks:
+
+"1. Prepare Financial Statements (Balance Sheet, Income Statement, Cash Flow)"
+"2. Calculate depreciation on DGX (declining balance, Class 50 CCA rate)"
+"3. Reconcile all accounts"
+"4. Prepare T2 corporate tax return (hire accountant recommended)"
+"5. File SR&ED claim if paid salaries (T661 form)"
+"6. File T3 trust return (for family trust)"
+"7. Update QSBC asset monitoring"
+"8. Archive all receipts and invoices"
+
+Important Notes:
+
+"✅ Keep ALL receipts (digital scans acceptable)"
+"✅ Reconcile bank account monthly"
+"✅ Categorize transactions accurately (affects tax deductions)"
+"✅ Separate business and personal expenses"
+"✅ Track mileage if using personal vehicle for business"
+"✅ Document all shareholder loans carefully"
+"✅ Keep contemporaneous records (don't reconstruct later)"
+
+When to Upgrade to QuickBooks:
+
+"Upgrade when:"
+"- Monthly transactions exceed 20-30"
+"- Revenue becomes regular and significant"
+"- Need automatic invoicing"
+"- Need expense tracking by project"
+"- Need better reporting for investors"
+"- CRA asks for detailed records"
+
+"QuickBooks Online Simple Start: $15-30/month"
+"Worth it when time saved > cost"

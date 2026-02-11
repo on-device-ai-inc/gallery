@@ -1,0 +1,21 @@
+appId: ai.ondevice.app
+---
+# Verify the disclaimer logo is now in color
+- launchApp:
+    clearState: false
+
+- takeScreenshot: 01-app-launched
+
+# Send a simple message to trigger AI response
+- inputText: "hi"
+- pressKey: Enter
+
+# Wait for AI response with disclaimer
+- extendedWaitUntil:
+    visible: "OnDevice can make mistakes"
+
+- takeScreenshot: 02-disclaimer-with-color-logo
+
+# Success - disclaimer visible with color logo
+- assertVisible:
+    text: "OnDevice can make mistakes"

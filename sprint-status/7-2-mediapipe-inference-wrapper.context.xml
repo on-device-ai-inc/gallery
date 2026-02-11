@@ -1,0 +1,165 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>7.2</storyId>
+    <title>MediaPipe Inference Wrapper</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>sprint status/7-2-mediapipe-inference-wrapper.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>an async wrapper around MediaPipe ImageGenerator</iWant>
+    <soThat>image generation doesn't block the UI thread</soThat>
+    <tasks>
+      - Task 1: Add MediaPipe dependency and gradle configuration
+      - Task 2: Create ImageGenerationHelper wrapper class
+      - Task 3: Implement inference loop with progress emission
+      - Task 4: Implement error handling and resource cleanup
+      - Task 5: Integration testing and validation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">Given a valid prompt and iteration count, when generateImage(prompt, iterations, seed) is called, then generation runs on background thread (Dispatchers.Default)</criterion>
+    <criterion id="AC2">Given generation is in progress, when progress updates occur, then progress is emitted via Flow&lt;GenerationProgress&gt; with step count and intermediate images</criterion>
+    <criterion id="AC3">Given generation completes successfully, when final bitmap is ready, then it's returned as GenerationResult.Success(bitmap)</criterion>
+    <criterion id="AC4">Given an error occurs during generation, when the error is caught, then it's returned as GenerationResult.Error(message)</criterion>
+    <criterion id="AC5">Given generation completes, when cleanup occurs, then MediaPipe resources are properly released to prevent memory leaks</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/epics.md</path>
+        <title>Epic 7: AI Image Generation</title>
+        <section>Story 7.2: MediaPipe Inference Wrapper</section>
+        <snippet>As a developer, I want an async wrapper around MediaPipe ImageGenerator, so that image generation doesn't block the UI thread. Create ImageGenerationHelper.kt following MediaPipe codelab pattern with blocking inference on Dispatchers.Default.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture.md</path>
+        <title>OnDevice AI Architecture</title>
+        <section>Project Structure - Helper Pattern</section>
+        <snippet>Helper classes encapsulate MediaPipe SDK interaction. Follow LlmChatModelHelper pattern: initialize with createFromOptions(), wrap blocking operations in coroutines, emit results via callbacks/flows, cleanup in finally blocks.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR47: On-Device Image Generation</section>
+        <snippet>Generate images from text prompts entirely on-device using Stable Diffusion. No internet required, privacy-preserving, 512x512 output, 15-60 second generation time on mid-range devices.</snippet>
+      </artifact>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/imagegeneration/ImageGenerationTaskModule.kt</path>
+        <kind>task-module</kind>
+        <symbol>ImageGenerationTask</symbol>
+        <lines>55-75</lines>
+        <reason>Contains TODO placeholders for Story 7.2 - initializeModelFn() and cleanUpModelFn() methods need to be implemented using the new ImageGenerationHelper</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatModelHelper.kt</path>
+        <kind>helper</kind>
+        <symbol>LlmChatModelHelper</symbol>
+        <lines>44-140</lines>
+        <reason>Reference pattern for MediaPipe SDK wrapper - shows initialize(), cleanup, callback patterns. ImageGenerationHelper should follow similar structure but adapted for image generation API.</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/java/ai/ondevice/app/data/Model.kt</path>
+        <kind>data-model</kind>
+        <symbol>MODEL_IMAGE_GENERATION_STABLE_DIFFUSION</symbol>
+        <lines>425-438</lines>
+        <reason>Defines Stable Diffusion model configuration: URL, size (1.9GB), isZip=true, unzipDir="sd15". Model path construction via getPath() method (line 240-267) extracts to externalFilesDir/Stable_diffusion/_/sd15/</reason>
+      </artifact>
+      <artifact>
+        <path>app/build.gradle.kts</path>
+        <kind>build-config</kind>
+        <symbol>N/A</symbol>
+        <lines>119</lines>
+        <reason>MediaPipe dependency already included: implementation(libs.mediapipe.tasks.imagegen) - verify version matches v0.10.21+ requirement</reason>
+      </artifact>
+      <artifact>
+        <path>app/src/main/AndroidManifest.xml</path>
+        <kind>manifest</kind>
+        <symbol>N/A</symbol>
+        <lines>54-56</lines>
+        <reason>OpenCL native library declarations for GPU acceleration (from Story 7.0) - required for MediaPipe ImageGenerator performance</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <android>
+        <package name="com.google.mediapipe:tasks-vision-image-generator" version="0.10.21+" />
+        <package name="org.jetbrains.kotlinx:kotlinx-coroutines-core" version="1.8+" />
+      </android>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use Dispatchers.Default for CPU-bound image generation - not IO or Main thread</constraint>
+    <constraint>Emit progress via Flow&lt;GenerationProgress&gt; - do not use callbacks for streaming updates</constraint>
+    <constraint>Follow MediaPipe API pattern: ImageGenerator.createFromOptions(), setInputs(), execute() loop</constraint>
+    <constraint>Extract intermediate bitmaps using BitmapExtractor.extract(result.generatedImage())</constraint>
+    <constraint>Release resources in finally block - call imageGenerator.close() to prevent memory leaks</constraint>
+    <constraint>Handle MediaPipeException and IllegalArgumentException with descriptive error messages</constraint>
+    <constraint>Model path from Model.getPath(context) resolves to externalFilesDir/Stable_diffusion/_/sd15/</constraint>
+    <constraint>Generation parameters: prompt (String), iterations (Int, 5-50 range), seed (Int for reproducibility)</constraint>
+    <constraint>Output format: Bitmap at 512x512 resolution (Stable Diffusion v1.5 default)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>CustomTask.initializeModelFn</name>
+      <kind>interface-method</kind>
+      <signature>fun initializeModelFn(context: Context, coroutineScope: CoroutineScope, model: Model, onDone: (String) -> Unit)</signature>
+      <path>app/src/main/java/ai/ondevice/app/customtasks/common/CustomTask.kt</path>
+      <note>ImageGenerationTaskModule must implement this to initialize ImageGenerationHelper with model path from model.getPath(context)</note>
+    </interface>
+    <interface>
+      <name>CustomTask.cleanUpModelFn</name>
+      <kind>interface-method</kind>
+      <signature>fun cleanUpModelFn(context: Context, coroutineScope: CoroutineScope, model: Model, onDone: () -> Unit)</signature>
+      <path>app/src/main/java/ai/ondevice/app/customtasks/common/CustomTask.kt</path>
+      <note>ImageGenerationTaskModule must implement this to release ImageGenerationHelper resources and call imageGenerator.close()</note>
+    </interface>
+    <interface>
+      <name>ImageGenerationHelper.generateImage</name>
+      <kind>suspend-function</kind>
+      <signature>suspend fun generateImage(context: Context, modelPath: String, prompt: String, iterations: Int, seed: Int): Flow&lt;GenerationResult&gt;</signature>
+      <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt (to be created)</path>
+      <note>Primary inference function - wraps MediaPipe ImageGenerator, returns Flow of GenerationProgress and final GenerationResult</note>
+    </interface>
+    <interface>
+      <name>GenerationProgress</name>
+      <kind>data-class</kind>
+      <signature>data class GenerationProgress(val step: Int, val total: Int, val intermediateBitmap: Bitmap?)</signature>
+      <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt (to be created)</path>
+      <note>Emitted during inference to show progress - intermediateBitmap available every 5 steps</note>
+    </interface>
+    <interface>
+      <name>GenerationResult</name>
+      <kind>sealed-class</kind>
+      <signature>sealed class GenerationResult { data class Success(val bitmap: Bitmap) : GenerationResult(); data class Error(val message: String) : GenerationResult() }</signature>
+      <path>app/src/main/java/ai/ondevice/app/helper/ImageGenerationHelper.kt (to be created)</path>
+      <note>Final result type - Success contains generated Bitmap, Error contains error message</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Follow existing MediaPipe helper testing patterns from LlmChatModelHelper. Use JUnit5 for unit tests, Espresso for UI tests. Mock MediaPipe dependencies where possible. Integration tests require actual model download (1.9GB) - run on device/emulator with 8GB+ RAM. Verify memory cleanup with Android Profiler.
+    </standards>
+    <locations>
+      - app/src/test/java/ai/ondevice/app/helper/ (unit tests)
+      - app/src/androidTest/java/ai/ondevice/app/helper/ (integration tests)
+    </locations>
+    <ideas>
+      <test-idea ac="AC1">Verify generateImage() executes on Dispatchers.Default thread - assert Thread.currentThread() is not MainThread</test-idea>
+      <test-idea ac="AC2">Mock ImageGenerator.execute() loop - verify Flow emits GenerationProgress for each step with correct step/total counts</test-idea>
+      <test-idea ac="AC3">Mock successful generation - verify final Flow emission is GenerationResult.Success with non-null Bitmap</test-idea>
+      <test-idea ac="AC4">Mock MediaPipeException throw - verify Flow emits GenerationResult.Error with exception message</test-idea>
+      <test-idea ac="AC5">Integration test - generate image, verify imageGenerator.close() called even on exception (use try-finally verification)</test-idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,67 @@
+appId: ai.ondevice.app
+name: Profile TextField Cursor Fix - Simple Test
+---
+# Simple test assuming user manually navigates to Settings > Profile section first
+# This tests ONLY the TextField cursor behavior
+
+- launchApp:
+    clearState: false
+
+# Wait a moment for app to be ready
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 5000
+
+- takeScreenshot: 01-app-state
+
+# Try multiple ways to find and tap settings
+- tapOn:
+    contentDescription: "Settings"
+    optional: true
+
+- tapOn:
+    text: ".*Settings.*"
+    optional: true
+
+- tapOn:
+    point: "95%,5%"
+    optional: true
+
+- takeScreenshot: 02-after-settings-tap
+
+# Wait for settings screen
+- extendedWaitUntil:
+    visible: ".*Profile.*|.*Full Name.*|.*Appearance.*"
+    timeout: 10000
+    optional: true
+
+- takeScreenshot: 03-settings-visible
+
+# Scroll down to find Profile section
+- scroll
+
+- takeScreenshot: 04-after-scroll
+
+# Try to find Full Name field
+- tapOn:
+    text: ".*Full.*Name.*"
+    optional: true
+
+- tapOn:
+    text: "John Doe"
+    optional: true
+
+- takeScreenshot: 05-full-name-tapped
+
+# Clear and type "Nathan"
+- eraseText
+
+- inputText: "Nathan"
+
+- takeScreenshot: 06-nathan-typed
+
+# Key test: Verify "Nathan" appears (not "nahtaN")
+- assertVisible:
+    text: "Nathan"
+
+- takeScreenshot: 07-verification-success

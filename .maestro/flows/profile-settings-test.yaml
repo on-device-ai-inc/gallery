@@ -1,0 +1,150 @@
+appId: ai.ondevice.app
+name: Profile Settings - TextField Cursor Fix Verification
+tags:
+  - regression
+  - profile
+  - textfield
+---
+# Verifies the TextField cursor position fix in profile settings
+# Tests that typing "Nathan" displays "Nathan" (not "nahtaN")
+# Bug: Cursor was jumping to beginning after each character
+
+# ============================================
+# STEP 1: Launch app and navigate to settings
+# ============================================
+
+- launchApp:
+    clearState: false
+
+- takeScreenshot: 01-app-launched
+
+# Wait for main screen to load
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 10000
+
+# Navigate to settings
+- tapOn:
+    id: "settings_button"
+    optional: true
+
+- tapOn:
+    text: "Settings"
+    optional: true
+
+- takeScreenshot: 02-settings-screen
+
+# ============================================
+# STEP 2: Test Full Name field
+# ============================================
+
+# Scroll to Profile section if needed
+- scrollUntilVisible:
+    element:
+      text: "Full Name"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+# Clear existing Full Name value
+- tapOn:
+    text: "Full Name"
+
+- takeScreenshot: 03-full-name-focused
+
+# Select all and delete
+- inputText: ""
+
+# Type "Nathan" character by character
+- inputText: "Nathan"
+
+- takeScreenshot: 04-typed-nathan
+
+# Verify text displays correctly (not scrambled like "nahtaN")
+- assertVisible:
+    text: "Nathan"
+
+# ============================================
+# STEP 3: Test Nickname field
+# ============================================
+
+# Tap Nickname field
+- tapOn:
+    text: "Nickname"
+
+- takeScreenshot: 05-nickname-focused
+
+# Clear existing value
+- inputText: ""
+
+# Type "Nick"
+- inputText: "Nick"
+
+- takeScreenshot: 06-typed-nick
+
+# Verify text displays correctly
+- assertVisible:
+    text: "Nick"
+
+# ============================================
+# STEP 4: Test long name (scrolling)
+# ============================================
+
+# Go back to Full Name field
+- tapOn:
+    text: "Full Name"
+
+# Clear and type a long name
+- inputText: ""
+- inputText: "Christopher Alexander Montgomery"
+
+- takeScreenshot: 07-long-name
+
+# Verify long name displays (should scroll horizontally)
+- assertVisible:
+    text: "Christopher"
+
+# ============================================
+# STEP 5: Test persistence (save and reload)
+# ============================================
+
+# Save: Press Done on keyboard (close keyboard)
+- hideKeyboard
+
+- takeScreenshot: 09-keyboard-hidden
+
+# Navigate back to main screen
+- pressKey: back
+
+- takeScreenshot: 10-back-to-main
+
+# Re-open settings
+- tapOn:
+    text: "Settings"
+    optional: true
+
+- tapOn:
+    id: "settings_button"
+    optional: true
+
+- takeScreenshot: 11-settings-reopened
+
+# Scroll to Full Name field
+- scrollUntilVisible:
+    element:
+      text: "Full Name"
+    direction: DOWN
+    timeout: 5000
+    optional: true
+
+# Verify saved value persisted
+- assertVisible:
+    text: "Christopher"
+
+- takeScreenshot: 12-value-persisted
+
+# ============================================
+# SUCCESS! TextField cursor fix verified
+# ============================================
+
+- takeScreenshot: 13-test-complete
