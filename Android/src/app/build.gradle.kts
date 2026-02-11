@@ -28,21 +28,21 @@ plugins {
 }
 
 android {
-  namespace = "com.google.ai.edge.gallery"
+  namespace = "ai.ondevice.app"
   compileSdk = 35
 
   defaultConfig {
-    applicationId = "com.google.aiedge.gallery"
+    applicationId = "ai.ondevice.app"
     minSdk = 31
     targetSdk = 35
-    versionCode = 17
-    versionName = "1.0.9"
+    versionCode = 35
+    versionName = "1.1.9"
 
     // Needed for HuggingFace auth workflows.
     // Use the scheme of the "Redirect URLs" in HuggingFace app.
     manifestPlaceholders["appAuthRedirectScheme"] =
-        "REPLACE_WITH_YOUR_REDIRECT_SCHEME_IN_HUGGINGFACE_APP"
-    manifestPlaceholders["applicationName"] = "com.google.ai.edge.gallery.GalleryApplication"
+        "ai.ondevice.app"
+    manifestPlaceholders["applicationName"] = "ai.ondevice.app.GalleryApplication"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
