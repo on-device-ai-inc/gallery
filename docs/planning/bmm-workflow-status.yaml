@@ -87,7 +87,7 @@ workflow_status:
       notes: "772 lines covering market, architecture, requirements, compliance, roadmap"
       key_sections:
         - "Market Opportunity: $813M-2.25B SA skincare market"
-        - "Technical Architecture: 6 new modules + inherited AI Edge Gallery"
+        - "Technical Architecture: 6 new modules + inherited OnDevice AI"
         - "50+ Functional Requirements across 5 modules"
         - "POPIA Compliance: Biometric data handling"
         - "MVP: Hyperpigmentation + Acne for melanin-rich skin"

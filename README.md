@@ -1,17 +1,17 @@
-# Google AI Edge Gallery ✨
+# OnDevice AI ✨
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/google-ai-edge/gallery)](https://github.com/google-ai-edge/gallery/releases)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/on-device-ai-inc/on-device-ai)](https://github.com/on-device-ai-inc/on-device-ai/releases)
 
-**Explore, Experience, and Evaluate the Future of On-Device Generative AI with Google AI Edge.**
+**Explore, Experience, and Evaluate the Future of On-Device Generative AI.**
 
-The Google AI Edge Gallery is an experimental app that puts the power of cutting-edge Generative AI models directly into your hands, running entirely on your Android *(available now)* and iOS *(available now via TestFlight)* devices. Dive into a world of creative and practical AI use cases, all running locally, without needing an internet connection once the model is loaded. Experiment with different models, chat, ask questions with images and audio clip, explore prompts, and more!
+OnDevice AI is an experimental app that puts the power of cutting-edge Generative AI models directly into your hands, running entirely on your Android *(available now)* and iOS *(available now via TestFlight)* devices. Dive into a world of creative and practical AI use cases, all running locally, without needing an internet connection once the model is loaded. Experiment with different models, chat, ask questions with images and audio clip, explore prompts, and more!
 
 Install the app today from Google Play
 
-<a href='https://play.google.com/store/apps/details?id=com.google.ai.edge.gallery'><img alt='Get it on Google Play' width="250" src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/></a>
+<a href='https://play.google.com/store/apps/details?id=ai.ondevice.app'><img alt='Get it on Google Play' width="250" src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/></a>
 
-For users without Google Play access, install the apk from the [**latest release**](https://github.com/google-ai-edge/gallery/releases/latest/)
+For users without Google Play access, install the apk from the [**latest release**](https://github.com/on-device-ai-inc/on-device-ai/releases/latest/)
 
 > [!IMPORTANT]
 > You must uninstall all previous versions of the app before installing this one. Past versions will no longer be working and supported.
@@ -56,9 +56,9 @@ We appreciate your help with this early testing phase. Your feedback is invaluab
 
 1. **Check OS Requirement**: Android 12 and up
 2.  **Download the App:**
-    - Install the app from [Google Play](https://play.google.com/store/apps/details?id=com.google.ai.edge.gallery).
-    - For users without Google Play access: install the apk from the [**latest release**](https://github.com/google-ai-edge/gallery/releases/latest/)
-3.  **Install & Explore:** For detailed installation instructions (including for corporate devices) and a full user guide, head over to our [**Project Wiki**](https://github.com/google-ai-edge/gallery/wiki)!
+    - Install the app from [Google Play](https://play.google.com/store/apps/details?id=ai.ondevice.app).
+    - For users without Google Play access: install the apk from the [**latest release**](https://github.com/on-device-ai-inc/on-device-ai/releases/latest/)
+3.  **Install & Explore:** For detailed installation instructions (including for corporate devices) and a full user guide, head over to our [**Project Wiki**](https://github.com/on-device-ai-inc/on-device-ai/wiki)!
 
 ## 🛠️ Technology Highlights
 
@@ -75,8 +75,8 @@ Check out the [development notes](DEVELOPMENT.md) for instructions about how to 
 
 This is an **experimental Beta release**, and your input is crucial!
 
-*   🐞 **Found a bug?** [Report it here!](https://github.com/google-ai-edge/gallery/issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBUG%5D)
-*   💡 **Have an idea?** [Suggest a feature!](https://github.com/google-ai-edge/gallery/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=%5BFEATURE%5D)
+*   🐞 **Found a bug?** [Report it here!](https://github.com/on-device-ai-inc/on-device-ai/issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBUG%5D)
+*   💡 **Have an idea?** [Suggest a feature!](https://github.com/on-device-ai-inc/on-device-ai/issues/new?assignees=&labels=enhancement&template=feature_request.md&title=%5BFEATURE%5D)
 
 ## 📄 License
 
@@ -84,7 +84,7 @@ Licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file 
 
 ## 🔗 Useful Links
 
-*   [**Project Wiki (Detailed Guides)**](https://github.com/google-ai-edge/gallery/wiki)
+*   [**Project Wiki (Detailed Guides)**](https://github.com/on-device-ai-inc/on-device-ai/wiki)
 *   [Hugging Face LiteRT Community](https://huggingface.co/litert-community)
 *   [LLM Inference guide for Android](https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android)
 *   [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM)

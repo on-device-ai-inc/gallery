@@ -51,7 +51,7 @@ class MobileActionsTask @Inject constructor() : CustomTask {
       description = "Perform various device actions through Function Gemma",
       docUrl = "https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md",
       sourceCodeUrl =
-        "https://github.com/google-ai-edge/gallery/blob/main/Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/mobileactions",
+        "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/customtasks/mobileactions",
       category = Category.LLM,
       icon = Icons.Outlined.Functions,
       agentNameRes = R.string.chat_agent_agent_name,

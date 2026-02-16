@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val TAG = "AGNewReleaseNotifi"
-private const val REPO = "google-ai-edge/gallery"
+private const val REPO = "on-device-ai-inc/on-device-ai"
 
 data class ReleaseInfo(val html_url: String, val tag_name: String)
 

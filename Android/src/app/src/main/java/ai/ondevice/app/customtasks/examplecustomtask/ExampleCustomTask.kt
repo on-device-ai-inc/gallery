@@ -70,9 +70,9 @@ class ExampleCustomTask @Inject constructor() : CustomTask {
           "below are configured in different ways in terms of how the model file is provided " +
           "(pushed to device manually, vs downloaded from internet).",
       docUrl =
-        "https://github.com/google-ai-edge/gallery/Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/common/CustomTask.kt",
+        "https://github.com/on-device-ai-inc/on-device-ai/Android/src/app/src/main/java/ai/ondevice/app/customtasks/common/CustomTask.kt",
       sourceCodeUrl =
-        "https://github.com/google-ai-edge/gallery/Android/src/app/src/main/java/com/google/ai/edge/gallery/customtasks/examplecustomtask/ExampleCustomTask.kt",
+        "https://github.com/on-device-ai-inc/on-device-ai/Android/src/app/src/main/java/ai/ondevice/app/customtasks/examplecustomtask/ExampleCustomTask.kt",
       models =
         mutableListOf(
           Model(
@@ -88,7 +88,7 @@ class ExampleCustomTask @Inject constructor() : CustomTask {
             info =
               "Downloads the model file (a README.md file for demonstration purpose) from internet.",
             url =
-              "https://raw.githubusercontent.com/google-ai-edge/gallery/refs/heads/main/README.md",
+              "https://raw.githubusercontent.com/on-device-ai-inc/on-device-ai/refs/heads/main/README.md",
             sizeInBytes = 3798L,
             downloadFileName = "README.md",
             configs = EXAMPLE_CUSTOM_TASK_CONFIGS,
