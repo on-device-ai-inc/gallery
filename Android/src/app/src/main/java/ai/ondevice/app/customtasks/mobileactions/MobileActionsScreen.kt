@@ -561,7 +561,7 @@ fun MainUi(
                   }
                 },
                 modifier = Modifier.weight(1f),
-              ) {
+              ) { _ ->
                 // Model response.
                 if (selectedTabIndex == 0) {
                   Column(modifier = Modifier.fillMaxWidth()) {
