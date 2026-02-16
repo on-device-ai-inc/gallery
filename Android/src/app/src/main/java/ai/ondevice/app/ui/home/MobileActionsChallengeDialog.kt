@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2025 OnDevice Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ fun MobileActionsChallengeDialog(
   onSendEmail: () -> Unit,
 ) {
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-  val guideUrl = "https://ai.google.dev/gemma/docs/mobile-actions"
+  val guideUrl = "https://ondevice.ai/docs/mobile-actions"
 
   ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
     Column(modifier = Modifier.padding(16.dp)) {

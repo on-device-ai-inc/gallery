@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2025 OnDevice Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -447,7 +447,7 @@ fun HomeScreen(
             data = "mailto:".toUri()
             type = "text/plain"
             putExtra(Intent.EXTRA_SUBJECT, "Finetune FunctionGemma 270M for Mobile Actions")
-            putExtra(Intent.EXTRA_TEXT, "https://ai.google.dev/gemma/docs/mobile-actions")
+            putExtra(Intent.EXTRA_TEXT, "https://ondevice.ai/docs/mobile-actions")
           }
         )
       },
