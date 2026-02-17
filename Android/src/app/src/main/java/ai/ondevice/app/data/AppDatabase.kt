@@ -14,12 +14,27 @@
  * limitations under the License.
  */
 
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-plugins {
-  alias(libs.plugins.android.application) apply false
-  alias(libs.plugins.google.services) apply false
-  alias(libs.plugins.kotlin.android) apply false
-  alias(libs.plugins.kotlin.compose) apply false
-  alias(libs.plugins.hilt.application) apply false
-  alias(libs.plugins.ksp) apply false
+package ai.ondevice.app.data
+
+import androidx.room.Database
+import androidx.room.RoomDatabase
+
+/**
+ * Main Room database for the application.
+ * Contains conversation history data.
+ *
+ * Version 1: Initial schema with ConversationThread, ConversationMessage,
+ *            and ConversationState entities.
+ */
+@Database(
+    entities = [
+        ConversationThread::class,
+        ConversationMessage::class,
+        ConversationState::class
+    ],
+    version = 1,
+    exportSchema = false
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun conversationDao(): ConversationDao
 }

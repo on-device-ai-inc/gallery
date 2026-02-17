@@ -39,6 +39,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import androidx.room.Room
+import ai.ondevice.app.data.AppDatabase
+import ai.ondevice.app.data.ConversationDao
+import ai.ondevice.app.data.ALL_MIGRATIONS
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -130,5 +134,23 @@ internal object AppModule {
     lifecycleProvider: AppLifecycleProvider,
   ): DownloadRepository {
     return DefaultDownloadRepository(context, lifecycleProvider)
+  }
+
+  @Provides
+  @Singleton
+  fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+    return Room.databaseBuilder(
+      context,
+      AppDatabase::class.java,
+      "ondevice_database"
+    )
+      .addMigrations(*ALL_MIGRATIONS)
+      .build()
+  }
+
+  @Provides
+  @Singleton
+  fun provideConversationDao(database: AppDatabase): ConversationDao {
+    return database.conversationDao()
   }
 }

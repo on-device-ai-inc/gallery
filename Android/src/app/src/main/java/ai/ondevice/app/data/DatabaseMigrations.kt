@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-plugins {
-  alias(libs.plugins.android.application) apply false
-  alias(libs.plugins.google.services) apply false
-  alias(libs.plugins.kotlin.android) apply false
-  alias(libs.plugins.kotlin.compose) apply false
-  alias(libs.plugins.hilt.application) apply false
-  alias(libs.plugins.ksp) apply false
-}
+package ai.ondevice.app.data
+
+import androidx.room.migration.Migration
+
+/**
+ * Database migrations for the OnDevice app.
+ * These migrations ensure user data is preserved when the database schema changes.
+ *
+ * Version 1 is the initial schema — no migrations needed yet.
+ * Add new migrations here as the schema evolves.
+ */
+val ALL_MIGRATIONS = arrayOf<Migration>()

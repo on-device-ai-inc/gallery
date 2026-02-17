@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-plugins {
-  alias(libs.plugins.android.application) apply false
-  alias(libs.plugins.google.services) apply false
-  alias(libs.plugins.kotlin.android) apply false
-  alias(libs.plugins.kotlin.compose) apply false
-  alias(libs.plugins.hilt.application) apply false
-  alias(libs.plugins.ksp) apply false
-}
+package ai.ondevice.app.data
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+/**
+ * Stores running summary for compacted conversations.
+ * Used to maintain context beyond token limits via summarization.
+ */
+@Entity(tableName = "conversation_state")
+data class ConversationState(
+    @PrimaryKey val threadId: Long,
+    val runningSummary: String,
+    val turnsSummarized: Int,
+    val lastCompactionTime: Long
+)

@@ -37,6 +37,8 @@ firebaseBom = "33.16.0"
 exifinterface = "1.4.1"
 securityCrypto = "1.1.0"
 kotlinReflect = "2.2.21"
+ksp = "2.1.0-1.0.29"
+androidx-room = "2.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -86,6 +88,9 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 # library dependencies.
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidx-room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "androidx-room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -96,3 +101,4 @@ protobuf = {id = "com.google.protobuf", version.ref = "protobuf"}
 hilt-application = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 oss-licenses = {id = "com.google.android.gms.oss-licenses-plugin", version.ref = "ossLicenses"}
 google-services = { id = "com.google.gms.google-services", version.ref = "googleService" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
