@@ -758,6 +758,10 @@ constructor(
           if (modelAllowlist == null) {
             Log.w(TAG, "Failed to load model allowlist from internet. Trying to load it from disk")
             modelAllowlist = readModelAllowlistFromDisk()
+            if (modelAllowlist == null) {
+              Log.w(TAG, "Failed to load model allowlist from disk. Trying bundled assets.")
+              modelAllowlist = readModelAllowlistFromAssets()
+            }
           } else {
             Log.d(TAG, "Done: loading model allowlist from internet")
             saveModelAllowlistToDisk(modelAllowlistContent = data?.textContent ?: "{}")
@@ -856,6 +860,18 @@ constructor(
       Log.d(TAG, "Done: saving model allowlist to disk.")
     } catch (e: Exception) {
       Log.e(TAG, "failed to write model allowlist to disk", e)
+    }
+  }
+
+  private fun readModelAllowlistFromAssets(): ModelAllowlist? {
+    return try {
+      Log.d(TAG, "Reading model allowlist from bundled assets.")
+      val content = context.assets.open("model_allowlist.json").bufferedReader().use { it.readText() }
+      Log.d(TAG, "Model allowlist content from assets: $content")
+      Gson().fromJson(content, ModelAllowlist::class.java)
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to read model allowlist from assets", e)
+      null
     }
   }
 
