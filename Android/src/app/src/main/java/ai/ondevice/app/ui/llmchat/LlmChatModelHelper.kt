@@ -29,7 +29,6 @@ import ai.ondevice.app.data.DEFAULT_TOPP
 import ai.ondevice.app.data.Model
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
-import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
@@ -61,7 +60,7 @@ object LlmChatModelHelper {
     supportImage: Boolean,
     supportAudio: Boolean,
     onDone: (String) -> Unit,
-    systemInstruction: Contents? = null,
+    systemMessage: Message? = null,
     tools: List<Any> = listOf(),
     enableConversationConstrainedDecoding: Boolean = false,
   ) {
@@ -116,7 +115,7 @@ object LlmChatModelHelper {
                 topP = topP.toDouble(),
                 temperature = temperature.toDouble(),
               ),
-            systemInstruction = systemInstruction,
+            systemMessage = systemMessage,
             tools = tools,
           )
         )
@@ -134,7 +133,7 @@ object LlmChatModelHelper {
     model: Model,
     supportImage: Boolean,
     supportAudio: Boolean,
-    systemInstruction: Contents? = null,
+    systemMessage: Message? = null,
     tools: List<Any> = listOf(),
     enableConversationConstrainedDecoding: Boolean = false,
   ) {
@@ -164,7 +163,7 @@ object LlmChatModelHelper {
                 topP = topP.toDouble(),
                 temperature = temperature.toDouble(),
               ),
-            systemInstruction = systemInstruction,
+            systemMessage = systemMessage,
             tools = tools,
           )
         )
@@ -237,7 +236,7 @@ object LlmChatModelHelper {
     }
 
     conversation.sendMessageAsync(
-      Contents.of(contents),
+      Message.of(contents),
       object : MessageCallback {
         override fun onMessage(message: Message) {
           resultListener(message.toString(), false)

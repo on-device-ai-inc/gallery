@@ -27,8 +27,11 @@ import ai.ondevice.app.customtasks.common.CustomTask
 import ai.ondevice.app.customtasks.common.CustomTaskDataForBuiltinTask
 import ai.ondevice.app.data.BuiltInTaskId
 import ai.ondevice.app.data.Category
+import ai.ondevice.app.data.DataStoreRepository
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.Task
+import com.google.ai.edge.litertlm.Content
+import com.google.ai.edge.litertlm.Message
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,7 +43,9 @@ import kotlinx.coroutines.CoroutineScope
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // AI Chat.
 
-class LlmChatTask @Inject constructor() : CustomTask {
+class LlmChatTask @Inject constructor(
+  private val dataStoreRepository: DataStoreRepository
+) : CustomTask {
   override val task: Task =
     Task(
       id = BuiltInTaskId.LLM_CHAT,
@@ -48,7 +53,7 @@ class LlmChatTask @Inject constructor() : CustomTask {
       category = Category.LLM,
       icon = Icons.Outlined.Forum,
       models = mutableListOf(),
-      description = "Chat with on-device large language models",
+      description = "Chat with on-device AI models. Supports text and images based on model capabilities",
       docUrl = "https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md",
       sourceCodeUrl =
         "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatModelHelper.kt",
@@ -61,12 +66,20 @@ class LlmChatTask @Inject constructor() : CustomTask {
     model: Model,
     onDone: (String) -> Unit,
   ) {
+    val customInstructions = dataStoreRepository.readCustomInstructions()
+    val systemMessage = if (customInstructions.isNotEmpty()) {
+      Message.of(listOf(Content.Text(customInstructions)))
+    } else {
+      null
+    }
+
     LlmChatModelHelper.initialize(
       context = context,
       model = model,
-      supportImage = false,
-      supportAudio = false,
+      supportImage = model.llmSupportImage,
+      supportAudio = model.llmSupportAudio,
       onDone = onDone,
+      systemMessage = systemMessage,
     )
   }
 
@@ -82,24 +95,33 @@ class LlmChatTask @Inject constructor() : CustomTask {
   @Composable
   override fun MainScreen(data: Any) {
     val myData = data as CustomTaskDataForBuiltinTask
-    LlmChatScreen(modelManagerViewModel = myData.modelManagerViewModel, navigateUp = myData.onNavUp)
+    LlmChatScreen(
+      modelManagerViewModel = myData.modelManagerViewModel,
+      navigateUp = myData.onNavUp,
+      onNavigateToConversationHistory = myData.onNavigateToConversationHistory,
+      onNavigateToSettings = myData.onNavigateToSettings,
+      loadConversationId = myData.loadConversationId,
+      onConversationLoaded = myData.onConversationLoaded,
+    )
   }
 }
 
 @Module
-@InstallIn(SingletonComponent::class) // Or another component that fits your scope
+@InstallIn(SingletonComponent::class)
 internal object LlmChatTaskModule {
   @Provides
   @IntoSet
-  fun provideTask(): CustomTask {
-    return LlmChatTask()
+  fun provideTask(dataStoreRepository: DataStoreRepository): CustomTask {
+    return LlmChatTask(dataStoreRepository)
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ask image.
 
-class LlmAskImageTask @Inject constructor() : CustomTask {
+class LlmAskImageTask @Inject constructor(
+  private val dataStoreRepository: DataStoreRepository
+) : CustomTask {
   override val task: Task =
     Task(
       id = BuiltInTaskId.LLM_ASK_IMAGE,
@@ -120,12 +142,20 @@ class LlmAskImageTask @Inject constructor() : CustomTask {
     model: Model,
     onDone: (String) -> Unit,
   ) {
+    val customInstructions = dataStoreRepository.readCustomInstructions()
+    val systemMessage = if (customInstructions.isNotEmpty()) {
+      Message.of(listOf(Content.Text(customInstructions)))
+    } else {
+      null
+    }
+
     LlmChatModelHelper.initialize(
       context = context,
       model = model,
-      supportImage = true,
-      supportAudio = false,
+      supportImage = model.llmSupportImage,
+      supportAudio = model.llmSupportAudio,
       onDone = onDone,
+      systemMessage = systemMessage,
     )
   }
 
@@ -144,24 +174,30 @@ class LlmAskImageTask @Inject constructor() : CustomTask {
     LlmAskImageScreen(
       modelManagerViewModel = myData.modelManagerViewModel,
       navigateUp = myData.onNavUp,
+      onNavigateToConversationHistory = myData.onNavigateToConversationHistory,
+      onNavigateToSettings = myData.onNavigateToSettings,
+      loadConversationId = myData.loadConversationId,
+      onConversationLoaded = myData.onConversationLoaded,
     )
   }
 }
 
 @Module
-@InstallIn(SingletonComponent::class) // Or another component that fits your scope
+@InstallIn(SingletonComponent::class)
 internal object LlmAskImageModule {
   @Provides
   @IntoSet
-  fun provideTask(): CustomTask {
-    return LlmAskImageTask()
+  fun provideTask(dataStoreRepository: DataStoreRepository): CustomTask {
+    return LlmAskImageTask(dataStoreRepository)
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Ask audio.
 
-class LlmAskAudioTask @Inject constructor() : CustomTask {
+class LlmAskAudioTask @Inject constructor(
+  private val dataStoreRepository: DataStoreRepository
+) : CustomTask {
   override val task: Task =
     Task(
       id = BuiltInTaskId.LLM_ASK_AUDIO,
@@ -183,12 +219,20 @@ class LlmAskAudioTask @Inject constructor() : CustomTask {
     model: Model,
     onDone: (String) -> Unit,
   ) {
+    val customInstructions = dataStoreRepository.readCustomInstructions()
+    val systemMessage = if (customInstructions.isNotEmpty()) {
+      Message.of(listOf(Content.Text(customInstructions)))
+    } else {
+      null
+    }
+
     LlmChatModelHelper.initialize(
       context = context,
       model = model,
-      supportImage = false,
-      supportAudio = true,
+      supportImage = model.llmSupportImage,
+      supportAudio = model.llmSupportAudio,
       onDone = onDone,
+      systemMessage = systemMessage,
     )
   }
 
@@ -207,16 +251,20 @@ class LlmAskAudioTask @Inject constructor() : CustomTask {
     LlmAskAudioScreen(
       modelManagerViewModel = myData.modelManagerViewModel,
       navigateUp = myData.onNavUp,
+      onNavigateToConversationHistory = myData.onNavigateToConversationHistory,
+      onNavigateToSettings = myData.onNavigateToSettings,
+      loadConversationId = myData.loadConversationId,
+      onConversationLoaded = myData.onConversationLoaded,
     )
   }
 }
 
 @Module
-@InstallIn(SingletonComponent::class) // Or another component that fits your scope
+@InstallIn(SingletonComponent::class)
 internal object LlmAskAudioModule {
   @Provides
   @IntoSet
-  fun provideTask(): CustomTask {
-    return LlmAskAudioTask()
+  fun provideTask(dataStoreRepository: DataStoreRepository): CustomTask {
+    return LlmAskAudioTask(dataStoreRepository)
   }
 }

@@ -40,6 +40,7 @@ enum class ChatMessageType {
   BENCHMARK_RESULT,
   BENCHMARK_LLM_RESULT,
   PROMPT_TEMPLATES,
+  LONG_RESPONSE_STATUS,  // Status box for long responses
 }
 
 enum class ChatSide {
@@ -290,3 +291,14 @@ class ChatMessagePromptTemplates(
   val templates: List<PromptTemplate>,
   val showMakeYourOwn: Boolean = true,
 ) : ChatMessage(type = ChatMessageType.PROMPT_TEMPLATES, side = ChatSide.SYSTEM)
+
+/** Chat message for long response status box. */
+data class ChatMessageLongResponseStatus(
+  val topic: String,
+  override val side: ChatSide = ChatSide.AGENT,
+  override val latencyMs: Float = -1f
+) : ChatMessage(
+  type = ChatMessageType.LONG_RESPONSE_STATUS,
+  side = side,
+  latencyMs = latencyMs
+)

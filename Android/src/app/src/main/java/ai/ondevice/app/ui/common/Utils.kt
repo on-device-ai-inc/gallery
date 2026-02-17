@@ -17,7 +17,10 @@
 package ai.ondevice.app.ui.common
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
+import android.widget.Toast
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -188,6 +191,16 @@ fun checkNotificationPermissionAndStartDownload(
 
 fun ensureValidFileName(fileName: String): String {
   return fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+}
+
+/**
+ * Copy text to clipboard and show a toast confirmation.
+ */
+fun copyToClipboard(context: Context, text: String, label: String = "Text") {
+  val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+  val clip = ClipData.newPlainText(label, text)
+  clipboard.setPrimaryClip(clip)
+  Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
 }
 
 /**

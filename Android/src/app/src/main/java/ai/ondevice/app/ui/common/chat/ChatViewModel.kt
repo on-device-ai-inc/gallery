@@ -16,12 +16,23 @@
 
 package ai.ondevice.app.ui.common.chat
 
+import ai.ondevice.app.data.ConversationDao
+import ai.ondevice.app.data.ConversationThread
+import ai.ondevice.app.data.ConversationMessage
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import ai.ondevice.app.common.processLlmResponse
 import ai.ondevice.app.data.Model
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 private const val TAG = "AGChatViewModel"
@@ -38,6 +49,11 @@ data class ChatUiState(
    */
   val preparing: Boolean = false,
 
+  /**
+   * Indicates whether the conversation is being compacted (summarizing old messages).
+   */
+  val isCompacting: Boolean = false,
+
   /** A map of model names to lists of chat messages. */
   val messagesByModel: Map<String, MutableList<ChatMessage>> = mapOf(),
 
@@ -52,9 +68,27 @@ data class ChatUiState(
 )
 
 /** ViewModel responsible for managing the chat UI state and handling chat-related operations. */
-abstract class ChatViewModel() : ViewModel() {
+abstract class ChatViewModel(
+  protected val conversationDao: ConversationDao
+) : ViewModel() {
+  companion object {
+    private const val TAG = "ChatViewModel"
+  }
+
+  protected var currentThreadId: Long? = null
+  private val threadMutex = Mutex()
+
+
   private val _uiState = MutableStateFlow(createUiState())
   val uiState = _uiState.asStateFlow()
+
+  /** Flow of conversation thread count for storage display */
+  val conversationCount = conversationDao.getAllThreadsFlow().map { it.size }
+
+  /** Flow of recent conversations for drawer quick access (last 10) */
+  val recentConversations = conversationDao.getAllThreadsFlow().map { threads ->
+    threads.sortedByDescending { it.updatedAt }.take(10)
+  }
 
   fun addMessage(model: Model, message: ChatMessage) {
     val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
@@ -66,6 +100,9 @@ abstract class ChatViewModel() : ViewModel() {
     }
     newMessages.add(message)
     _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
+
+    // Phase 2: Silent save to database (fire-and-forget)
+    saveMessageToDatabase(model, message)
   }
 
   fun insertMessageAfter(model: Model, anchorMessage: ChatMessage, messageToAdd: ChatMessage) {
@@ -107,6 +144,44 @@ abstract class ChatViewModel() : ViewModel() {
     val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
     newMessagesByModel[model.name] = mutableListOf()
     _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
+    currentThreadId = null // Reset thread ID for new conversation
+  }
+
+  /**
+   * Load an existing conversation from database into the chat view.
+   * This allows users to continue a saved conversation.
+   */
+  fun loadConversation(threadId: Long, model: Model) {
+    viewModelScope.launch(Dispatchers.IO) {
+      try {
+        val thread = conversationDao.getThreadById(threadId) ?: return@launch
+        val messages = conversationDao.getMessagesForThread(threadId)
+
+        // Set the current thread ID so new messages are added to this conversation
+        threadMutex.withLock {
+          currentThreadId = threadId
+        }
+
+        // Convert database messages to ChatMessages
+        // Use latencyMs = 0f for agent messages to enable action buttons/disclaimer
+        val chatMessages: MutableList<ChatMessage> = messages.map { msg ->
+          ChatMessageText(
+            content = msg.content,
+            side = if (msg.isUser) ChatSide.USER else ChatSide.AGENT,
+            latencyMs = if (msg.isUser) -1f else 0f // Agent messages need >= 0 for UI actions
+          ) as ChatMessage
+        }.toMutableList()
+
+        // Update UI state with loaded messages
+        val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
+        newMessagesByModel[model.name] = chatMessages
+        _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
+
+        Log.d(TAG, "Loaded conversation $threadId with ${messages.size} messages")
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to load conversation", e)
+      }
+    }
   }
 
   fun getLastMessage(model: Model): ChatMessage? {
@@ -202,6 +277,10 @@ abstract class ChatViewModel() : ViewModel() {
     _uiState.update { _uiState.value.copy(preparing = preparing) }
   }
 
+  fun setIsCompacting(isCompacting: Boolean) {
+    _uiState.update { _uiState.value.copy(isCompacting = isCompacting) }
+  }
+
   fun addConfigChangedMessage(
     oldConfigValues: Map<String, Any>,
     newConfigValues: Map<String, Any>,
@@ -240,4 +319,50 @@ abstract class ChatViewModel() : ViewModel() {
   private fun createUiState(): ChatUiState {
     return ChatUiState()
   }
+
+  /**
+   * Phase 2: Saves message to database without blocking UI.
+   * Fire-and-forget pattern - failures are logged but don't affect chat.
+   */
+    private fun saveMessageToDatabase(model: Model, message: ChatMessage) {
+    viewModelScope.launch(Dispatchers.IO) {
+      try {
+        // Only save text messages
+        if (message !is ChatMessageText) {
+          return@launch
+        }
+
+        // Get or create conversation thread (thread-safe with mutex)
+        threadMutex.withLock {
+          if (currentThreadId == null) {
+            currentThreadId = conversationDao.insertThread(
+              ConversationThread(
+                title = message.content.take(50).ifEmpty { "New Conversation" },
+                modelId = model.name,
+                taskId = "chat",
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+              )
+            )
+            Log.d(TAG, "Created new thread: $currentThreadId")
+          }
+        }
+
+        // Save the message
+        conversationDao.insertMessage(
+          ConversationMessage(
+            threadId = currentThreadId!!,
+            content = message.content,
+            isUser = message.side == ChatSide.USER,
+            timestamp = System.currentTimeMillis()
+          )
+        )
+
+        Log.d(TAG, "Saved message to thread $currentThreadId")
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to save message to database", e)
+      }
+    }
+  }
+
 }
