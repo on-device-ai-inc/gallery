@@ -6,18 +6,26 @@
 
 ## Data Layer
 
+### Room Database (Conversation History)
+| File | Purpose | Location |
+|------|---------|----------|
+| `AppDatabase` | Room DB v1, 3 entities | `data/AppDatabase.kt` |
+| `ConversationThread` | Entity: thread metadata | `data/ConversationThread.kt` |
+| `ConversationMessage` | Entity: individual messages | `data/ConversationMessage.kt` |
+| `ConversationState` | Entity: compaction state | `data/ConversationState.kt` |
+| `ConversationDao` | DAO: all CRUD + Flow + search | `data/ConversationDao.kt` |
+| `DatabaseMigrations` | `ALL_MIGRATIONS` array (empty v1) | `data/DatabaseMigrations.kt` |
+
 ### Repositories
 | Repository | Purpose | Location |
 |------------|---------|----------|
-| `ModelRepository` | Model download/management | `data/repository/` |
-| `ChatRepository` | Chat history | `data/repository/` |
-| `SettingsRepository` | User preferences | `data/repository/` |
+| `DataStoreRepository` | Proto DataStore (settings/user data) | `data/DataStoreRepository.kt` |
+| `DownloadRepository` | Model download/management | `data/DownloadRepository.kt` |
 
-### Data Sources
-| Source | Purpose | Location |
+### DI
+| Module | Purpose | Location |
 |--------|---------|----------|
-| `LocalModelDataSource` | Local model storage | `data/local/` |
-| `RemoteModelDataSource` | Model download | `data/remote/` |
+| `AppModule` | Provides DB, DAO, DataStores, lifecycle | `di/AppModule.kt` |
 
 ---
 
@@ -86,6 +94,7 @@
 
 | Date | Component | Description |
 |------|-----------|-------------|
+| 2026-02-17 | Room DB layer | `AppDatabase`, 3 entities, `ConversationDao`, `DatabaseMigrations`: `data/` |
 | 2026-02-17 | `ChatDisclaimerRow` | Disclaimer row after AI messages: `ui/common/chat/ChatDisclaimerRow.kt` |
 | 2026-02-17 | `ErrorDialog` | Error dialog with support contact: `ui/common/ErrorDialog.kt` |
 | 2026-02-17 | Legal assets | Privacy/Terms HTML: `assets/legal/privacy.html`, `assets/legal/terms.html` |
