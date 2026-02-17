@@ -62,8 +62,7 @@ We appreciate your help with this early testing phase. Your feedback is invaluab
 
 ## 🛠️ Technology Highlights
 
-*   **Google AI Edge:** Core APIs and tools for on-device ML.
-*   **LiteRT:** Lightweight runtime for optimized model execution.
+*   **LiteRT:** Lightweight runtime for optimized on-device ML execution.
 *   **LLM Inference API:** Powering on-device Large Language Models.
 *   **Hugging Face Integration:** For model discovery and download.
 
