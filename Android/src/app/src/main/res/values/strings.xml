@@ -43,6 +43,7 @@
   <string name="chat_agent_agent_name" translatable="false">Agent</string>
   <string name="chat_generic_agent_name" translatable="false">Model</string>
   <string name="chat_generic_result_name" translatable="false">Result</string>
+  <string name="chat_disclaimer_text" translatable="false">OnDevice AI can make mistakes</string>
   <string name="clear" translatable="false">Clear</string>
   <string name="collect" translatable="false">Collect</string>
   <string name="color" translatable="false">Color</string>

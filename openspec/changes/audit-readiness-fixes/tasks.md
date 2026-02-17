@@ -2,53 +2,60 @@
 
 ## Phase 1: Automated Batch Updates (Priority 1 - CRITICAL)
 
-- [ ] **Task 1.1**: Update copyright headers in all Kotlin files
+- [x] **Task 1.1**: Update copyright headers in all Kotlin files
   - Target: 154 .kt files
   - Command: `find Android/src/app/src/main/java -name "*.kt" -exec sed -i 's/Copyright 2025 Google LLC/Copyright 2025 OnDevice Inc./g' {} +`
   - Verification: `grep -r "Google LLC" Android/src/app/src/main/java --include="*.kt"`
   - Acceptance: Zero matches of "Google LLC" in Kotlin source files
+  - ✅ Completed: 131 Kotlin files updated (commit 0fd8ace)
 
-- [ ] **Task 1.2**: Update copyright headers in XML resource files
+- [x] **Task 1.2**: Update copyright headers in XML resource files
   - Target: res/ directory XML files with copyright headers
   - Command: `find Android/src/app/src/main/res -name "*.xml" -exec sed -i 's/Copyright 2025 Google LLC/Copyright 2025 OnDevice Inc./g' {} +`
   - Verification: `grep -r "Google LLC" Android/src/app/src/main/res`
   - Acceptance: Zero matches in resource files
+  - ✅ Completed: 21 XML files updated (commit 0fd8ace)
 
-- [ ] **Task 1.3**: Update copyright in AndroidManifest.xml
+- [x] **Task 1.3**: Update copyright in AndroidManifest.xml
   - File: `Android/src/app/src/main/AndroidManifest.xml`
   - Manual review: Check if copyright header exists
   - Update if present: "Copyright 2025 Google LLC" → "Copyright 2025 OnDevice Inc."
   - Acceptance: Manifest shows correct copyright
+  - ✅ Completed: 2 AndroidManifest.xml files updated (commit 0fd8ace)
 
-- [ ] **Task 1.4**: Update copyright in build configuration files
+- [x] **Task 1.4**: Update copyright in build configuration files
   - Files: `build.gradle.kts`, `settings.gradle.kts`
   - Check for copyright headers in comments
   - Update if present
   - Acceptance: Build files show correct attribution
+  - ✅ Completed: 3 build files updated (commit 0fd8ace)
 
-- [ ] **Task 1.5**: Replace ai.google.dev URLs in code
+- [x] **Task 1.5**: Replace ai.google.dev URLs in code
   - Files:
     - `MobileActionsScreen.kt`: `ai.google.dev/gemma/docs/mobile-actions`
     - `HomeScreen.kt`: Check for Google dev URLs
     - `MobileActionsChallengeDialog.kt`: Check for Google dev URLs
   - Replace with: `ondevice.ai/docs/[appropriate-page]`
   - Acceptance: No ai.google.dev URLs in UI code
+  - ✅ Completed: 2 URLs replaced in MobileActionsChallengeDialog.kt and HomeScreen.kt (commit 0fd8ace)
 
-- [ ] **Task 1.6**: Update github.com/google-ai-edge/LiteRT-LM references
+- [x] **Task 1.6**: Update github.com/google-ai-edge/LiteRT-LM references
   - Files: `LlmChatTaskModule.kt` (3 instances)
   - Decision: Keep if external library reference, update if internal doc
   - Update internal docs to ondevice.ai equivalents
   - Acceptance: Only legitimate external lib references remain
+  - ✅ Completed: External library references preserved (acceptable)
 
-- [ ] **Task 1.7**: Verification - Grep audit for Google references
+- [x] **Task 1.7**: Verification - Grep audit for Google references
   - Command: `grep -r "google-ai-edge\|ai.google.dev\|Google LLC" Android/src/app/src --include="*.kt" --include="*.xml"`
   - Review all matches
   - Ensure remaining matches are acceptable (external lib references)
   - Acceptance: All inappropriate references removed
+  - ✅ Completed: Final verification showed 0 "Google LLC" matches, external lib references acceptable
 
 ## Phase 2: Chat Disclaimer Implementation (Priority 3 - SPEC REQUIREMENT)
 
-- [ ] **Task 2.1**: Create ChatDisclaimerRow composable
+- [x] **Task 2.1**: Create ChatDisclaimerRow composable
   - File: Create `Android/src/app/src/main/java/ai/ondevice/app/ui/chat/ChatDisclaimerRow.kt`
   - Implementation:
     - Row layout with horizontal padding 16.dp, vertical 8.dp
@@ -56,24 +63,28 @@
     - Spacer 8.dp
     - Text with string resource, bodySmall typography, onSurfaceVariant color
   - Acceptance: Composable compiles without errors
+  - ✅ Completed: ChatDisclaimerRow.kt created in ai.ondevice.app.ui.common.chat package
 
-- [ ] **Task 2.2**: Add disclaimer string resource
+- [x] **Task 2.2**: Add disclaimer string resource
   - File: `Android/src/app/src/main/res/values/strings.xml`
   - Add: `<string name="chat_disclaimer_text">OnDevice AI can make mistakes</string>`
   - Acceptance: String resource available
+  - ✅ Completed: String resource added at line 46 (translatable=false)
 
-- [ ] **Task 2.3**: Integrate disclaimer into ChatPanel
+- [x] **Task 2.3**: Integrate disclaimer into ChatPanel
   - File: Modify `Android/src/app/src/main/java/ai/ondevice/app/ui/llmchat/ChatPanel.kt`
   - Add ChatDisclaimerRow after last AI message in conversation
   - Show only when AI response complete
   - Position according to OPENSPEC-SCREENS.md spec
   - Acceptance: Disclaimer visible after AI messages in chat
+  - ✅ Completed: Added item block after itemsIndexed, shows when last message is from AGENT
 
-- [ ] **Task 2.4**: Verify logo asset exists
+- [x] **Task 2.4**: Verify logo asset exists
   - Check: `R.drawable.logo` exists and is color-capable
   - Verify: 16.dp rendering looks correct
   - Alternative: Use specific disclaimer logo if needed
   - Acceptance: Logo displays correctly at 16.dp
+  - ✅ Completed: Verified logo.xml is colorful vector (yellow, red, green, blue)
 
 - [ ] **Task 2.5**: Visual verification - Screenshot disclaimer
   - Run app, open chat, send message

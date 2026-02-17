@@ -535,6 +535,13 @@ fun ChatPanel(
               }
             }
           }
+
+          // Disclaimer row after last AI message
+          if (messages.isNotEmpty() && messages.last().side == ChatSide.AGENT) {
+            item {
+              ChatDisclaimerRow()
+            }
+          }
         }
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.padding(vertical = 4.dp))
