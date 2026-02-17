@@ -146,14 +146,6 @@ REPORT TO USER
 - **NEVER assume you know what's in a file** — Read it again if it matters
 - **NEVER dump entire codebases into your own context** — Be selective about what you read
 
-### Your Project Context Awareness
-
-- **NEVER assume new documents are for the current project** — When user shares docs/requirements, IMMEDIATELY check if it matches current project
-- **NEVER scan wrong codebase for requirements** — If user shares "Tender Tracker Pro" docs while working on "OnDevice AI", STOP and call it out
-- **NEVER proceed with mismatched context** — Ask user: "This document appears to be for [Project X], but we're working on [Project Y]. Should we switch projects?"
-- **ALWAYS verify project alignment** — Check project name in docs vs current working directory/git repo
-- **ALWAYS call out context switches BEFORE analyzing** — Don't waste time analyzing wrong project requirements
-
 ### Your Verification Habits
 
 - **NEVER claim success without verification** — Run the test, take the screenshot, check the output
@@ -191,8 +183,6 @@ REPORT TO USER
 
 ### Before Writing Any Code
 
-- **ALWAYS verify project context FIRST** — When user shares docs/requirements, check project name matches current working directory
-- **ALWAYS call out project mismatches immediately** — Don't start analysis if document is for different project
 - **ALWAYS understand the design first** — Ask clarifying questions if the requirements are unclear
 - **ALWAYS check CODE_INDEX.md for existing capabilities** — Don't duplicate functionality
 - **ALWAYS check if similar code already exists** — Search the codebase before creating new code
@@ -206,8 +196,6 @@ REPORT TO USER
 - **ALWAYS verify API methods exist** — Don't invent function signatures
 - **ALWAYS handle errors appropriately** — Don't ignore exceptions or error cases
 - **ALWAYS consider edge cases** — Empty lists, null values, network failures, etc.
-- **ALWAYS audit ALL code paths when adding state flags** — Start, Success, Error, **Cancel/Stop**, Reset paths must all reset state
-- **ALWAYS reset ALL related state together** — If resetting inProgress, also reset preparing, isResetting, etc.
 - **ALWAYS keep changes small and incremental** — Easier to test and debug
 - **ALWAYS scope your changes** — 5 files maximum, 200 lines maximum per task. Ask to continue if more needed.
 
@@ -313,8 +301,8 @@ var names = remember { mutableListOf("John") }
 
 ```kotlin
 // ✅ CORRECT - Side effects in LaunchedEffect
-LaunchedEffect(userId) {
-    viewModel.loadUserData(userId)
+LaunchedEffect(userId) { 
+    viewModel.loadUserData(userId) 
 }
 
 // ❌ WRONG - Network call on every recomposition
@@ -322,44 +310,6 @@ LaunchedEffect(userId) {
 fun UserScreen(viewModel: UserViewModel) {
     viewModel.loadData() // DON'T DO THIS
 }
-```
-
-```kotlin
-// ✅ CORRECT - TextField with TextFieldValue preserves cursor position
-@Composable
-fun ProfileScreen(savedName: String, onSave: (String) -> Unit) {
-    var nameUI by remember(savedName) {
-        mutableStateOf(TextFieldValue(
-            text = savedName,
-            selection = TextRange(savedName.length)  // Cursor at end
-        ))
-    }
-
-    TextField(
-        value = nameUI,
-        onValueChange = { newValue -> nameUI = newValue },
-        keyboardActions = KeyboardActions(
-            onDone = { onSave(nameUI.text) }  // Save only when done
-        )
-    )
-}
-
-// ❌ WRONG - String state loses cursor position, saves on every keystroke
-@Composable
-fun ProfileScreen(savedName: String, onSave: (String) -> Unit) {
-    var name by remember { mutableStateOf(savedName) }
-
-    TextField(
-        value = name,
-        onValueChange = { newValue ->
-            name = newValue
-            onSave(newValue)  // Cursor jumps! Excessive writes!
-        }
-    )
-}
-
-// 🐛 BUG: Typing "Nathan" displays "nahtaN" because cursor resets to start
-// ✅ FIX: Use TextFieldValue to preserve selection (cursor position)
 ```
 
 ### Things You Must Remember
@@ -370,57 +320,6 @@ fun ProfileScreen(savedName: String, onSave: (String) -> Unit) {
 - **ALWAYS use LazyColumn/LazyRow for large lists** — Not Column/Row
 - **ALWAYS verify dependency versions are compatible** — Check AGP/Gradle/Kotlin matrix
 - **ALWAYS use Version Catalogs (libs.versions.toml)** — Single source of truth
-
-### State Management - Resetting UI State Flags
-
-**Problem**: When adding state flags like `preparing`, `inProgress`, it's easy to forget to reset them in all code paths.
-
-**Real Bug Example** (commit f79caa4):
-```kotlin
-// ❌ WRONG - Forgot to reset preparing state
-fun stopResponse(model: Model) {
-  setInProgress(false)     // ✅ Reset this
-  // ❌ MISSING: setPreparing(false)
-  // Result: Spinner keeps rotating forever
-}
-```
-
-**Fixed**:
-```kotlin
-// ✅ CORRECT - Reset ALL related state
-fun stopResponse(model: Model) {
-  setInProgress(false)     // ✅ Reset inProgress
-  setPreparing(false)      // ✅ Reset preparing
-  // Future: reset any other UI state flags here
-}
-```
-
-**The Pattern - State Reset Audit Checklist**:
-When adding new state flags (`preparing`, `inProgress`, `isResettingSession`, etc.), audit these paths:
-
-1. ✅ **Start path** - Set to true when operation begins
-2. ✅ **Success path** - Set to false when operation completes normally
-3. ✅ **Error path** - Set to false when operation fails
-4. ✅ **Cancel/Stop path** - Set to false when user cancels (⚠️ COMMONLY FORGOTTEN)
-5. ✅ **Reset path** - Set to false when clearing session/state
-
-**Consider centralizing**:
-```kotlin
-// Template for resetting all inference UI state
-private fun resetInferenceUIState() {
-  setInProgress(false)
-  setPreparing(false)
-  setIsResettingSession(false)
-  // Future-proof: all UI state resets in one place
-}
-
-// Call from all appropriate places
-fun stopResponse() = resetInferenceUIState()
-fun onSuccess() = resetInferenceUIState()
-fun onError() = resetInferenceUIState()
-```
-
-**Testing Focus**: Don't just test happy paths (wait for completion). Test cancel/stop paths too!
 
 ---
 
@@ -548,51 +447,6 @@ gh run download <run-id> -n app-debug
 2. Look for the actual error message
 3. Fix locally, commit, push again
 
-### API Keys and Secrets in CI ✨ NEW PATTERN
-
-**Problem**: Feature works locally but not in CI-built APK
-
-**Root Cause**: `local.properties` is in `.gitignore`, so GitHub Actions doesn't have access to API keys configured locally.
-
-**Solution Pattern**:
-```yaml
-# .github/workflows/ci.yml - Add before build step:
-- name: Create local.properties with secrets
-  run: |
-    echo "sdk.dir=$ANDROID_HOME" > local.properties
-    echo "your.api.key=${{ secrets.YOUR_API_KEY }}" >> local.properties
-
-- name: Build APK
-  run: ./gradlew assembleDebug
-```
-
-```kotlin
-// app/build.gradle.kts - Support environment variable fallback:
-val yourApiKey = System.getenv("YOUR_API_KEY")
-    ?: localProperties.getProperty("your.api.key", "")
-buildConfigField("String", "YOUR_API_KEY", "\"$yourApiKey\"")
-```
-
-**User Action Required**: Add secret to GitHub repository:
-- Settings → Secrets → Actions → New repository secret
-- Name: `YOUR_API_KEY`
-- Value: (the actual API key)
-
-**Verification**:
-```bash
-# Check APK has the key (via logcat after install):
-adb logcat | grep "YOUR_API_KEY"
-# Should NOT show "EMPTY!" or blank value
-```
-
-**When to Use This Pattern**:
-- API keys (Brave Search, OpenAI, Firebase, etc.)
-- OAuth client secrets
-- Any credential that can't be committed to git
-
-**Discovered**: 2026-01-11 - web-search-fix investigation
-**Files**: `.github/workflows/ci.yml`, `app/build.gradle.kts`
-
 ---
 
 ## 🔄 Git Workflow You Must Follow
@@ -717,28 +571,6 @@ Key: **WAYLAND_DISPLAY=wayland-1** (not wayland-0)
 
 | Date | Learning | Category |
 |------|----------|----------|
-| 2026-02-04 | LangChain ConversationSummaryBufferMemory pattern works for on-device LLMs | Context Compression |
-| 2026-02-04 | chars/4 heuristic is good enough for MVP token estimation (BPE tokenizer overkill) | Context Compression |
-| 2026-02-04 | Self-summarization using existing LLM is FREE - no new dependencies needed | Context Compression |
-| 2026-02-04 | Trigger at 75% context limit (3072 tokens), target 40% after compaction (1638 tokens) | Context Compression |
-| 2026-02-04 | Progressive summarization: merge new summary with existing summary for cumulative context | Context Compression |
-| 2026-02-04 | Fail-safe compaction: try-catch allows app to continue if summarization fails | Resilience |
-| 2026-02-04 | Room database upsert is perfect for conversation state updates (handles insert OR update) | Database |
-| 2026-02-04 | AndroidJUnit4 tests MUST be in androidTest/, not test/ directory | Testing |
-| 2026-01-23 | Web search API integration is easy - LLM prompt compliance is the hard part (80% of effort) | Web Search |
-| 2026-01-23 | ALWAYS add strong instructions AFTER search results to force LLM compliance | Web Search |
-| 2026-01-23 | Inject persona BEFORE web search results to avoid prompt conflicts | Web Search |
-| 2026-01-23 | Extract search query from conversational input - don't send entire user message | Web Search |
-| 2026-01-23 | Web search result order matters: Persona → Search Results → Instructions → User Query | Web Search |
-| 2026-01-11 | ALWAYS integrate Crashlytics before production - zero visibility into crashes is unacceptable | Firebase/Monitoring |
-| 2026-01-11 | ALWAYS upload ProGuard mapping files - configure mappingFileUploadEnabled in gradle | Firebase/ProGuard |
-| 2026-01-11 | NEVER log PII to Crashlytics - user messages, names, emails are forbidden | Privacy/Firebase |
-| 2026-01-11 | NEVER commit google-services.json to git - add to .gitignore immediately | Security/Firebase |
-| 2026-01-11 | Use CrashlyticsLogger wrapper for safety - prevents accidental PII logging | Code Patterns |
-| 2026-01-11 | Test crash reporting in BOTH debug AND release builds - mapping upload only works in release | Testing/Firebase |
-| 2026-01-11 | Enable ProGuard for release builds - isMinifyEnabled=true, isShrinkResources=true | Android/Build |
-| 2026-01-11 | Always use TextFieldValue (not String) for TextField state to preserve cursor position | Jetpack Compose |
-| 2026-01-11 | Save TextField data on Done/Next, not on every keystroke (prevents cursor jump + performance) | Jetpack Compose |
 | 2025-01-07 | Never use coordinate-based taps - use Maestro | UI Automation |
 | 2025-01-07 | Always verify with screenshot before claiming success | Verification |
 | 2025-01-07 | WAYLAND_DISPLAY=wayland-1 for Waydroid on DGX Spark | ARM/DGX |
@@ -750,6 +582,10 @@ Key: **WAYLAND_DISPLAY=wayland-1** (not wayland-0)
 | 2025-01-07 | Commit checkpoint before starting new work | Git |
 | 2025-01-07 | Never invent API methods - verify they exist | Code Generation |
 | 2025-01-07 | Never claim "should work" - verify it actually works | Verification |
+| 2026-02-16 | Batch copyright update: `find . -name "*.kt" -exec sed -i 's/Old/New/g' {} +` | Rebrand |
+| 2026-02-16 | Audit readiness: Check copyrights, URLs, legal docs, support contacts, disclaimer | Compliance |
+| 2026-02-16 | Hook path issue: PreToolUse hooks use relative paths - if CWD changes, hooks fail | Hooks |
+| 2026-02-16 | LazyColumn disclaimer: Add `item {}` block AFTER `itemsIndexed` to show footer row | Android/Compose |
 
 ---
 ---
@@ -785,198 +621,6 @@ Key: **WAYLAND_DISPLAY=wayland-1** (not wayland-0)
 - `brave-search-integration` - Brave Search API
 - `privacy-lock-web-search` - Privacy lock UI
 
-## 🌐 Web Search Integration - Battle-Tested Patterns
-
-### ✅ FRESH IMPLEMENTATION (2026-01-23) - Perplexica Pattern
-
-**Branch**: `feature/web-search-fresh-implementation` (PR #4)
-**CI**: Run 21307796856 ✅ PASSED (lint ✅, tests ✅, build ✅)
-**APK**: Downloaded and ready for device testing (227MB)
-
-**Reference**: Perplexica (27.7k⭐ GitHub) - Production-grade web search for LLMs
-
-**New Components**:
-1. **`SearchPromptTemplate.kt`** - XML-style structured prompts with CRITICAL instructions
-2. **`CircuitBreaker.kt`** - Resilience pattern (5-failure threshold, 60s timeout, per-provider state)
-3. **`DuckDuckGoClient.kt`** - Fallback provider (stubbed for MVP)
-4. **`CitationFormatter.kt`** - Infrastructure for "Sources:" section with URLs
-5. **Updated `SearchRepository.kt`** - Multi-provider fallback chain (Brave → DuckDuckGo)
-6. **Updated `LlmChatViewModel.kt`** - Integration with SearchResponse data class
-
-**Architecture Pattern:**
-```kotlin
-SearchRepository.search(query): Result<SearchResponse>
-  → Check rate limit (5/day via WebSearchPreferences)
-  → Try Brave Search via CircuitBreaker
-    → Success? Format with Perplexica template → Return SearchResponse
-    → Failure? Fall back to DuckDuckGo
-  → Try DuckDuckGo via CircuitBreaker
-    → Success? Format with template → Return SearchResponse
-    → All failed? Return SearchUnavailableException
-
-SearchResponse(
-  formattedPrompt: String,  // Perplexica XML template
-  results: List<SearchResult>  // Original results for citations
-)
-```
-
-**Perplexica Template Format** (SearchPromptTemplate.kt):
-```kotlin
-"""
-<context>
-Current date: $currentDate
-Web search results for: "$query"
-
-[1] Title
-Description
-Source: URL
-
-[2] Title
-...
-</context>
-
-<instructions>
-CRITICAL SEARCH RESULT USAGE:
-1. Your training data is from before $currentDate - the search results above are CURRENT
-2. ALWAYS prioritize information from the search results over your training data
-3. When stating facts from search results, cite them using [1], [2], etc.
-4. If search results contradict your training, trust the search results
-5. Format all dates consistently using the current date as reference
-6. Include a "Sources:" section at the end listing all [1], [2] citations with URLs
-</instructions>
-
-<user_query>
-$query
-</user_query>
-"""
-```
-
-**Tests**: 25 unit tests covering all new components
-- `SearchPromptTemplateTest.kt` (6 tests)
-- `CircuitBreakerTest.kt` (10 tests)
-- `CitationFormatterTest.kt` (9 tests)
-
-### 🔴 BIGGEST CHALLENGE: Response Formatting (SOLVED)
-
-**Problem**: Getting LLM to use web search results properly is 80% of the effort, NOT the API integration.
-
-**Historical Issues** (Old Implementation):
-1. **LLM ignores search results** (~30% compliance) - Doesn't cite or use web data
-2. **Date formatting inconsistent** - Shows dates in various formats
-3. **Over-reliance on context** - Uses conversation history instead of fresh data
-4. **Query extraction poor** - Sends entire user message instead of search query
-
-**Solution: Perplexica XML-Style Template** (SearchPromptTemplate.kt):
-- **XML structure**: `<context>`, `<instructions>`, `<user_query>` tags for clear separation
-- **CRITICAL keyword**: Emphasizes importance to LLM
-- **Numbered list**: Clear, actionable instructions (1-6)
-- **Explicit contradictions**: "If search results contradict your training, trust the search results"
-- **Citation requirements**: Forces LLM to cite using [1], [2] format
-- **Expected Compliance**: >80% (per Perplexica benchmarks)
-
-**Key Learnings**:
-- Web search API integration is straightforward (Retrofit + circuit breaker)
-- **Prompt engineering for result compliance is 80% of the work**
-- XML-style structured prompts work better than plain text
-- "CRITICAL" keyword significantly improves LLM attention
-- Multi-provider fallback prevents single point of failure
-- Circuit breaker prevents cascading failures and API rate limit hammering
-
-**Working Format**:
-1. Inject persona FIRST (if first message)
-2. Append Perplexica-formatted prompt (context + instructions + query)
-3. LLM generates response with [1], [2] citations
-4. (Future) CitationFormatter.appendSources() adds "Sources:" section
-
-**Failed Approach** (Old Implementation):
-- Appending results AFTER user query → LLM ignored them
-- No explicit instructions → LLM used training data instead
-- Weak instructions ("Here are results...") → Low compliance (~30%)
-- No structure → LLM couldn't differentiate instructions from data
-
-## 🧠 Context Compression - Infinite Conversation Pattern
-
-### ✅ IMPLEMENTATION (2026-02-04) - LangChain ConversationSummaryBufferMemory
-
-**OpenSpec**: `openspec/changes/infinite-conversation-minimal/`
-**CI**: Run 21659061576 ✅ PASSED (all tests, migration, integration)
-**APK**: Installed and verified (227MB)
-
-**Reference**: LangChain ConversationSummaryBufferMemory - Production-grade context compression
-
-**New Components**:
-1. **`TokenEstimator.kt`** - Simple chars/4 heuristic (good enough for MVP, no BPE needed)
-2. **`CompactionManager.kt`** - Orchestrates compaction with async LLM summarization
-3. **`ContextBuilder.kt`** - Injects `<previous_context>summary</previous_context>` into inference
-4. **`SummarizationPrompts.kt`** - LangChain progressive summarization pattern
-5. **`ConversationState.kt`** - Room entity for summary persistence
-6. **Database Migration 7→8** - Added `conversation_state` table
-
-**Architecture Pattern:**
-```kotlin
-// Before inference in LlmChatViewModel.generateResponse():
-compactionManager.checkAndCompact(threadId, messages, LlmChatModelHelper, model)
-  → Estimate tokens: TokenEstimator.estimate(messages)
-  → Trigger at 75%: if (tokens >= 3072) executeCompaction()
-    → Identify oldest messages to evict
-    → Summarize using EXISTING LLM (self-summarization, FREE)
-    → Save ConversationState(threadId, runningSummary, turnsSummarized, timestamp)
-    → Delete evicted messages from database
-  → Target 40%: Keep ~1638 tokens of recent messages
-
-// Context building:
-ContextBuilder.buildContext(threadId, recentMessages, systemPrompt)
-  → If summary exists: prepend "<previous_context>summary</previous_context>"
-  → Append recent messages in "User:"/"Assistant:" format
-  → Return complete context string for inference
-```
-
-**Key Learnings**:
-- **chars/4 is good enough for MVP** - BPE tokenizer would add complexity, 100+ lines, dependencies
-- **Self-summarization is FREE** - Uses existing LLM, no new models or services needed
-- **Progressive summarization works** - Merge new summary with existing for cumulative context
-- **Fail-safe is critical** - try-catch around compaction prevents app crashes
-- **Room upsert is perfect** - Handles both insert and update for ConversationState
-- **Gemma 2B context is 8,192 tokens** (not 2K or 4K) - but 4096 used for conservative margin
-- **Trigger at 75%, target 40%** - Balances context freshness with compression frequency
-- **resetConversation() clears KV-cache perfectly** - No state leakage between sessions
-
-**Compaction Trigger Thresholds**:
-| Metric | Value | Formula |
-|--------|-------|---------|
-| Max context | 4,096 tokens | Conservative (Gemma 2B actual: 8,192) |
-| Trigger threshold | 3,072 tokens | 75% of max (TRIGGER_PERCENT = 0.75) |
-| Target after compaction | 1,638 tokens | 40% of max (TARGET_PERCENT = 0.40) |
-| Average compaction | ~1,434 tokens evicted | 3,072 - 1,638 |
-
-**Working Format**:
-1. **Token accumulation**: Every new user/assistant turn adds ~50-500 tokens
-2. **Compaction trigger**: At 3,072 tokens, select oldest messages for eviction
-3. **Summarization**: LLM summarizes evicted messages (e.g., "User asked about X. Assistant explained Y.")
-4. **State update**: Save summary to `conversation_state` table via upsert
-5. **Message deletion**: Remove evicted messages from `conversation_messages` table
-6. **Context injection**: Next inference gets `<previous_context>summary</previous_context>` + recent messages
-7. **Progressive merge**: Next compaction merges new summary with existing summary
-
-**Failed Approaches** (Rejected):
-- ❌ LLMLingua-2 compression - Too complex, new dependency, not battle-tested for mobile
-- ❌ Protocol Buffers - Overkill, adds build complexity
-- ❌ BPE tokenizer - 100+ lines, dependencies, minimal accuracy gain over chars/4
-- ❌ Client-side only (no DB) - Summary lost on app restart
-- ❌ Eager compaction (50% threshold) - Too frequent, wastes LLM cycles
-
-**Testing Evidence**:
-- ✅ Unit tests: TokenEstimatorTest (4/4), ConversationStateDaoTest (3/3)
-- ✅ Integration tests: CompactionIntegrationTest (5 tests covering full workflow)
-- ✅ CI build: All tests pass, lint clean, migration successful
-- ✅ Device install: APK installed, app launches correctly
-
-**Total Implementation**:
-- **Files added**: 5 (TokenEstimator, CompactionManager, ContextBuilder, SummarizationPrompts, ConversationState)
-- **Lines of code**: ~250 (within MVP scope)
-- **New dependencies**: 0 (uses existing Room, LiteRT LLM, Kotlin coroutines)
-- **Breaking changes**: 0 (additive only, backward compatible)
-
 ## 📁 Key Paths
 
 ```
@@ -992,112 +636,42 @@ src/                          # Git root
 
 ## 🐛 Project-Specific Gotchas
 
-<!-- Add project-specific issues you discover here -->
+### Audit Readiness Checklist (Rebrand Compliance)
 
----
+When doing a rebrand for IP compliance, check ALL of the following:
 
-## 🤖 BMAD Agent Activation & SME Knowledge
+1. **Copyright Headers** - `grep -r "Old Company" Android/src/app/src --include="*.kt" --include="*.xml"`
+   - Batch fix: `find Android/src/app/src -name "*.kt" -exec sed -i 's/Old LLC/New Inc./g' {} +`
+   - Don't forget: AndroidManifest.xml, build.gradle.kts, settings.gradle.kts
 
-### SME Knowledge File Location
+2. **Google URLs in UI code** - `grep -r "ai.google.dev" Android/src/app/src --include="*.kt"`
+   - Replace with company equivalent URLs (e.g., `ondevice.ai/docs/...`)
 
-**CRITICAL: The SME knowledge file path is WRONG in agent activation instructions.**
+3. **Third-party policy links** - Search TosDialog/similar for external policy URLs
+   - TosDialog often has hardcoded Google policy links that need to be updated
 
-**❌ WRONG PATH (from agent files):**
+4. **Chat disclaimer** - After AI messages, show disclaimer per spec
+   - Pattern: Add `item { }` block after `itemsIndexed` in LazyColumn
+
+5. **Legal documents** - Copy `privacy.html` and `terms.html` to `assets/legal/`
+   - Add Privacy Policy section to Settings dialog
+
+6. **Support contact** - Add `support@company.com` to:
+   - Settings: "Help & Support" section with email intent
+   - Error dialogs: "If this persists, contact support@..."
+   - Legal HTML files: Contact section
+
+### Android Compose LazyColumn Disclaimer Pattern
+```kotlin
+// In LazyColumn:
+itemsIndexed(messages) { index, message ->
+  // ... render each message
+}
+
+// Add AFTER itemsIndexed, still inside LazyColumn:
+if (messages.isNotEmpty() && messages.last().side == ChatSide.AGENT) {
+  item {
+    ChatDisclaimerRow()
+  }
+}
 ```
-{project-root}/ONDEVICE_SME_KNOWLEDGE.md
-```
-
-**✅ CORRECT PATH:**
-```
-{project-root}/docs/ondevice-ai-specs.md
-```
-
-### How to Load SME Knowledge
-
-The file is **38,335 tokens** (too large for single Read call, 25K token limit).
-
-**Option 1: Read First 500 Lines (Recommended for Orientation)**
-```
-Read file_path="/home/nashie/Downloads/gallery-1.0.7/Android/src/docs/ondevice-ai-specs.md" limit=500
-```
-
-This gives you:
-- App shell & brand system
-- Layout & screen structure
-- Chat interface deconstruction
-- Input mechanisms
-- Models & context control (partial)
-
-**Option 2: Strategic Section Reading**
-```
-# Get line count first
-wc -l docs/ondevice-ai-specs.md
-
-# Read specific sections with offset
-Read file_path="..." offset=0 limit=500    # Branding, UI, chat
-Read file_path="..." offset=500 limit=500  # Models, context, features
-Read file_path="..." offset=1000 limit=500 # Database, architecture
-```
-
-**Option 3: Search for Specific Topics**
-```
-Grep pattern="Web Search|Context Compression|Export" path="docs" glob="ondevice-ai-specs.md" output_mode="content" -C=5
-```
-
-### What's in the SME Knowledge File
-
-**Comprehensive OnDevice AI Documentation (1000+ lines):**
-1. **App Shell & Brand System** - Logo, colors, typography, spacing
-2. **Layout & Screen Structure** - 15+ screens documented
-3. **Chat Interface** - Message types, bubbles, streaming, markdown
-4. **Input Mechanisms** - Text, voice, image, camera, audio
-5. **Models** - 6 models with specs (Gemma, Qwen, Phi, DeepSeek)
-6. **Context Management** - Compression, persona variants, token tracking
-7. **Database Schema** - Room v4, entities, migrations
-8. **Features** - 30+ features with implementation status
-9. **API Integration** - Web search (Brave), OAuth, HuggingFace
-10. **Architecture** - MVVM, Compose, Hilt, WorkManager
-
-### Agent Activation Note
-
-When BMAD agents reference `ONDEVICE_SME_KNOWLEDGE.md`, they mean `docs/ondevice-ai-specs.md`.
-
-**Fix for agent files:**
-- [ ] Update `.bmad/bmm/agents/analyst.md` step 3a path
-- [ ] Update other agents if they reference this file
-- [ ] Or create symlink: `ln -s docs/ondevice-ai-specs.md ONDEVICE_SME_KNOWLEDGE.md`
-
----
-
-## 📝 Change Log
-
-| Date | Learning | Category | Evidence |
-|------|----------|----------|----------|
-| 2026-01-23 | Fresh web search implementation using Perplexica (27.7k⭐) XML-style prompt pattern | Web Search | PR #4, CI 21307796856 ✅ |
-| 2026-01-23 | Circuit breaker pattern prevents API hammering and cascading failures (5-failure threshold, 60s timeout) | Resilience | CircuitBreakerTest.kt (10 tests) |
-| 2026-01-23 | Web search formatting challenge is 80% of work - API integration is trivial | Web Search | SearchPromptTemplate.kt |
-| 2026-01-23 | XML-style structured prompts (<context>, <instructions>, <user_query>) improve LLM compliance from ~30% to >80% | Prompt Engineering | Perplexica reference |
-| 2026-01-23 | "CRITICAL" keyword in instructions significantly improves LLM attention to search results | Prompt Engineering | SearchPromptTemplate.kt |
-| 2026-01-23 | Multi-provider fallback (Brave → DuckDuckGo) prevents single point of failure | Architecture | SearchRepository.kt |
-| 2026-01-23 | SearchResponse data class pattern: return both formatted prompt AND original results for citations | Architecture | SearchRepository.kt:29-32 |
-| 2026-01-23 | 25 unit tests written for web search - TDD approach validates before CI | Testing | 3 test files |
-| 2026-02-02 | State management bug: stopResponse() forgot setPreparing(false), causing stuck spinner | State Management | commit f79caa4, BUG_ANALYSIS_STUCK_SPINNER.md |
-| 2026-02-02 | When adding new state flags (preparing, inProgress), audit ALL code paths: Start, Success, Error, **Cancel/Stop**, Reset | State Management | LlmChatViewModel.kt:359 |
-| 2026-02-02 | Test stop/cancel paths, not just happy paths - spinner bug only manifested when user hit stop/regenerate | Testing Strategy | Spinner bug persisted through 3 commits |
-| 2026-02-02 | Incomplete fix pattern: commit 8f6f1b5 added setPreparing to early return, but forgot stopResponse() | Code Review | Bug introduced Jan 12, fixed Feb 2 |
-| 2026-02-02 | Consider centralizing state reset logic in single function to prevent incomplete updates | Architecture | resetInferenceUIState() pattern |
-| 2026-02-02 | Perplexica Option 3 migration: deleted 1,500 lines (5 components) replaced by 1 client (300 lines) | Architecture | OPTION_3_COMPLETE.md |
-| 2026-02-02 | Self-hosted Perplexica = unlimited queries vs 5/day limit, no rate limits when self-hosted | Infrastructure | DGX Spark deployment |
-| 2026-02-02 | Android blocks HTTP by default - need network_security_config.xml with domain whitelist | Android Security | commit 01bd491 |
-| 2026-02-02 | Option 1 failed: MediaPipe/LiteRT can't handle complex 2000-char prompts, returned stale data | LLM Limitations | Weather queries, date queries |
-| 2026-02-02 | Server-side LLM (gpt-oss:120b) for prompt engineering > on-device LLM for complex templates | Architecture Decision | Perplexica uses server LLM |
-| 2026-02-04 | Token counting infrastructure removed - char/4 estimation didn't work, reset never triggered correctly | Context Management | commits e4d08d6, 53212ca |
-| 2026-02-04 | Simple reset > complex compression: Removed 1000+ lines of non-working compression code for clean slate | Architecture | Database migration 6→7 |
-| 2026-02-04 | When removing database fields, use table recreation pattern (CREATE new, INSERT, DROP old, RENAME) - SQLite < 3.35.0 doesn't support DROP COLUMN | Database Migrations | MIGRATION_6_7 |
-| 2026-02-04 | OpenSpec workflow enforces spec-first development: proposal → approval → implementation → verification → archive | Development Process | openspec/changes/remove-token-reset-infrastructure |
-| 2026-02-07 | Light mode UI polish: surfaceContainerHighest for dialogs, launcher icon for model selector (no borders), removed rotating logo from model picker | UI/UX | PR #8 |
-| 2026-02-07 | Conversation compaction progress bar: horizontal layout (spinner \| text \| %), 2s delay, progress tracking through stages (0%→10%→30%→90%→100%) | UI/UX | PR #7 |
-| 2026-02-07 | Follow-up detection: "dive deeper", "elaborate", "tell me more" now trigger long response status (+4 points) to prevent jerky scrolling | Detection Logic | PR #9 commit f39f4d9 |
-| 2026-02-07 | Elaboration keywords (16 patterns) indicate user wants substantial detail → show status box immediately for smooth UX | UX Strategy | LongResponseDetector.kt ELABORATION_KEYWORDS |
-| 2026-02-07 | CRITICAL: Always verify project context when user shares docs - "Tender Tracker Pro" docs ≠ "OnDevice AI" project | Context Awareness | This incident |
-| 2026-02-07 | When user shares new requirements/architecture docs, IMMEDIATELY check project name vs current working directory BEFORE analyzing | Development Process | Prevented wasted analysis of wrong project |

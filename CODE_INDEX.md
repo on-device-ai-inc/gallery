@@ -21,29 +21,6 @@
 
 ---
 
-## Conversation Management
-
-### Context Compression
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| `TokenEstimator` | Estimate token count from text | `conversation/` |
-| `CompactionManager` | Orchestrate conversation compaction | `conversation/` |
-| `ContextBuilder` | Build inference context with summary | `conversation/` |
-| `SummarizationPrompts` | LangChain-style progressive summarization | `conversation/` |
-
-### State Management
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| `ConversationState` | Room entity for summary state | `data/` |
-| `CompactionResult` | Sealed class for compaction outcomes | `conversation/` |
-
-**Pattern:** LangChain ConversationSummaryBufferMemory
-**Trigger:** 75% of context limit (3,072 tokens for 4,096 limit)
-**Target:** 40% after compaction (1,638 tokens)
-**Summarization:** Self-summarization using existing LLM
-
----
-
 ## Domain Layer
 
 ### Use Cases
@@ -109,12 +86,9 @@
 
 | Date | Component | Description |
 |------|-----------|-------------|
-| 2026-02-04 | `conversation/` package | Context compression with self-summarization (infinite conversation) |
-| 2026-02-04 | `TokenEstimator` | chars/4 heuristic for token counting |
-| 2026-02-04 | `CompactionManager` | Async LLM-based conversation summarization |
-| 2026-02-04 | `ContextBuilder` | Inject summary into inference context |
-| 2026-02-04 | `ConversationState` | Room entity for summary persistence |
-| 2026-02-04 | Database v8 | Added conversation_state table (MIGRATION_7_8) |
+| 2026-02-17 | `ChatDisclaimerRow` | Disclaimer row after AI messages: `ui/common/chat/ChatDisclaimerRow.kt` |
+| 2026-02-17 | `ErrorDialog` | Error dialog with support contact: `ui/common/ErrorDialog.kt` |
+| 2026-02-17 | Legal assets | Privacy/Terms HTML: `assets/legal/privacy.html`, `assets/legal/terms.html` |
 
 ---
 
