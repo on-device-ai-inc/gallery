@@ -28,8 +28,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import ai.ondevice.app.R
 
 @Composable
 fun ErrorDialog(error: String, onDismiss: () -> Unit) {
@@ -51,6 +53,13 @@ fun ErrorDialog(error: String, onDismiss: () -> Unit) {
           error,
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.error,
+        )
+
+        // Support contact
+        Text(
+          stringResource(R.string.error_support_text),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

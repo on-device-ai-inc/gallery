@@ -20,6 +20,7 @@ import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -315,6 +316,45 @@ fun SettingsDialog(
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
             )
             OutlinedButton(onClick = { showTos = true }) { Text("View Terms of Services") }
+          }
+
+          // Privacy Policy
+          Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+            Text(
+              "Privacy Policy",
+              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
+            )
+            OutlinedButton(
+              onClick = {
+                val intent =
+                  Intent(Intent.ACTION_VIEW, Uri.parse("https://ondevice.ai/privacy"))
+                context.startActivity(intent)
+              }
+            ) {
+              Text("View Privacy Policy")
+            }
+          }
+
+          // Help & Support
+          Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+            Text(
+              "Help & Support",
+              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
+            )
+            Text(
+              stringResource(R.string.support_contact_text),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+              onClick = {
+                val intent =
+                  Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@ondevice.ai"))
+                context.startActivity(intent)
+              }
+            ) {
+              Text("Send Email")
+            }
           }
         }
 

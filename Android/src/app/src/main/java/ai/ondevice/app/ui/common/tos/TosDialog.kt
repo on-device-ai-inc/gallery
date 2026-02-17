@@ -73,10 +73,10 @@ fun TosDialog(onTosAccepted: () -> Unit, viewingMode: Boolean = false) {
           // Short content.
           MarkdownText(
             "By using this app, you agree to the " +
-              "[Google Terms of Service](https://policies.google.com/terms?hl=en-US).\n\n" +
+              "[OnDevice AI Terms of Service](https://ondevice.ai/terms).\n\n" +
               "To learn what information we collect and why, how we use it, " +
               "and how to review and update it, please review the " +
-              "[Google Privacy Policy](https://policies.google.com/privacy?hl=en-US).",
+              "[OnDevice AI Privacy Policy](https://ondevice.ai/privacy).",
             smallFontSize = true,
             textColor = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 16.dp),

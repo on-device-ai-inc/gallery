@@ -105,6 +105,9 @@
   <string name="tos_dialog_title" translatable="false">Welcome to OnDevice AI</string>
   <string name="tos_dialog_view_accept_button_label" translatable="false">Accept &amp; Continue</string>
   <string name="try_it" translatable="false">Try it</string>
+  <string name="support_contact_text" translatable="false">Need help? Contact us at support@ondevice.ai</string>
+  <string name="error_support_text" translatable="false">If this problem persists, contact support@ondevice.ai</string>
+  <string name="support_email" translatable="false">support@ondevice.ai</string>
   <string name="undo" translatable="false">Undo</string>
   <string name="unsupported_action" translatable="false">Unsupported action</string>
   <string name="set_screen_brightness_message" translatable="false">I\'ve set the screen brightness to %1$d%%.</string>
