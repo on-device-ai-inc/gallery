@@ -26,9 +26,9 @@ val localProperties = Properties().apply {
 plugins {
     id("com.google.devtools.ksp")
   alias(libs.plugins.android.application)
-  // Note: set apply to true once Firebase project is configured (google-services.json required)
-  alias(libs.plugins.google.services) apply false
-  alias(libs.plugins.firebase.crashlytics) apply false
+  // Firebase enabled - google-services.json configured
+  alias(libs.plugins.google.services)
+  alias(libs.plugins.firebase.crashlytics)
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
@@ -100,10 +100,10 @@ android {
         signingConfig = signingConfigs.getByName("release")
       }
 
-      // Firebase Crashlytics disabled until Firebase project is configured
-      // configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
-      //   mappingFileUploadEnabled = true
-      // }
+      // Firebase Crashlytics - Upload ProGuard mapping files for deobfuscated stack traces
+      configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+        mappingFileUploadEnabled = true
+      }
     }
   }
   compileOptions {
