@@ -26,9 +26,9 @@ val localProperties = Properties().apply {
 plugins {
     id("com.google.devtools.ksp")
   alias(libs.plugins.android.application)
-  // Firebase enabled - google-services.json configured
-  alias(libs.plugins.google.services)
-  alias(libs.plugins.firebase.crashlytics)
+  // Note: set apply to true once Firebase project is configured (google-services.json required)
+  alias(libs.plugins.google.services) apply false
+  alias(libs.plugins.firebase.crashlytics) apply false
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
