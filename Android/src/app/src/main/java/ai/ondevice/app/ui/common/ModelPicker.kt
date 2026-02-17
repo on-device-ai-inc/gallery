@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,11 +47,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ai.ondevice.app.R
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.common.modelitem.StatusIcon
@@ -80,7 +78,7 @@ fun ModelPicker(
         task.icon ?: ImageVector.vectorResource(task.iconVectorResourceId!!),
         tint = getTaskIconColor(task = task),
         modifier = Modifier.size(16.dp),
-        contentDescription = null,
+        contentDescription = "",
       )
       Text(
         "${task.label} models",
@@ -137,11 +135,7 @@ fun ModelPicker(
           }
         }
         if (selected) {
-          Icon(
-            Icons.Filled.CheckCircle,
-            modifier = Modifier.size(16.dp),
-            contentDescription = stringResource(R.string.cd_selected_icon),
-          )
+          Icon(Icons.Filled.CheckCircle, modifier = Modifier.size(16.dp), contentDescription = "")
         }
       }
     }

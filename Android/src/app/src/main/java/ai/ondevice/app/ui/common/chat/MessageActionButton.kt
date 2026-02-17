@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ fun MessageActionButton(
   ) {
     Icon(
       icon,
-      contentDescription = null,
+      contentDescription = "",
       modifier = Modifier.size(16.dp).offset(x = 6.dp).alpha(alpha),
     )
     Text(

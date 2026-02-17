@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package ai.ondevice.app.ui.common.chat
 
+// import androidx.compose.ui.tooling.preview.Preview
+// import ai.ondevice.app.ui.theme.GalleryTheme
+// import ai.ondevice.app.ui.preview.MODEL_TEST1
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,34 +28,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ai.ondevice.app.data.convertValueToTargetType
 import ai.ondevice.app.data.getConfigValueString
 import ai.ondevice.app.ui.theme.bodySmallNarrow
 import ai.ondevice.app.ui.theme.titleSmaller
-
-private data class ConfigRowData(
-  val label: String,
-  val oldValueDisplay: String,
-  val newValueDisplay: String,
-  val isChanged: Boolean,
-)
 
 /**
  * Composable function to display a message indicating configuration value changes.
@@ -62,37 +52,6 @@ private data class ConfigRowData(
  */
 @Composable
 fun MessageBodyConfigUpdate(message: ChatMessageConfigValuesChange) {
-  val density = LocalDensity.current
-  val windowInfo = LocalWindowInfo.current
-  val screenWidthDp = remember { with(density) { windowInfo.containerSize.width.toDp() } }
-
-  val configRows =
-    remember(message) {
-      val oldValues = message.oldValues
-      val newValues = message.newValues
-      val commonKeys = oldValues.keys.intersect(newValues.keys)
-      commonKeys.mapNotNull { key ->
-        val config =
-          message.model.configs.firstOrNull { it.key.label == key } ?: return@mapNotNull null
-        val oldValue: Any =
-          convertValueToTargetType(
-            value = message.oldValues.getValue(key),
-            valueType = config.valueType,
-          )
-        val newValue: Any =
-          convertValueToTargetType(
-            value = message.newValues.getValue(key),
-            valueType = config.valueType,
-          )
-
-        val isChanged = oldValue != newValue
-        val oldValueDisplay = getConfigValueString(oldValue, config)
-        val newValueDisplay = getConfigValueString(newValue, config)
-
-        ConfigRowData(key, oldValueDisplay, newValueDisplay, isChanged)
-      }
-    }
-
   Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     Box(
       modifier =
@@ -109,15 +68,9 @@ fun MessageBodyConfigUpdate(message: ChatMessageConfigValuesChange) {
 
         Row(modifier = Modifier.padding(top = 8.dp)) {
           // Keys
-          Column(modifier = Modifier.widthIn(max = screenWidthDp / 2)) {
-            for (rowData in configRows) {
-              Text(
-                "${rowData.label}:",
-                style = bodySmallNarrow,
-                modifier = Modifier.alpha(0.6f),
-                maxLines = 1,
-                overflow = TextOverflow.MiddleEllipsis,
-              )
+          Column {
+            for (config in message.model.configs) {
+              Text("${config.key.label}:", style = bodySmallNarrow, modifier = Modifier.alpha(0.6f))
             }
           }
 
@@ -125,28 +78,34 @@ fun MessageBodyConfigUpdate(message: ChatMessageConfigValuesChange) {
 
           // Values
           Column {
-            for (rowData in configRows) {
-              if (!rowData.isChanged) {
-                Text(rowData.newValueDisplay, style = bodySmallNarrow, maxLines = 1)
+            for (config in message.model.configs) {
+              val key = config.key.label
+              val oldValue: Any =
+                convertValueToTargetType(
+                  value = message.oldValues.getValue(key),
+                  valueType = config.valueType,
+                )
+              val newValue: Any =
+                convertValueToTargetType(
+                  value = message.newValues.getValue(key),
+                  valueType = config.valueType,
+                )
+              if (oldValue == newValue) {
+                Text("$newValue", style = bodySmallNarrow)
               } else {
-                val annotatedString = buildAnnotatedString {
-                  withStyle(style = bodySmallNarrow.toSpanStyle()) {
-                    append(rowData.oldValueDisplay)
-                  }
-                  withStyle(style = bodySmallNarrow.copy(fontSize = 12.sp).toSpanStyle()) {
-                    append(" ▸ ") // Added spaces for visual separation
-                  }
-                  withStyle(
-                    style =
-                      bodySmallNarrow
-                        .copy(fontWeight = FontWeight.Bold)
-                        .toSpanStyle()
-                        .copy(color = MaterialTheme.colorScheme.primary)
-                  ) {
-                    append(rowData.newValueDisplay)
-                  }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  Text(getConfigValueString(oldValue, config), style = bodySmallNarrow)
+                  Text(
+                    "▸",
+                    style = bodySmallNarrow.copy(fontSize = 12.sp),
+                    modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                  )
+                  Text(
+                    getConfigValueString(newValue, config),
+                    style = bodySmallNarrow.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary,
+                  )
                 }
-                Text(annotatedString, maxLines = 1, lineHeight = 12.sp)
               }
             }
           }
@@ -155,3 +114,25 @@ fun MessageBodyConfigUpdate(message: ChatMessageConfigValuesChange) {
     }
   }
 }
+
+// @Preview(showBackground = true)
+// @Composable
+// fun MessageBodyConfigUpdatePreview() {
+//   GalleryTheme {
+//     Row(modifier = Modifier.padding(16.dp)) {
+//       MessageBodyConfigUpdate(
+//         message = ChatMessageConfigValuesChange(
+//           model = MODEL_TEST1,
+//           oldValues = mapOf(
+//             ConfigKeys.MAX_RESULT_COUNT.label to 100,
+//             ConfigKeys.USE_GPU.label to false
+//           ),
+//           newValues = mapOf(
+//             ConfigKeys.MAX_RESULT_COUNT.label to 200,
+//             ConfigKeys.USE_GPU.label to true
+//           )
+//         )
+//       )
+//     }
+//   }
+// }

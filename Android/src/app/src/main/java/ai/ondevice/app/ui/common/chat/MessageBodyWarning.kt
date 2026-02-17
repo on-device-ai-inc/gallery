@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import ai.ondevice.app.ui.common.MarkdownText
-import ai.ondevice.app.ui.theme.customColors
 
 /**
  * Composable function to display warning message content within a chat.
@@ -44,13 +43,12 @@ fun MessageBodyWarning(message: ChatMessageWarning) {
     Box(
       modifier =
         Modifier.clip(RoundedCornerShape(16.dp))
-          .background(MaterialTheme.customColors.warningContainerColor)
+          .background(MaterialTheme.colorScheme.tertiaryContainer)
     ) {
       MarkdownText(
         text = message.content,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
         smallFontSize = true,
-        textColor = MaterialTheme.customColors.warningTextColor,
       )
     }
   }

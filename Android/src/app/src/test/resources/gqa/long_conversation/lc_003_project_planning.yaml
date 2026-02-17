@@ -1,0 +1,194 @@
+# GQA Test Case: Project Planning Discussion
+# Category: Long Conversation
+# Purpose: Test compression on planning conversation with milestones and decisions
+
+test_case_id: "lc_003"
+category: "long_conversation"
+description: "Project planning discussion for mobile app MVP with timeline and feature prioritization"
+token_budget: 4096
+target_compression_ratio: 0.3
+
+messages:
+  - role: "user"
+    content: "I need help planning the MVP for my food delivery app. Where should I start?"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: true
+
+  - role: "assistant"
+    content: "Let's break down your MVP! First, what are the absolutely essential features you need for launch? Think minimum viable - what's the simplest version that delivers value?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Users need to browse restaurants, order food, and track delivery. Restaurants need to receive and manage orders."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Good core features! Let's define them more specifically:\n\nCustomer App:\n1. Restaurant browsing and search\n2. Menu viewing\n3. Cart and checkout\n4. Order tracking\n5. Payment integration\n\nRestaurant App:\n1. Order notification and management\n2. Menu management\n3. Status updates\n\nIs this what you had in mind?"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Yes exactly! How long would this take to build with a team of 3 developers?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "For a team of 3 developers, here's a realistic timeline:\n\nWeek 1-2: Architecture, database design, API planning\nWeek 3-6: Backend API development and testing\nWeek 7-10: Customer app UI and integration  \nWeek 11-12: Restaurant app development\nWeek 13-14: Integration testing and bug fixes\nWeek 15-16: Beta testing and refinement\n\nTotal: 16 weeks for MVP\n\nThis assumes full-time work and some parallel development."
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "That's 4 months. What if we need to launch sooner, say in 8 weeks?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "To hit 8 weeks, you'll need to cut scope significantly. I'd recommend:\n\n**Keep:**\n- Basic restaurant browsing (no search)\n- Simple menu viewing\n- Order placement\n- Manual payment (cash/card on delivery)\n- SMS/email order notifications\n\n**Cut for v1:**\n- Real-time tracking\n- In-app payment processing\n- Restaurant app (use web dashboard instead)\n- Advanced search and filters\n\nThis gets you to market faster. You can add features in v1.1, v1.2, etc."
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Makes sense. What about the tech stack? We're thinking Firebase for backend."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Firebase is a solid choice for MVP! Here's what I'd recommend:\n\n**Backend:**\n- Firestore for database\n- Cloud Functions for business logic\n- Firebase Auth for users\n- Cloud Storage for images\n\n**Mobile:**\n- Kotlin + Jetpack Compose (Android)\n- Swift + SwiftUI (iOS)\n- Shared business logic if possible\n\n**Advantages:**\n- Fast development\n- Built-in scaling\n- Reduced ops overhead\n- Real-time capabilities\n\nDo you need both iOS and Android for MVP?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Just Android for MVP. We'll add iOS later if we get traction."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Smart decision! Focusing on Android first lets you iterate faster. With 3 devs, I'd split responsibilities:\n\n**Dev 1:** Backend (Firebase, Cloud Functions, API)\n**Dev 2:** Customer app UI and integration  \n**Dev 3:** Restaurant web dashboard + testing\n\nEveryone helps with integration testing in final weeks. Does your team have these skills?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Yes, we have one backend specialist, one Android dev, and one full-stack developer."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Perfect! That maps well. Your full-stack dev can build the restaurant dashboard and help with integration. Here's a sprint-by-sprint breakdown for 8 weeks:\n\n**Sprint 1 (Week 1-2):**\n- Backend: User auth, restaurant data model\n- Android: Project setup, navigation structure\n- Full-stack: Dashboard mockups and setup\n\n**Sprint 2 (Week 3-4):**\n- Backend: Order API, menu endpoints\n- Android: Restaurant browsing, menu viewing\n- Full-stack: Restaurant dashboard basics\n\n**Sprint 3 (Week 5-6):**\n- Backend: Order processing, notifications\n- Android: Cart, checkout flow\n- Full-stack: Order management dashboard\n\n**Sprint 4 (Week 7-8):**\n- All: Integration, testing, bug fixes\n- Polish and prepare for launch\n\nWhat do you think?"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "This looks doable! What about testing? Should we hire QA?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "For MVP, developers should own testing:\n\n- Unit tests: Critical business logic\n- Integration tests: API endpoints\n- UI tests: Key user flows (browse → order)\n- Manual testing: Everyone tests weekly builds\n\nConsider a small beta group (10-20 friendly users) in week 7 for real-world feedback. Save QA hire for post-MVP when you have steady feature development."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Good idea. What are the biggest risks we should watch out for?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Top risks for your timeline:\n\n**Technical:**\n1. Payment integration (that's why we cut it for v1)\n2. Firebase costs escalating with scale\n3. Notification reliability\n4. Restaurant onboarding complexity\n\n**Process:**\n1. Scope creep (stick to the plan!)\n2. Inadequate testing leading to crash-heavy launch\n3. Backend bottlenecks blocking mobile dev\n\n**Mitigation:**\n- Daily standups to catch blockers early\n- Feature freeze after week 6\n- Continuous integration from day 1\n- Restaurant pilot program (3-5 restaurants for launch)"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "We only have 3 restaurants lined up. Should we get more before launch?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "3 restaurants is actually perfect for MVP! It's enough to validate the concept without overwhelming your support capacity. Focus on:\n\n- Pick diverse restaurant types (fast food, casual dining, ethnic cuisine)\n- Work closely with them during beta\n- Document their feedback thoroughly\n- Ensure great experience for these 3 before scaling\n\nAfter successful launch with 3, add 5-10 more restaurants in first month, then scale gradually. Quality over quantity initially."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "That's reassuring. What success metrics should we track for MVP?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Key MVP metrics:\n\n**Activation:**\n- App installs\n- Completed registrations\n- First orders\n\n**Engagement:**\n- Orders per week per user\n- Restaurant browse to order conversion rate\n- Repeat customer rate\n\n**Quality:**\n- App crash rate (keep below 1%)\n- Order completion rate (target 95%+)\n- Average order delivery time\n- Customer satisfaction (simple 1-5 star rating)\n\n**Business:**\n- Total orders per week\n- Average order value\n- Restaurant satisfaction\n\nStart simple - you can add more sophisticated analytics post-MVP."
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Excellent! I think we have a solid plan now. Any final advice?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Final advice for your 8-week MVP sprint:\n\n1. **Communicate constantly** - daily standups, weekly demos\n2. **Deploy early and often** - weekly builds for internal testing\n3. **Say no to feature requests** - maintain discipline on scope\n4. **Build relationships with pilot restaurants** - they're your partners\n5. **Prepare for post-launch** - have a bug fix plan ready\n6. **Document everything** - helps onboarding future devs\n\nMost importantly: Done is better than perfect. Ship your MVP, learn from users, and iterate. Good luck!"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Thank you so much! This has been incredibly helpful. We're starting next week!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "You're welcome! Sounds like you have a great plan. Feel free to check back in for advice as you progress. Wishing you and your team a successful build and launch! 🚀"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+evaluation_queries:
+  - query: "What is the MVP launch timeline?"
+    expected_keywords: ["8 weeks", "4 sprints", "2 weeks per sprint"]
+    importance: "high"
+
+  - query: "What features were cut from the initial MVP?"
+    expected_keywords: ["real-time tracking", "in-app payment", "restaurant app", "search"]
+    importance: "high"
+
+  - query: "What is the recommended tech stack?"
+    expected_keywords: ["Firebase", "Firestore", "Kotlin", "Compose", "Android"]
+    importance: "medium"
+
+  - query: "How should the 3-person team be split?"
+    expected_keywords: ["backend specialist", "Android dev", "full-stack", "dashboard"]
+    importance: "medium"
+
+  - query: "What are the key MVP success metrics?"
+    expected_keywords: ["orders per week", "conversion rate", "crash rate", "completion rate"]
+    importance: "medium"
+
+expected_compression_behavior:
+  - "Should preserve project timeline: 8 weeks, 4 sprints"
+  - "Should retain feature decisions: what's in MVP vs what's cut"
+  - "Should maintain team structure and sprint breakdown"
+  - "Can compress general advice and encouragement"
+  - "Should preserve starred messages with key decisions"

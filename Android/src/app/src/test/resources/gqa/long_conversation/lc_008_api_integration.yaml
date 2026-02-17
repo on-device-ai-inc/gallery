@@ -1,0 +1,12 @@
+# GQA Test Case: API Integration
+test_case_id: "lc_008"
+category: "long_conversation"
+description: "42-message REST API integration with Retrofit"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "How do I integrate a REST API in Android?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use Retrofit with OkHttp. Add Gson for JSON parsing.", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What libraries for REST API?", expected_keywords: ["Retrofit", "OkHttp", "Gson"], importance: "high"}
+expected_compression_behavior: ["Should preserve library recommendations"]

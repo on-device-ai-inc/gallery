@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ai.ondevice.app.ui.theme.GalleryTheme
@@ -51,7 +49,7 @@ fun DataCard(
   showPlaceholder: Boolean = false,
 ) {
   var strValue = "-"
-  Column(modifier = Modifier.semantics { isTraversalGroup = true }) {
+  Column {
     Text(label, style = labelSmallNarrowMedium)
     if (showPlaceholder) {
       Text("-", style = bodySmallMediumNarrow)

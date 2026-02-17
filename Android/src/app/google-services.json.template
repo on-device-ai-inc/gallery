@@ -1,0 +1,14 @@
+{
+  "_comment": "This is a TEMPLATE file. To enable Firebase Crashlytics:",
+  "_instructions": [
+    "1. Create Firebase project at https://console.firebase.google.com/",
+    "2. Register Android app with package name: ai.ondevice.app",
+    "3. Download google-services.json from Firebase Console",
+    "4. Save as google-services.json (remove .template extension) in THIS directory (app/)",
+    "5. In app/build.gradle.kts, change 'apply false' to 'apply true' for plugins:",
+    "   - alias(libs.plugins.google.services)",
+    "   - alias(libs.plugins.firebase.crashlytics)",
+    "6. See docs/firebase-setup.md for detailed instructions"
+  ],
+  "_security_warning": "NEVER commit the actual google-services.json to git! It's already in .gitignore."
+}

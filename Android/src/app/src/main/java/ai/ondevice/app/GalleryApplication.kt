@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package ai.ondevice.app
 import android.app.Application
 import ai.ondevice.app.data.DataStoreRepository
 import ai.ondevice.app.ui.theme.ThemeSettings
+import ai.ondevice.app.util.CrashlyticsLogger
 import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -34,6 +36,32 @@ class GalleryApplication : Application() {
     // Load saved theme.
     ThemeSettings.themeOverride.value = dataStoreRepository.readTheme()
 
+    // Initialize Firebase
     FirebaseApp.initializeApp(this)
+
+    // Initialize Firebase Crashlytics
+    // Note: Requires google-services.json in app/ directory and plugins applied in build.gradle.kts
+    // See docs/firebase-setup.md for setup instructions
+    initializeCrashlytics()
+  }
+
+  private fun initializeCrashlytics() {
+    try {
+      FirebaseCrashlytics.getInstance().apply {
+        // Enable crash reporting (requires google-services.json)
+        setCrashlyticsCollectionEnabled(true)
+
+        // Set app version for crash correlation
+        setCustomKey("app_version", BuildConfig.VERSION_NAME)
+        setCustomKey("build_number", BuildConfig.VERSION_CODE)
+
+        // Log initialization
+        log("Crashlytics initialized successfully")
+      }
+    } catch (e: IllegalStateException) {
+      // Crashlytics not configured (google-services.json missing or plugins not applied)
+      // This is expected during development before Firebase setup
+      android.util.Log.w("GalleryApplication", "Crashlytics initialization skipped (Firebase not configured)")
+    }
   }
 }

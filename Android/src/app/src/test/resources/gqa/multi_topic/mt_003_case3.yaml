@@ -1,0 +1,17 @@
+# GQA Test Case: Multi-Topic Conversation 3
+test_case_id: "mt_003"
+category: "multi_topic"
+description: "Conversation covering multiple topics with transitions"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "Let's discuss UI design", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Sure! Material Design is great for Android", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "user", content: "Now about backend architecture", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "assistant", content: "For backend, consider microservices with Kubernetes", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "user", content: "What about deployment strategy?", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "assistant", content: "Use CI/CD with GitHub Actions", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What topics were discussed?", expected_keywords: ["UI design", "backend", "deployment"], importance: "high"}
+  - {query: "What was recommended for each topic?", expected_keywords: ["Material Design", "microservices", "CI/CD"], importance: "high"}
+expected_compression_behavior: ["Should preserve topic transitions", "Should retain key points from each topic"]

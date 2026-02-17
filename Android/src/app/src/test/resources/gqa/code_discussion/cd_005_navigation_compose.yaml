@@ -1,0 +1,12 @@
+# GQA Test Case: Navigation in Compose
+test_case_id: "cd_005"
+category: "code_discussion"
+description: "Implementing navigation between screens"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "How to navigate with arguments in Compose?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use NavController with arguments:\n```kotlin\nNavHost(navController, startDestination = \"home\") {\n    composable(\"home\") {\n        HomeScreen { userId ->\n            navController.navigate(\"detail/$userId\")\n        }\n    }\n    composable(\"detail/{userId}\") { backStackEntry ->\n        val userId = backStackEntry.arguments?.getString(\"userId\")\n        DetailScreen(userId)\n    }\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "How to pass arguments in navigation?", expected_keywords: ["navigate", "backStackEntry", "arguments"], importance: "high"}
+expected_compression_behavior: ["Should preserve navigation pattern"]

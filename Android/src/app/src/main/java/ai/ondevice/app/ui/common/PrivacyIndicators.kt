@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -306,6 +306,87 @@ private fun PrivacyAdvantageItem(
                 color = MaterialTheme.colorScheme.onTertiaryContainer
             )
         }
+    }
+}
+
+/**
+ * Comparison callout for competitive differentiation.
+ * Can be used in settings or about screens.
+ */
+@Composable
+fun CompetitiveComparisonCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "vs. Cloud AI Services",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            ComparisonRow(
+                feature = "Privacy",
+                onDevice = "✓ Complete",
+                cloud = "✗ Uploaded to servers"
+            )
+
+            ComparisonRow(
+                feature = "Cost",
+                onDevice = "✓ Unlimited free",
+                cloud = "✗ Pay per message"
+            )
+
+            ComparisonRow(
+                feature = "Speed",
+                onDevice = "✓ Instant",
+                cloud = "✗ Network latency"
+            )
+
+            ComparisonRow(
+                feature = "Offline",
+                onDevice = "✓ Works anywhere",
+                cloud = "✗ Requires internet"
+            )
+        }
+    }
+}
+
+@Composable
+private fun ComparisonRow(
+    feature: String,
+    onDevice: String,
+    cloud: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = feature,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(0.3f)
+        )
+        Text(
+            text = onDevice,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(0.35f)
+        )
+        Text(
+            text = cloud,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(0.35f)
+        )
     }
 }
 

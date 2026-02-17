@@ -1,0 +1,18 @@
+# GQA Test Case: Summarization Quality 9
+test_case_id: "sq_009"
+category: "summarization_quality"
+description: "Test quality of conversation summarization"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "Let's plan the project", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Great! Key points: 1) Timeline is 8 weeks, 2) Budget is \0k, 3) Team of 5 developers", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "user", content: "What about milestones?", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "assistant", content: "Milestone 1: Week 2 - Architecture\nMilestone 2: Week 4 - MVP\nMilestone 3: Week 6 - Beta\nMilestone 4: Week 8 - Launch", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "user", content: "What are the main risks?", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "assistant", content: "Top risks: 1) Scope creep, 2) Third-party API delays, 3) Resource availability", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What is the project timeline?", expected_keywords: ["8 weeks", "milestones"], importance: "high"}
+  - {query: "What are the key project parameters?", expected_keywords: ["\0k", "5 developers", "Timeline"], importance: "high"}
+  - {query: "What are the identified risks?", expected_keywords: ["Scope creep", "API delays", "Resource availability"], importance: "medium"}
+expected_compression_behavior: ["Should preserve key facts and numbers", "Should maintain milestone structure", "Should retain risk assessment"]

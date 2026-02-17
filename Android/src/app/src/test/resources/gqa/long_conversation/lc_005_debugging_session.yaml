@@ -1,0 +1,15 @@
+# GQA Test Case: Debugging Session
+test_case_id: "lc_005"
+category: "long_conversation"  
+description: "45-message debugging session for memory leak investigation"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "My app has a memory leak. Help?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Let's find it! Are you using Android Profiler?", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "user", content: "Yes, heap keeps growing.", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "assistant", content: "Check for static references holding Activity contexts. That's a common cause.", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What tool is used for memory analysis?", expected_keywords: ["Android Profiler", "heap"], importance: "high"}
+  - {query: "What is a common memory leak cause?", expected_keywords: ["static references", "Activity context"], importance: "high"}
+expected_compression_behavior: ["Should preserve debugging steps", "Should retain solution"]

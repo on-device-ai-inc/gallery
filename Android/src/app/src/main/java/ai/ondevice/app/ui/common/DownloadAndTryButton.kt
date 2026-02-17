@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,17 @@
 
 package ai.ondevice.app.ui.common
 
+import ai.ondevice.app.BuildConfig
 import android.content.Intent
 import android.util.Log
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -66,8 +71,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -79,6 +82,9 @@ import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import ai.ondevice.app.ui.modelmanager.TokenRequestResultType
 import ai.ondevice.app.ui.modelmanager.TokenStatus
+import ai.ondevice.app.ui.common.tos.GemmaTermsDialog
+import ai.ondevice.app.helper.SecureModelDownloader
+import ai.ondevice.app.config.FeatureFlags
 import java.net.HttpURLConnection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -131,9 +137,18 @@ fun DownloadAndTryButton(
   var checkingToken by remember { mutableStateOf(false) }
   var showAgreementAckSheet by remember { mutableStateOf(false) }
   var showErrorDialog by remember { mutableStateOf(false) }
+  var errorMessage by remember { mutableStateOf("") }
+  var errorTitle by remember { mutableStateOf("Error") }
+  var retryAction by remember { mutableStateOf<(() -> Unit)?>(null) }
   var showMemoryWarning by remember { mutableStateOf(false) }
   var downloadStarted by remember { mutableStateOf(false) }
+  var showPreOAuthDialog by remember { mutableStateOf(false) }
+  var showLicenseSummaryDialog by remember { mutableStateOf(false) }
+  var showGemmaTermsDialog by remember { mutableStateOf(false) }
+  var showStorageWarningDialog by remember { mutableStateOf(false) }
+  var storageWarningMessage by remember { mutableStateOf("") }
   val sheetState = rememberModalBottomSheetState()
+  val secureDownloader = remember { SecureModelDownloader(context) }
 
   val needToDownloadFirst =
     (downloadStatus?.status == ModelDownloadStatusType.NOT_DOWNLOADED ||
@@ -198,7 +213,9 @@ fun DownloadAndTryButton(
                   ) == HttpURLConnection.HTTP_FORBIDDEN
                 ) {
                   Log.d(TAG, "Model '${model.name}' needs user agreement ack.")
-                  showAgreementAckSheet = true
+                  withContext(Dispatchers.Main) {
+                    showLicenseSummaryDialog = true
+                  }
                 } else {
                   Log.d(
                     TAG,
@@ -212,12 +229,20 @@ fun DownloadAndTryButton(
             }
 
             TokenRequestResultType.FAILED -> {
-              Log.d(
+              Log.e(
                 TAG,
-                "Token request done. Error message: ${tokenRequestResult.errorMessage ?: ""}",
+                "OAuth failed. Error: ${tokenRequestResult.errorMessage ?: "Unknown error"}",
               )
               checkingToken = false
               downloadStarted = false
+              errorTitle = "Authentication Failed"
+              errorMessage = tokenRequestResult.errorMessage
+                ?: "Failed to authenticate with HuggingFace. Please try again."
+              retryAction = {
+                checkingToken = true
+                showPreOAuthDialog = true
+              }
+              showErrorDialog = true
             }
 
             TokenRequestResultType.USER_CANCELLED -> {
@@ -242,12 +267,36 @@ fun DownloadAndTryButton(
   // handles HuggingFace URLs by verifying the need for authentication, and initiates
   // the token exchange process if required or proceeds with the download if no auth is needed
   // or a valid token is available.
-  val handleClickButton = {
+  fun handleClickButton() {
     scope.launch(Dispatchers.IO) {
       if (needToDownloadFirst) {
+        // STEP 1: Check Gemma Terms FIRST (before any OAuth or download logic)
+        if (model.requiresGemmaTerms && !modelManagerViewModel.isGemmaTermsAccepted()) {
+          withContext(Dispatchers.Main) {
+            showGemmaTermsDialog = true
+          }
+          return@launch
+        }
+
+        // STEP 2: Validate download conditions (WiFi, storage, network)
+        val validationError = secureDownloader.validateDownloadConditions(model)
+        if (validationError != null) {
+          withContext(Dispatchers.Main) {
+            storageWarningMessage = validationError
+            showStorageWarningDialog = true
+          }
+          return@launch
+        }
+
         downloadStarted = true
-        // For HuggingFace urls
-        if (model.url.startsWith("https://huggingface.co")) {
+
+        // STEP 3: Determine which URL to use (self-hosted vs OAuth)
+        val useOAuthFlow = model.url.startsWith("https://huggingface.co") &&
+                           (model.downloadUrl.isEmpty() ||
+                            !FeatureFlags.isUserInSelfHostedCohort(null))
+
+        // For HuggingFace urls (OAuth flow)
+        if (useOAuthFlow) {
           checkingToken = true
 
           // Check if the url needs auth.
@@ -263,7 +312,12 @@ fun DownloadAndTryButton(
           } else if (firstResponseCode < 0) {
             checkingToken = false
             downloadStarted = false
-            Log.e(TAG, "Unknown network error")
+            Log.e(TAG, "Network error checking model access")
+            errorTitle = "Network Error"
+            errorMessage = "Failed to connect to HuggingFace. Please check your internet connection and try again."
+            retryAction = {
+              handleClickButton()
+            }
             showErrorDialog = true
             return@launch
           }
@@ -276,7 +330,9 @@ fun DownloadAndTryButton(
             // If token is not stored or expired, log in and request a new token.
             TokenStatus.NOT_STORED,
             TokenStatus.EXPIRED -> {
-              withContext(Dispatchers.Main) { startTokenExchange() }
+              withContext(Dispatchers.Main) {
+                showPreOAuthDialog = true
+              }
             }
 
             // If token is still valid...
@@ -303,7 +359,9 @@ fun DownloadAndTryButton(
                   "Download url is NOT accessible. Response code: ${responseCode}. Trying to request a new token.",
                 )
 
-                withContext(Dispatchers.Main) { startTokenExchange() }
+                withContext(Dispatchers.Main) {
+                  showPreOAuthDialog = true
+                }
               }
             }
           }
@@ -365,7 +423,7 @@ fun DownloadAndTryButton(
         Icon(
           if (needToDownloadFirst) Icons.Outlined.FileDownload
           else Icons.AutoMirrored.Rounded.ArrowForward,
-          contentDescription = null,
+          contentDescription = "",
           tint = textColor,
         )
 
@@ -430,7 +488,6 @@ fun DownloadAndTryButton(
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
           )
         }
-        val cbStop = stringResource(R.string.cd_stop_icon)
         IconButton(
           onClick = {
             downloadStarted = false
@@ -440,11 +497,10 @@ fun DownloadAndTryButton(
             IconButtonDefaults.iconButtonColors(
               containerColor = MaterialTheme.colorScheme.surfaceContainer
             ),
-          modifier = Modifier.semantics { contentDescription = cbStop },
         ) {
           Icon(
             Icons.Outlined.Close,
-            contentDescription = null,
+            contentDescription = "",
             tint = MaterialTheme.colorScheme.onSurface,
           )
         }
@@ -459,60 +515,169 @@ fun DownloadAndTryButton(
   // for a gated model and provides a button to open the agreement in a custom tab.
   // Upon clicking the button, it constructs the agreement URL, launches it using a
   // custom tab, and then dismisses the bottom sheet.
+  // WebView-based license acceptance with auto-scroll
   if (showAgreementAckSheet) {
-    ModalBottomSheet(
+    AlertDialog(
       onDismissRequest = {
         showAgreementAckSheet = false
         checkingToken = false
       },
-      sheetState = sheetState,
-      modifier = Modifier.wrapContentHeight(),
-    ) {
-      Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(horizontal = 16.dp),
-      ) {
-        Text("Acknowledge user agreement", style = MaterialTheme.typography.titleLarge)
-        Text(
-          "This is a gated model. Please click the button below to view and agree to the user agreement. After accepting, simply close that tab to proceed with the model download.",
-          style = MaterialTheme.typography.bodyMedium,
-          modifier = Modifier.padding(vertical = 16.dp),
-        )
-        Button(
-          onClick = {
-            // Get agreement url from model url.
-            val index = model.url.indexOf("/resolve/")
-            // Show it in a tab.
-            if (index >= 0) {
-              val agreementUrl = model.url.substring(0, index)
+      title = { Text("Accept Gemma License") },
+      text = {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          Text(
+            "Please accept Google's Gemma license to download this model. The 'Agree' button will be highlighted for you.",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(bottom = 16.dp),
+          )
 
-              val customTabsIntent = CustomTabsIntent.Builder().build()
-              customTabsIntent.intent.setData(agreementUrl.toUri())
-              agreementAckLauncher.launch(customTabsIntent.intent)
-            }
-            // Dismiss the sheet.
-            showAgreementAckSheet = false
+          // Get agreement url from model url
+          val index = model.url.indexOf("/resolve/")
+          val agreementUrl = if (index >= 0) model.url.substring(0, index) else ""
+
+          if (agreementUrl.isNotEmpty()) {
+            AndroidView(
+              factory = { context ->
+                WebView(context).apply {
+                  settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    // Security hardening
+                    allowFileAccess = false
+                    setGeolocationEnabled(false)
+                  }
+
+                  webViewClient = object : WebViewClient() {
+                    override fun shouldInterceptRequest(
+                      view: WebView?,
+                      request: android.webkit.WebResourceRequest
+                    ): android.webkit.WebResourceResponse? {
+                      // Inject Authorization header for HuggingFace requests
+                      if (request.url.host?.endsWith("huggingface.co") == true) {
+                        return try {
+                          val accessToken = modelManagerViewModel.curAccessToken
+                          val connection = java.net.URL(request.url.toString()).openConnection() as java.net.HttpURLConnection
+                          connection.setRequestProperty("Authorization", "Bearer $accessToken")
+                          connection.setRequestProperty("User-Agent", "OnDeviceAI-Android/1.1.7")
+
+                          android.webkit.WebResourceResponse(
+                            connection.contentType ?: "text/html",
+                            connection.contentEncoding ?: "UTF-8",
+                            connection.inputStream
+                          )
+                        } catch (e: Exception) {
+                          Log.e(TAG, "Failed to load with auth header", e)
+                          null
+                        }
+                      }
+                      return super.shouldInterceptRequest(view, request)
+                    }
+
+                    override fun onReceivedError(
+                      view: WebView?,
+                      request: android.webkit.WebResourceRequest?,
+                      error: android.webkit.WebResourceError?
+                    ) {
+                      super.onReceivedError(view, request, error)
+                      if (request?.isForMainFrame == true) {
+                        Log.e(TAG, "WebView error loading license page: ${error?.description}")
+                        showAgreementAckSheet = false
+                        errorTitle = "License Page Error"
+                        errorMessage = "Failed to load the license page. Please check your internet connection and try again."
+                        retryAction = {
+                          showLicenseSummaryDialog = true
+                        }
+                        showErrorDialog = true
+                      }
+                    }
+
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                      // Auto-scroll to Agree button and highlight it
+                      view?.evaluateJavascript("""
+                        (function() {
+                          // Wait a bit for page to fully render
+                          setTimeout(function() {
+                            // Find the agree button (HuggingFace uses button[type="submit"])
+                            const agreeBtn = document.querySelector('button[type="submit"]');
+                            if (agreeBtn) {
+                              // Scroll into view
+                              agreeBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              // Highlight with green border
+                              agreeBtn.style.border = '3px solid #4CAF50';
+                              agreeBtn.style.boxShadow = '0 0 10px #4CAF50';
+                            }
+                          }, 500);
+                        })();
+                      """, null)
+
+                      // Check if user clicked Agree (URL changes after acceptance)
+                      if (url != null && url != agreementUrl && !url.contains("/login")) {
+                        Log.d(TAG, "License accepted, closing dialog")
+                        showAgreementAckSheet = false
+                        startDownload(modelManagerViewModel.curAccessToken)
+                      }
+                    }
+                  }
+
+                  loadUrl(agreementUrl)
+                }
+              },
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(400.dp)
+            )
           }
-        ) {
-          Text("Open user agreement")
+        }
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          showAgreementAckSheet = false
+          startDownload(modelManagerViewModel.curAccessToken)
+        }) {
+          Text("I've Accepted")
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = {
+          showAgreementAckSheet = false
+          checkingToken = false
+        }) {
+          Text("Cancel")
         }
       }
-    }
+    )
   }
 
   if (showErrorDialog) {
     AlertDialog(
       icon = {
-        Icon(
-          Icons.Rounded.Error,
-          contentDescription = stringResource(R.string.cd_error),
-          tint = MaterialTheme.colorScheme.error,
-        )
+        Icon(Icons.Rounded.Error, contentDescription = "", tint = MaterialTheme.colorScheme.error)
       },
-      title = { Text("Unknown network error") },
-      text = { Text("Please check your internet connection.") },
-      onDismissRequest = { showErrorDialog = false },
-      confirmButton = { TextButton(onClick = { showErrorDialog = false }) { Text("Close") } },
+      title = { Text(errorTitle) },
+      text = { Text(errorMessage) },
+      onDismissRequest = {
+        showErrorDialog = false
+        retryAction = null
+      },
+      confirmButton = {
+        if (retryAction != null) {
+          TextButton(onClick = {
+            showErrorDialog = false
+            retryAction?.invoke()
+            retryAction = null
+          }) {
+            Text("Retry")
+          }
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = {
+          showErrorDialog = false
+          retryAction = null
+        }) {
+          Text("Close")
+        }
+      },
     )
   }
 
@@ -523,6 +688,237 @@ fun DownloadAndTryButton(
         showMemoryWarning = false
       },
       onDismissed = { showMemoryWarning = false },
+    )
+  }
+
+  // Pre-OAuth Warning Dialog - Sets user expectations before browser opens
+  if (showPreOAuthDialog) {
+    AlertDialog(
+      onDismissRequest = {
+        showPreOAuthDialog = false
+        checkingToken = false
+      },
+      title = {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          // Step indicator
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+          ) {
+            // Step 1 - Active
+            androidx.compose.foundation.layout.Box(
+              modifier = Modifier
+                .width(32.dp)
+                .height(32.dp)
+                .background(
+                  color = MaterialTheme.colorScheme.primary,
+                  shape = CircleShape
+                ),
+              contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+              Text("1", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge)
+            }
+
+            // Connector line
+            androidx.compose.foundation.layout.Spacer(
+              modifier = Modifier
+                .width(40.dp)
+                .height(2.dp)
+                .background(MaterialTheme.colorScheme.outline)
+            )
+
+            // Step 2 - Inactive
+            androidx.compose.foundation.layout.Box(
+              modifier = Modifier
+                .width(32.dp)
+                .height(32.dp)
+                .background(
+                  color = MaterialTheme.colorScheme.surfaceVariant,
+                  shape = CircleShape
+                ),
+              contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+              Text("2", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+            }
+          }
+
+          androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+          Text("Sign In", style = MaterialTheme.typography.headlineSmall)
+        }
+      },
+      text = {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          Text(
+            "To download Gemma, you need a HuggingFace account.\n\n" +
+            "Here's what happens next:\n\n" +
+            "1. Your browser will open\n" +
+            "2. Sign in or create account\n" +
+            "3. You'll see \"Authorize?\"\n" +
+            "   Tap [Authorize] - it's safe\n" +
+            "4. You'll return to this app\n\n" +
+            "This takes about 60 seconds.",
+            style = MaterialTheme.typography.bodyMedium
+          )
+        }
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          showPreOAuthDialog = false
+          startTokenExchange()
+        }) {
+          Text("Continue")
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = {
+          showPreOAuthDialog = false
+          checkingToken = false
+        }) {
+          Text("Cancel")
+        }
+      }
+    )
+  }
+
+  // License Summary Dialog - Simplifies legal terms before full license
+  if (showLicenseSummaryDialog) {
+    AlertDialog(
+      onDismissRequest = {
+        showLicenseSummaryDialog = false
+        checkingToken = false
+      },
+      title = {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          // Step indicator
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+          ) {
+            // Step 1 - Completed
+            androidx.compose.foundation.layout.Box(
+              modifier = Modifier
+                .width(32.dp)
+                .height(32.dp)
+                .background(
+                  color = MaterialTheme.colorScheme.tertiary,
+                  shape = CircleShape
+                ),
+              contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+              Text("✓", color = MaterialTheme.colorScheme.onTertiary, style = MaterialTheme.typography.labelLarge)
+            }
+
+            // Connector line
+            androidx.compose.foundation.layout.Spacer(
+              modifier = Modifier
+                .width(40.dp)
+                .height(2.dp)
+                .background(MaterialTheme.colorScheme.primary)
+            )
+
+            // Step 2 - Active
+            androidx.compose.foundation.layout.Box(
+              modifier = Modifier
+                .width(32.dp)
+                .height(32.dp)
+                .background(
+                  color = MaterialTheme.colorScheme.primary,
+                  shape = CircleShape
+                ),
+              contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+              Text("2", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge)
+            }
+          }
+
+          androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(16.dp))
+          Text("Accept License", style = MaterialTheme.typography.headlineSmall)
+        }
+      },
+      text = {
+        Column(modifier = Modifier.fillMaxWidth()) {
+          Text(
+            "Gemma requires you to agree to:\n\n" +
+            "✓ Non-commercial use only\n" +
+            "  (Learning & testing)\n\n" +
+            "✓ No redistribution\n" +
+            "  (Can't share the model)\n\n" +
+            "✓ Credit Google if you publish\n\n" +
+            "Tap [I Agree] to see full license.",
+            style = MaterialTheme.typography.bodyMedium
+          )
+        }
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          showLicenseSummaryDialog = false
+          showAgreementAckSheet = true
+        }) {
+          Text("I Agree")
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = {
+          showLicenseSummaryDialog = false
+          checkingToken = false
+        }) {
+          Text("Cancel")
+        }
+      }
+    )
+  }
+
+  // Gemma Terms Dialog - Required before downloading any Gemma model
+  if (showGemmaTermsDialog) {
+    GemmaTermsDialog(
+      modelName = model.name,
+      onAccept = {
+        modelManagerViewModel.acceptGemmaTerms()
+        modelManagerViewModel.logGemmaTermsAccepted(model.name)
+        showGemmaTermsDialog = false
+        // Retry download after accepting terms
+        handleClickButton()
+      },
+      onDecline = {
+        showGemmaTermsDialog = false
+        checkingToken = false
+        downloadStarted = false
+      }
+    )
+  }
+
+  // Storage Warning Dialog - Shows WiFi/storage/network issues
+  if (showStorageWarningDialog) {
+    AlertDialog(
+      onDismissRequest = {
+        showStorageWarningDialog = false
+        checkingToken = false
+        downloadStarted = false
+      },
+      icon = {
+        Icon(
+          Icons.Rounded.Error,
+          contentDescription = "",
+          tint = MaterialTheme.colorScheme.error
+        )
+      },
+      title = {
+        Text("Cannot Download Model")
+      },
+      text = {
+        Text(storageWarningMessage)
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          showStorageWarningDialog = false
+          checkingToken = false
+          downloadStarted = false
+        }) {
+          Text("OK")
+        }
+      }
     )
   }
 }

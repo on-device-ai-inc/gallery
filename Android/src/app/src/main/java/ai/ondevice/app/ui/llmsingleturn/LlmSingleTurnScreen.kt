@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,16 +206,14 @@ fun LlmSingleTurnScreen(
               modifier =
                 Modifier.fillMaxSize().background(MaterialTheme.customColors.agentBubbleBgColor),
             ) {
-              if (task.models.indexOf(selectedModel) >= 0) {
-                ResponsePanel(
-                  task = task,
-                  model = selectedModel,
-                  viewModel = viewModel,
-                  modelManagerViewModel = modelManagerViewModel,
-                  modifier =
-                    Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding()),
-                )
-              }
+              ResponsePanel(
+                task = task,
+                model = selectedModel,
+                viewModel = viewModel,
+                modelManagerViewModel = modelManagerViewModel,
+                modifier =
+                  Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding()),
+              )
             }
           },
         )

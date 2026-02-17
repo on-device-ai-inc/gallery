@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,11 +53,9 @@ object ConfigKeys {
   val DEFAULT_TEMPERATURE = ConfigKey("default_temperature", "Default temperature")
   val SUPPORT_IMAGE = ConfigKey("support_image", "Support image")
   val SUPPORT_AUDIO = ConfigKey("support_audio", "Support audio")
-  val SUPPORT_TINY_GARDEN = ConfigKey("support_tiny_garden", "Support tiny garden")
-  val SUPPORT_MOBILE_ACTIONS = ConfigKey("support_mobile_actions", "Support mobile actions")
   val MAX_RESULT_COUNT = ConfigKey("max_result_count", "Max result count")
   val USE_GPU = ConfigKey("use_gpu", "Use GPU")
-  val ACCELERATOR = ConfigKey("accelerator", "Accelerator")
+  val ACCELERATOR = ConfigKey("accelerator", "Choose accelerator")
   val COMPATIBLE_ACCELERATORS = ConfigKey("compatible_accelerators", "Compatible accelerators")
   val WARM_UP_ITERATIONS = ConfigKey("warm_up_iterations", "Warm up iterations")
   val BENCHMARK_ITERATIONS = ConfigKey("benchmark_iterations", "Benchmark iterations")
@@ -65,8 +63,6 @@ object ConfigKeys {
   val THEME = ConfigKey("theme", "Theme")
   val NAME = ConfigKey("name", "Name")
   val MODEL_TYPE = ConfigKey("model_type", "Model type")
-  val RESET_CONVERSATION_TURN_COUNT =
-    ConfigKey("reset_conversation_turn_count", "Number of turns before the conversation resets")
 }
 
 /**

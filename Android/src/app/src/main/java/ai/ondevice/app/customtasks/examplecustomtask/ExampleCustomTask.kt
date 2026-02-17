@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,9 +70,9 @@ class ExampleCustomTask @Inject constructor() : CustomTask {
           "below are configured in different ways in terms of how the model file is provided " +
           "(pushed to device manually, vs downloaded from internet).",
       docUrl =
-        "https://github.com/on-device-ai-inc/on-device-ai/Android/src/app/src/main/java/ai/ondevice/app/customtasks/common/CustomTask.kt",
+        "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/customtasks/common/CustomTask.kt",
       sourceCodeUrl =
-        "https://github.com/on-device-ai-inc/on-device-ai/Android/src/app/src/main/java/ai/ondevice/app/customtasks/examplecustomtask/ExampleCustomTask.kt",
+        "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/customtasks/examplecustomtask/ExampleCustomTask.kt",
       models =
         mutableListOf(
           Model(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ private const val TAG = "FirstLaunchManager"
  * Handles first launch experience - checks if user needs to download a model
  */
 object FirstLaunchManager {
-
+    
     /**
      * Check if user needs first-launch model download
      * Returns the default model and task if needed
@@ -39,28 +39,28 @@ object FirstLaunchManager {
     ): Pair<Task, Model>? {
         val tasks = modelManagerViewModel.uiState.value.tasks
         val chatTask = tasks.find { it.id == BuiltInTaskId.LLM_CHAT } ?: return null
-
+        
         // Check if user already has any downloaded models
         val hasDownloadedModel = chatTask.models.any { model ->
             val status = modelManagerViewModel.uiState.value.modelDownloadStatus[model.name]
             status?.status == ModelDownloadStatusType.SUCCEEDED
         }
-
+        
         if (hasDownloadedModel) {
             Log.d(TAG, "User already has downloaded models")
             return null
         }
-
-        // Find the best model for chat
-        val defaultModel = chatTask.models.firstOrNull {
+        
+        // Find the best model for chat (usually Gemma3-1B-IT)
+        val defaultModel = chatTask.models.firstOrNull { 
             it.bestForTaskIds.contains(BuiltInTaskId.LLM_CHAT)
         } ?: chatTask.models.firstOrNull()
-
+        
         if (defaultModel == null) {
             Log.e(TAG, "No models available for chat task")
             return null
         }
-
+        
         Log.d(TAG, "User needs to download model: ${defaultModel.name}")
         return Pair(chatTask, defaultModel)
     }

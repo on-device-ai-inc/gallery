@@ -11,3 +11,16 @@ local.properties
 
 # OS
 Thumbs.db
+
+# Keystores and secrets
+*.keystore
+*.jks
+keystore.b64
+*.backup
+
+# Archive folders
+Android/src_archive/
+_model_downloads/
+
+# Scripts with embedded credentials
+upload_models.py

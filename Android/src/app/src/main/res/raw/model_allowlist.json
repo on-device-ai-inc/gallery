@@ -11,7 +11,7 @@
       "llmSupportImage": true,
       "llmSupportAudio": true,
       "requiresGemmaTerms": true,
-      "downloadUrl": "https://huggingface.co/na5h13/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm",
+      "downloadUrl": "https://huggingface.co/On-device/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm",
       "fallbackUrls": [
         "https://huggingface.co/google/gemma-3n-E2B-it-litert-lm/resolve/ba9ca88da013b537b6ed38108be609b8db1c3a16/gemma-3n-E2B-it-int4.litertlm"
       ],
@@ -38,7 +38,7 @@
       "llmSupportImage": true,
       "llmSupportAudio": true,
       "requiresGemmaTerms": true,
-      "downloadUrl": "https://huggingface.co/na5h13/gemma-3n-E4B-it-litert-lm/resolve/main/gemma-3n-E4B-it-int4.litertlm",
+      "downloadUrl": "https://huggingface.co/On-device/gemma-3n-E4B-it-litert-lm/resolve/main/gemma-3n-E4B-it-int4.litertlm",
       "fallbackUrls": [
         "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/297ed75955702dec3503e00c2c2ecbbf475300bc/gemma-3n-E4B-it-int4.litertlm"
       ],
@@ -62,7 +62,7 @@
       "minDeviceMemoryInGb": 6,
       "commitHash": "42d538a932e8d5b12e6b3b455f5572560bd60b2c",
       "requiresGemmaTerms": true,
-      "downloadUrl": "https://huggingface.co/na5h13/Gemma3-1B-IT-litert-lm/resolve/main/gemma3-1b-it-int4.litertlm",
+      "downloadUrl": "https://huggingface.co/On-device/Gemma3-1B-IT-litert-lm/resolve/main/gemma3-1b-it-int4.litertlm",
       "fallbackUrls": [
         "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/42d538a932e8d5b12e6b3b455f5572560bd60b2c/gemma3-1b-it-int4.litertlm"
       ],
@@ -131,7 +131,7 @@
     },
     {
       "name": "Qwen2.5-Omni-7B",
-      "modelId": "GoraAI-Na5h13/qwen2.5-omni-7b-litert-lm",
+      "modelId": "On-device/qwen2.5-omni-7b-litert-lm",
       "modelFile": "qwen2.5-omni-7b-int4.litertlm",
       "description": "**🚀 Premium Multimodal Model** - [Qwen2.5-Omni-7B](https://huggingface.co/Qwen/Qwen2.5-Omni-7B) with integrated Whisper audio encoder, 128K context window, and streaming speech generation. Supports text, vision, audio, and video understanding. **Note**: Requires conversion - see /scripts/CONVERSION_GUIDE.md",
       "sizeInBytes": 1887436800,
@@ -139,7 +139,7 @@
       "commitHash": "main",
       "llmSupportImage": true,
       "llmSupportAudio": true,
-      "downloadUrl": "https://huggingface.co/GoraAI-Na5h13/qwen2.5-omni-7b-litert-lm/resolve/main/qwen2.5-omni-7b-int4.litertlm",
+      "downloadUrl": "https://huggingface.co/On-device/qwen2.5-omni-7b-litert-lm/resolve/main/qwen2.5-omni-7b-int4.litertlm",
       "fallbackUrls": [
         "https://huggingface.co/Qwen/Qwen2.5-Omni-7B/resolve/main/model.safetensors"
       ],

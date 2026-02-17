@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -382,13 +382,13 @@ val MODEL_IMAGE_GENERATION_STABLE_DIFFUSION: Model =
     downloadFileName = "sd15.zip",
     isZip = true,
     unzipDir = "sd15",
-    url = "https://huggingface.co/na5h13/stable-diffusion-v1-5-mediapipe/resolve/main/sd15.zip",
+    url = "https://huggingface.co/On-device/stable-diffusion-v1-5-mediapipe/resolve/main/sd15.zip",
     sizeInBytes = 1906219565L,
     showRunAgainButton = false,
     showBenchmarkButton = false,
     info = IMAGE_GENERATION_INFO,
     configs = IMAGE_GENERATION_CONFIGS,
-    learnMoreUrl = "https://huggingface.co/na5h13/stable-diffusion-v1-5-mediapipe",
+    learnMoreUrl = "https://huggingface.co/On-device/stable-diffusion-v1-5-mediapipe",
   )
 
 val EMPTY_MODEL: Model =

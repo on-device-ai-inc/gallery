@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ fun MessageBodyImageWithHistory(
     var savedIndex by remember { mutableIntStateOf(0) }
     Image(
       bitmap = curImageBitmap,
-      contentDescription = null,
+      contentDescription = "",
       modifier =
         Modifier.height(imageHeight.dp).width(imageWidth.dp).pointerInput(Unit) {
           detectHorizontalDragGestures(

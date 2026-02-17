@@ -1,19 +1,3 @@
-/*
- * Copyright 2025 OnDevice Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package ai.ondevice.app.data
 
 import androidx.room.Database
@@ -23,8 +7,17 @@ import androidx.room.RoomDatabase
  * Main Room database for the application.
  * Contains conversation history data.
  *
- * Version 1: Initial schema with ConversationThread, ConversationMessage,
- *            and ConversationState entities.
+ * Version 2: Added imageUris and messageType fields to ConversationMessage
+ *            to support image persistence in chat history.
+ * Version 3: Added audioUri and audioSampleRate fields to ConversationMessage
+ *            to support audio message persistence in chat history.
+ * Version 4: Added personaVariant, estimatedTokens, and lastTokenUpdate fields
+ *            to ConversationThread for prompt engineering support.
+ * Version 5: (Skipped - compression fields removed before release)
+ * Version 6: Cleanup - removed unused compression fields from ConversationMessage.
+ * Version 7: Cleanup - removed non-working token counting fields from ConversationThread
+ *            (personaVariant, estimatedTokens, lastTokenUpdate).
+ * Version 8: Added ConversationState entity for context compression via self-summarization.
  */
 @Database(
     entities = [
@@ -32,7 +25,7 @@ import androidx.room.RoomDatabase
         ConversationMessage::class,
         ConversationState::class
     ],
-    version = 1,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

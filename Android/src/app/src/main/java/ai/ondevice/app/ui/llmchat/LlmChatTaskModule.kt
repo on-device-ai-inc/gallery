@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ class LlmChatTask @Inject constructor(
       icon = Icons.Outlined.Forum,
       models = mutableListOf(),
       description = "Chat with on-device AI models. Supports text and images based on model capabilities",
-      docUrl = "https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md",
+      docUrl = "https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android",
       sourceCodeUrl =
         "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatModelHelper.kt",
       textInputPlaceHolderRes = R.string.text_input_placeholder_llm_chat,
@@ -66,6 +66,7 @@ class LlmChatTask @Inject constructor(
     model: Model,
     onDone: (String) -> Unit,
   ) {
+    // Story 8: Read custom instructions from DataStore
     val customInstructions = dataStoreRepository.readCustomInstructions()
     val systemMessage = if (customInstructions.isNotEmpty()) {
       Message.of(listOf(Content.Text(customInstructions)))
@@ -76,8 +77,8 @@ class LlmChatTask @Inject constructor(
     LlmChatModelHelper.initialize(
       context = context,
       model = model,
-      supportImage = model.llmSupportImage,
-      supportAudio = model.llmSupportAudio,
+      supportImage = model.llmSupportImage,  // Enable based on model capability
+      supportAudio = model.llmSupportAudio,  // Enable based on model capability
       onDone = onDone,
       systemMessage = systemMessage,
     )
@@ -99,7 +100,7 @@ class LlmChatTask @Inject constructor(
       modelManagerViewModel = myData.modelManagerViewModel,
       navigateUp = myData.onNavUp,
       onNavigateToConversationHistory = myData.onNavigateToConversationHistory,
-      onNavigateToSettings = myData.onNavigateToSettings,
+      onNavigateToSettings = myData.onNavigateToSettings,  // Epic 5: Settings navigation
       loadConversationId = myData.loadConversationId,
       onConversationLoaded = myData.onConversationLoaded,
     )
@@ -107,7 +108,7 @@ class LlmChatTask @Inject constructor(
 }
 
 @Module
-@InstallIn(SingletonComponent::class)
+@InstallIn(SingletonComponent::class) // Or another component that fits your scope
 internal object LlmChatTaskModule {
   @Provides
   @IntoSet
@@ -130,7 +131,7 @@ class LlmAskImageTask @Inject constructor(
       icon = Icons.Outlined.Mms,
       models = mutableListOf(),
       description = "Ask questions about images with on-device large language models",
-      docUrl = "https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md",
+      docUrl = "https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android",
       sourceCodeUrl =
         "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatModelHelper.kt",
       textInputPlaceHolderRes = R.string.text_input_placeholder_llm_chat,
@@ -142,6 +143,7 @@ class LlmAskImageTask @Inject constructor(
     model: Model,
     onDone: (String) -> Unit,
   ) {
+    // Story 8: Read custom instructions from DataStore
     val customInstructions = dataStoreRepository.readCustomInstructions()
     val systemMessage = if (customInstructions.isNotEmpty()) {
       Message.of(listOf(Content.Text(customInstructions)))
@@ -152,8 +154,8 @@ class LlmAskImageTask @Inject constructor(
     LlmChatModelHelper.initialize(
       context = context,
       model = model,
-      supportImage = model.llmSupportImage,
-      supportAudio = model.llmSupportAudio,
+      supportImage = model.llmSupportImage,  // Enable based on model capability
+      supportAudio = model.llmSupportAudio,  // Enable based on model capability
       onDone = onDone,
       systemMessage = systemMessage,
     )
@@ -175,7 +177,7 @@ class LlmAskImageTask @Inject constructor(
       modelManagerViewModel = myData.modelManagerViewModel,
       navigateUp = myData.onNavUp,
       onNavigateToConversationHistory = myData.onNavigateToConversationHistory,
-      onNavigateToSettings = myData.onNavigateToSettings,
+      onNavigateToSettings = myData.onNavigateToSettings,  // Epic 5: Settings navigation
       loadConversationId = myData.loadConversationId,
       onConversationLoaded = myData.onConversationLoaded,
     )
@@ -183,7 +185,7 @@ class LlmAskImageTask @Inject constructor(
 }
 
 @Module
-@InstallIn(SingletonComponent::class)
+@InstallIn(SingletonComponent::class) // Or another component that fits your scope
 internal object LlmAskImageModule {
   @Provides
   @IntoSet
@@ -207,7 +209,7 @@ class LlmAskAudioTask @Inject constructor(
       models = mutableListOf(),
       description =
         "Instantly transcribe and/or translate audio clips using on-device large language models",
-      docUrl = "https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md",
+      docUrl = "https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android",
       sourceCodeUrl =
         "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatModelHelper.kt",
       textInputPlaceHolderRes = R.string.text_input_placeholder_llm_chat,
@@ -219,6 +221,7 @@ class LlmAskAudioTask @Inject constructor(
     model: Model,
     onDone: (String) -> Unit,
   ) {
+    // Story 8: Read custom instructions from DataStore
     val customInstructions = dataStoreRepository.readCustomInstructions()
     val systemMessage = if (customInstructions.isNotEmpty()) {
       Message.of(listOf(Content.Text(customInstructions)))
@@ -229,8 +232,8 @@ class LlmAskAudioTask @Inject constructor(
     LlmChatModelHelper.initialize(
       context = context,
       model = model,
-      supportImage = model.llmSupportImage,
-      supportAudio = model.llmSupportAudio,
+      supportImage = model.llmSupportImage,  // Enable based on model capability
+      supportAudio = model.llmSupportAudio,  // Enable based on model capability
       onDone = onDone,
       systemMessage = systemMessage,
     )
@@ -252,7 +255,7 @@ class LlmAskAudioTask @Inject constructor(
       modelManagerViewModel = myData.modelManagerViewModel,
       navigateUp = myData.onNavUp,
       onNavigateToConversationHistory = myData.onNavigateToConversationHistory,
-      onNavigateToSettings = myData.onNavigateToSettings,
+      onNavigateToSettings = myData.onNavigateToSettings,  // Epic 5: Settings navigation
       loadConversationId = myData.loadConversationId,
       onConversationLoaded = myData.onConversationLoaded,
     )
@@ -260,7 +263,7 @@ class LlmAskAudioTask @Inject constructor(
 }
 
 @Module
-@InstallIn(SingletonComponent::class)
+@InstallIn(SingletonComponent::class) // Or another component that fits your scope
 internal object LlmAskAudioModule {
   @Provides
   @IntoSet

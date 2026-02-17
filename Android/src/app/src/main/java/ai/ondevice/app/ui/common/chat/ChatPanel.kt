@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -337,7 +337,7 @@ fun ChatPanel(
               contentDescription = "OnDevice Logo",
               modifier = Modifier.size(160.dp).padding(bottom = 4.dp)
             )
-
+            
             val greeting = remember {
               val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
               when (hour) {
@@ -346,7 +346,7 @@ fun ChatPanel(
                 else -> "evening"
               }
             }
-
+            
             Text(
               text = "How can I help you this $greeting?",
               style = MaterialTheme.typography.headlineMedium,
@@ -402,6 +402,10 @@ fun ChatPanel(
             ) messageColumn@{
               // Sender row.
               var agentName = stringResource(task.agentNameRes)
+              // Removed "on CPU" suffix for cleaner UI like Claude
+              // if (message.accelerator.isNotEmpty()) {
+              //   agentName = "$agentName on ${message.accelerator}"
+              // }
               MessageSender(
                 message = message,
                 agentName = agentName,
@@ -480,7 +484,7 @@ fun ChatPanel(
                   Box(modifier = messageBubbleModifier) {
                     when (message) {
                       // Text
-                      is ChatMessageText -> MessageBodyText(message = message, inProgress = uiState.inProgress)
+                      is ChatMessageText -> MessageBodyText(message = message)
 
                       // Image
                       is ChatMessageImage -> {
@@ -769,7 +773,7 @@ fun ChatPanel(
             )
           }
         }
-        // Show an info message for ask audio task to get users started.
+        // Show an info message for ask image task to get users started.
         else if (task.id == BuiltInTaskId.LLM_ASK_AUDIO && messages.isEmpty()) {
           Column(
             modifier = Modifier.padding(horizontal = 16.dp).fillMaxSize(),

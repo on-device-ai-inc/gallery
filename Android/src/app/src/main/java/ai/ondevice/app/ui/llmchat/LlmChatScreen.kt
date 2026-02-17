@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 fun LlmChatScreen(
   modelManagerViewModel: ModelManagerViewModel,
   navigateUp: () -> Unit,
-  onNavigateToConversationHistory: () -> Unit = {},
-  onNavigateToSettings: () -> Unit = {},
+  onNavigateToConversationHistory: () -> Unit,
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
   loadConversationId: Long? = null,
   onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
@@ -60,8 +60,8 @@ fun LlmChatScreen(
 fun LlmAskImageScreen(
   modelManagerViewModel: ModelManagerViewModel,
   navigateUp: () -> Unit,
-  onNavigateToConversationHistory: () -> Unit = {},
-  onNavigateToSettings: () -> Unit = {},
+  onNavigateToConversationHistory: () -> Unit,
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
   loadConversationId: Long? = null,
   onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
@@ -84,8 +84,8 @@ fun LlmAskImageScreen(
 fun LlmAskAudioScreen(
   modelManagerViewModel: ModelManagerViewModel,
   navigateUp: () -> Unit,
-  onNavigateToConversationHistory: () -> Unit = {},
-  onNavigateToSettings: () -> Unit = {},
+  onNavigateToConversationHistory: () -> Unit,
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
   loadConversationId: Long? = null,
   onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
@@ -111,7 +111,7 @@ fun ChatViewWrapper(
   taskId: String,
   navigateUp: () -> Unit,
   onNavigateToConversationHistory: () -> Unit = {},
-  onNavigateToSettings: () -> Unit = {},
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
   loadConversationId: Long? = null,
   onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
@@ -121,7 +121,7 @@ fun ChatViewWrapper(
   val modelManagerUiState = modelManagerViewModel.uiState.collectAsState()
   val selectedModel = modelManagerUiState.value.selectedModel
 
-  // Load conversation when returning from history list
+  // Update #8: Load conversation when returning from history list
   androidx.compose.runtime.LaunchedEffect(loadConversationId) {
     if (loadConversationId != null) {
       viewModel.loadConversation(loadConversationId, selectedModel)
@@ -200,7 +200,7 @@ fun ChatViewWrapper(
     onStopButtonClicked = { model -> viewModel.stopResponse(model = model) },
     navigateUp = navigateUp,
     onNavigateToConversationHistory = onNavigateToConversationHistory,
-    onNavigateToSettings = onNavigateToSettings,
+    onNavigateToSettings = onNavigateToSettings,  // Epic 5: Settings navigation
     modifier = modifier,
   )
 }

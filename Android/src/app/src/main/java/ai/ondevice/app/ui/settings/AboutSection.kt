@@ -75,21 +75,21 @@ fun AboutSection(
                 
                 // External links
                 TextButton(
-                    onClick = { onOpenWebsite("https://github.com/google-ai-edge/gallery") },
+                    onClick = { onOpenWebsite("https://github.com/on-device-ai-inc/on-device-ai") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("View Original Source Code")
                 }
                 
                 TextButton(
-                    onClick = { onOpenWebsite("https://goraai.github.io/ondevice-legal/terms.html") },
+                    onClick = { onOpenWebsite("https://ondevice.ai/legal/terms.html") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Terms of Service")
                 }
                 
                 TextButton(
-                    onClick = { onOpenWebsite("https://goraai.github.io/ondevice-legal/privacy.html") },
+                    onClick = { onOpenWebsite("https://ondevice.ai/legal/privacy.html") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Privacy Policy")

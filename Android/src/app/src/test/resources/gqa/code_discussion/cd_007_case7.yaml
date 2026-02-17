@@ -1,0 +1,12 @@
+# GQA Test Case: Code Discussion 7
+test_case_id: "cd_007"
+category: "code_discussion"
+description: "Technical code discussion case 7"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "Technical question 7", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Technical answer 7", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "Technical query 7", expected_keywords: ["keyword"], importance: "high"}
+expected_compression_behavior: ["Should preserve technical content"]

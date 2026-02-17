@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,7 @@ import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import ai.ondevice.app.R
 import ai.ondevice.app.data.MAX_AUDIO_CLIP_DURATION_SEC
 import ai.ondevice.app.ui.theme.customColors
 import java.nio.ByteBuffer
@@ -147,10 +145,7 @@ fun AudioPlaybackPanel(
     ) {
       Icon(
         if (isPlaying) Icons.Rounded.Stop else Icons.Rounded.PlayArrow,
-        contentDescription =
-          stringResource(
-            if (isPlaying) R.string.cd_stop_playback_icon else R.string.cd_play_audio_icon
-          ),
+        contentDescription = "",
         tint = if (onDarkBg) Color.White else MaterialTheme.colorScheme.primary,
       )
     }

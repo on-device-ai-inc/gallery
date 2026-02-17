@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ fun ModelNameAndStatus(
           Icon(
             Icons.Filled.Star,
             tint = Color(0xFFFCC934),
-            contentDescription = null,
+            contentDescription = "",
             modifier = Modifier.size(18.dp),
           )
           Text(
@@ -222,7 +222,7 @@ fun ModelNameAndStatus(
           Icon(
             Icons.AutoMirrored.Outlined.OpenInNew,
             tint = MaterialTheme.customColors.modelInfoIconColor,
-            contentDescription = null,
+            contentDescription = "",
             modifier = Modifier.size(MODEL_INFO_ICON_SIZE).offset(y = 1.dp),
           )
           ClickableLink(model.learnMoreUrl, linkText = stringResource(R.string.learn_more))

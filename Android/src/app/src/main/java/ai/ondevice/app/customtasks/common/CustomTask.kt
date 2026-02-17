@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import kotlinx.coroutines.CoroutineScope
  *    the app's home screen.
  *
  * For a concrete example of how to implement these steps, see the
- * [ai.ondevice.app.customtasks.examplecustomtask.ExampleCustomTask] class. This example
+ * [com.google.ai.edge.gallery.customtasks.examplecustomtask.ExampleCustomTask] class. This example
  * implements a "Model Viewer" task that displays the text content of a model file for demonstration
  * purpose. See comments there for more details.
  *

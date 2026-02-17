@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ abstract class ChatViewModel(
     }
     newMessages.add(message)
     _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
-
+    
     // Phase 2: Silent save to database (fire-and-forget)
     saveMessageToDatabase(model, message)
   }
@@ -331,7 +331,7 @@ abstract class ChatViewModel(
         if (message !is ChatMessageText) {
           return@launch
         }
-
+        
         // Get or create conversation thread (thread-safe with mutex)
         threadMutex.withLock {
           if (currentThreadId == null) {
@@ -347,7 +347,7 @@ abstract class ChatViewModel(
             Log.d(TAG, "Created new thread: $currentThreadId")
           }
         }
-
+        
         // Save the message
         conversationDao.insertMessage(
           ConversationMessage(
@@ -357,7 +357,7 @@ abstract class ChatViewModel(
             timestamp = System.currentTimeMillis()
           )
         )
-
+        
         Log.d(TAG, "Saved message to thread $currentThreadId")
       } catch (e: Exception) {
         Log.e(TAG, "Failed to save message to database", e)

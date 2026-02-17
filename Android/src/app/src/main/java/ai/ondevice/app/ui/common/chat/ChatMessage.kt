@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ private const val TAG = "AGChatMessage"
 enum class ChatMessageType {
   INFO,
   WARNING,
-  ERROR,
   TEXT,
   IMAGE,
   IMAGE_WITH_HISTORY,
@@ -69,13 +68,9 @@ class ChatMessageLoading(override val accelerator: String = "") :
 class ChatMessageInfo(val content: String) :
   ChatMessage(type = ChatMessageType.INFO, side = ChatSide.SYSTEM)
 
-/** Chat message for warning message. */
+/** Chat message for info (help). */
 class ChatMessageWarning(val content: String) :
   ChatMessage(type = ChatMessageType.WARNING, side = ChatSide.SYSTEM)
-
-/** Chat message for error message. */
-class ChatMessageError(val content: String) :
-  ChatMessage(type = ChatMessageType.ERROR, side = ChatSide.SYSTEM)
 
 /** Chat message for config values change. */
 class ChatMessageConfigValuesChange(
@@ -95,7 +90,9 @@ open class ChatMessageText(
   // Benchmark result for LLM response.
   var llmBenchmarkResult: ChatMessageBenchmarkLlmResult? = null,
   override val accelerator: String = "",
-  var data: Any? = null,
+
+  // Indicates if this message originated from voice input
+  val isVoiceInput: Boolean = false,
 ) :
   ChatMessage(
     type = ChatMessageType.TEXT,
@@ -111,7 +108,7 @@ open class ChatMessageText(
       accelerator = accelerator,
       isMarkdown = isMarkdown,
       llmBenchmarkResult = llmBenchmarkResult,
-      data = data,
+      isVoiceInput = isVoiceInput,
     )
   }
 }
@@ -237,7 +234,8 @@ class ChatMessageClassification(
   override val latencyMs: Float = 0f,
   // Typical android phone width is > 320dp
   val maxBarWidth: Dp? = null,
-) : ChatMessage(type = ChatMessageType.CLASSIFICATION, side = ChatSide.AGENT, latencyMs = latencyMs)
+) :
+  ChatMessage(type = ChatMessageType.CLASSIFICATION, side = ChatSide.AGENT, latencyMs = latencyMs)
 
 /** A stat used in benchmark result. */
 data class Stat(val id: String, val label: String, val unit: String)

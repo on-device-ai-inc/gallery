@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -451,7 +451,8 @@ fun HomeScreen(
   // Show TOS dialog for users to accept.
   if (showTosDialog) {
     TosDialog(
-      onTosAccepted = {
+      onDismiss = {},
+      onAccept = {
         showTosDialog = false
         tosViewModel.acceptTos()
 

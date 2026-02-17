@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,13 +59,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ai.ondevice.app.R
 import ai.ondevice.app.data.ConfigKeys
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.Task
@@ -134,7 +129,7 @@ fun ResponsePanel(
     // Scroll to bottom when response changes.
     LaunchedEffect(response) {
       if (inProgress && responseScrollState.maxValue - responseScrollState.value < 80) {
-        responseScrollState.animateScrollTo(1000000)
+        responseScrollState.animateScrollTo(responseScrollState.maxValue)
       }
     }
 
@@ -183,7 +178,7 @@ fun ResponsePanel(
                         else MaterialTheme.colorScheme.onSurfaceVariant
                       Icon(
                         ICONS[index],
-                        contentDescription = null,
+                        contentDescription = "",
                         modifier = Modifier.size(16.dp).alpha(0.7f),
                         tint = titleColor,
                       )
@@ -214,13 +209,7 @@ fun ResponsePanel(
               Column(modifier = Modifier.fillMaxSize().verticalScroll(responseScrollState)) {
                 MarkdownText(
                   text = response,
-                  modifier =
-                    Modifier.padding(top = 8.dp, bottom = 40.dp).semantics {
-                      // Only announce when message is complete.
-                      if (!inProgress) {
-                        liveRegion = LiveRegionMode.Polite
-                      }
-                    },
+                  modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
                 )
               }
               // Copy button.
@@ -240,7 +229,7 @@ fun ResponsePanel(
               ) {
                 Icon(
                   Icons.Outlined.ContentCopy,
-                  contentDescription = stringResource(R.string.cd_copy_to_clipboard_icon),
+                  contentDescription = "",
                   modifier = Modifier.size(20.dp),
                 )
               }

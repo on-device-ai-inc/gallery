@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,12 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import ai.ondevice.app.R
 import ai.ondevice.app.common.calculatePeakAmplitude
 import ai.ondevice.app.data.MAX_AUDIO_CLIP_DURATION_SEC
 import ai.ondevice.app.data.SAMPLE_RATE
@@ -138,7 +133,7 @@ fun AudioRecorderPanel(
     ) {
       Icon(
         Icons.Rounded.Close,
-        contentDescription = stringResource(R.string.close),
+        contentDescription = "Close audio recorder",
         tint = MaterialTheme.colorScheme.onSurface,
       )
     }
@@ -178,7 +173,6 @@ fun AudioRecorderPanel(
 
       // Record/send button.
       IconButton(
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
         onClick = {
           coroutineScope.launch {
             if (!isRecording) {
@@ -208,10 +202,7 @@ fun AudioRecorderPanel(
       ) {
         Icon(
           if (isRecording) Icons.Rounded.ArrowUpward else Icons.Rounded.Mic,
-          contentDescription =
-            stringResource(
-              if (isRecording) R.string.cd_send_audio_clip_icon else R.string.cd_start_recording
-            ),
+          contentDescription = "",
           tint = Color.White,
         )
       }

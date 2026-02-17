@@ -1,0 +1,12 @@
+# GQA Test Case: Retrofit Setup
+test_case_id: "cd_006"
+category: "code_discussion"
+description: "Configuring Retrofit for API calls"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "Setup Retrofit with error handling?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use sealed class for results:\n```kotlin\nsealed class Result<out T> {\n    data class Success<T>(val data: T) : Result<T>()\n    data class Error(val exception: Exception) : Result<Nothing>()\n}\n\nsuspend fun <T> safeApiCall(call: suspend () -> T): Result<T> {\n    return try {\n        Result.Success(call())\n    } catch (e: Exception) {\n        Result.Error(e)\n    }\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "How to handle API errors?", expected_keywords: ["sealed class", "Result", "Success", "Error"], importance: "high"}
+expected_compression_behavior: ["Should preserve error handling pattern"]

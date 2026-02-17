@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -31,7 +31,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,9 +62,6 @@ import kotlin.math.pow
 import kotlinx.coroutines.delay
 
 private const val TAG = "AGUtils"
-
-val SMALL_BUTTON_CONTENT_PADDING =
-  PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp)
 
 /** Format the bytes into a human-readable format. */
 fun Long.humanReadableSize(si: Boolean = true, extraDecimalForGbAndAbove: Boolean = false): String {
@@ -150,7 +146,9 @@ fun getDistinctiveColor(index: Int): Color {
       Color(0xffffd8b1),
       Color(0xff000075),
     )
-  return colors[index % colors.size]
+  val size = colors.size
+  val colorIndex = ((index % size) + size) % size
+  return colors[colorIndex]
 }
 
 fun Context.createTempPictureUri(
@@ -161,7 +159,7 @@ fun Context.createTempPictureUri(
 
   return FileProvider.getUriForFile(
     applicationContext,
-    "ai.ondevice.app.provider" /* {applicationId}.provider */,
+    "com.google.aiedge.gallery.provider" /* {applicationId}.provider */,
     tempFile,
   )
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ class LlmSingleTurnTask @Inject constructor() : CustomTask {
       icon = Icons.Outlined.Widgets,
       models = mutableListOf(),
       description = "Single turn use cases with on-device large language models",
-      docUrl = "https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md",
+      docUrl = "https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android",
       sourceCodeUrl =
         "https://github.com/on-device-ai-inc/on-device-ai/blob/main/Android/src/app/src/main/java/ai/ondevice/app/ui/llmchat/LlmChatModelHelper.kt",
       textInputPlaceHolderRes = R.string.text_input_placeholder_llm_chat,
