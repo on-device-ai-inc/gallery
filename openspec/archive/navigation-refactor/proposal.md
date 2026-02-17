@@ -107,3 +107,21 @@ GoraAI removes `setTopBarVisible` and `setCustomNavigateUpCallback` from `Custom
 - GoraAI Tasks: `/tmp/goraai-target/app/src/main/java/ai/ondevice/app/data/Tasks.kt`
 - GoraAI CustomTaskData: `/tmp/goraai-target/app/src/main/java/ai/ondevice/app/customtasks/common/CustomTaskData.kt`
 - Previous archived spec: `openspec/archive/room-database-data-layer/` (Room DB prerequisite ✅ complete)
+
+---
+
+## Completion Record
+
+- **Archived**: 2026-02-17
+- **CI Run**: 22113198810 (GREEN)
+- **Commits**: 
+  - `d16ad29` Initial project/CI setup
+  - `bcbc3e5` Fix compilation errors - GoraAI API alignment (ChatPanel, LlmChatScreen, LlmChatTaskModule, Utils)
+  - `1bdf7ef` Fix remaining errors (TosDialog callers, ModelPageAppBar, string resources, model_allowlist.json)
+  - `315b690` Remove duplicate CompetitiveComparisonCard
+- **Visual Verification**: App launches, shows "Welcome to OnDevice AI" TOS dialog ✅
+- **Lessons Learned**: Added to LESSONS_LEARNED.md:
+  - Copy-from-target strategy (avoid surgical patches)
+  - GoraAI LiteRT v0.9.0 API breaking changes
+  - ADB on DGX Spark (ARM64) setup
+  - Raw resources pattern

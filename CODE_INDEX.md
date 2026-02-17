@@ -106,6 +106,18 @@
 | 2026-02-17 | `ErrorDialog` | Error dialog with support contact: `ui/common/ErrorDialog.kt` |
 | 2026-02-17 | Legal assets | Privacy/Terms HTML: `assets/legal/privacy.html`, `assets/legal/terms.html` |
 | 2026-02-17 | Navigation refactor | 10-route GoraAI nav graph; settings/, modelselection/, conversationlist/, conversationdetail/ |
+| 2026-02-17 | `conversation/` package | CompactionManager, ContextBuilder, SummarizationPrompts, TokenEstimator: `conversation/` |
+| 2026-02-17 | `persona/` package | PersonaLibrary, PersonaManager, PersonaVariant (Gemma persona injection): `persona/` |
+| 2026-02-17 | `SecureTokenStorage` | Encrypted API token storage: `data/SecureTokenStorage.kt` |
+| 2026-02-17 | `LongResponseDetector` | Scoring system for long-form response detection: `ui/llmchat/LongResponseDetector.kt` |
+| 2026-02-17 | `ChatMenuSheet` | Gemini-style navigation drawer: `ui/common/ChatMenuSheet.kt` |
+| 2026-02-17 | `RegenerateOption` + `RegenerateMenu` | Regeneration style selector bottom sheet: `ui/common/chat/` |
+| 2026-02-17 | `CompactingStatusChip` | Pulsating chip for context compaction: `ui/common/chat/` |
+| 2026-02-17 | `LongResponseStatusBox` | Status box for long-form generation: `ui/common/chat/` |
+| 2026-02-17 | `MessageDisclaimerRow` | Disclaimer row below AI responses: `ui/common/chat/` |
+| 2026-02-17 | `PrivacyIndicators` | OnDeviceIndicator, PrivacyAdvantagesCard, OfflineCapabilityBadge: `ui/common/PrivacyIndicators.kt` |
+| 2026-02-17 | `FirstLaunchManager` | First-launch model setup detection: `ui/firstlaunch/FirstLaunchManager.kt` |
+| 2026-02-17 | `model_allowlist.json` | Bundled GoraAI model list (Gemma-3n + Qwen + Phi): `res/raw/model_allowlist.json` |
 | 2026-02-17 | `SettingsScreen` (+ 8 sub-screens) | Settings hub + CustomInstructions, ModelParams, Privacy, Storage: `ui/settings/` |
 | 2026-02-17 | `ModelSelectionScreen` | First-launch model selection: `ui/modelselection/` |
 | 2026-02-17 | `ConversationListScreen` + VM + State | Conversation history list: `ui/conversationlist/` |
