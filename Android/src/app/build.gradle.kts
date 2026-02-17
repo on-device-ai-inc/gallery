@@ -100,10 +100,10 @@ android {
         signingConfig = signingConfigs.getByName("release")
       }
 
-      // Firebase Crashlytics - Upload ProGuard mapping files for deobfuscated stack traces
-      configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
-        mappingFileUploadEnabled = true
-      }
+      // Firebase Crashlytics disabled until Firebase project is configured
+      // configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+      //   mappingFileUploadEnabled = true
+      // }
     }
   }
   compileOptions {
