@@ -22,10 +22,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MapsUgc
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -36,23 +38,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
-import ai.ondevice.app.R
-import ai.ondevice.app.data.BuiltInTaskId
-import ai.ondevice.app.data.ConfigKeys
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.ModelDownloadStatusType
 import ai.ondevice.app.data.Task
@@ -66,7 +66,7 @@ fun ModelPageAppBar(
   task: Task,
   model: Model,
   modelManagerViewModel: ModelManagerViewModel,
-  onBackClicked: () -> Unit,
+  onMenuClicked: () -> Unit,
   onModelSelected: (prev: Model, cur: Model) -> Unit,
   inProgress: Boolean,
   modelPreparing: Boolean,
@@ -74,8 +74,6 @@ fun ModelPageAppBar(
   isResettingSession: Boolean = false,
   onResetSessionClicked: (Model) -> Unit = {},
   canShowResetSessionButton: Boolean = false,
-  hideModelSelector: Boolean = false,
-  useThemeColor: Boolean = false,
   onConfigChanged: (oldConfigValues: Map<String, Any>, newConfigValues: Map<String, Any>) -> Unit =
     { _, _ ->
     },
@@ -92,49 +90,22 @@ fun ModelPageAppBar(
 
   CenterAlignedTopAppBar(
     title = {
-      Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-      ) {
-        // Task type.
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-          val tintColor =
-            if (useThemeColor) MaterialTheme.colorScheme.onSurface
-            else getTaskIconColor(task = task)
-          Icon(
-            task.icon ?: ImageVector.vectorResource(task.iconVectorResourceId!!),
-            tint = tintColor,
-            modifier = Modifier.size(24.dp),
-            contentDescription = null,
-          )
-          Text(task.label, style = MaterialTheme.typography.titleMedium, color = tintColor)
-        }
-
-        // Model chips pager.
-        if (!hideModelSelector) {
-          val enableModelPickerChip = !isModelInitializing && !inProgress
-          ModelPickerChip(
-            enabled = enableModelPickerChip,
-            task = task,
-            initialModel = model,
-            modelManagerViewModel = modelManagerViewModel,
-            onModelSelected = onModelSelected,
-          )
-        }
-      }
+      // Model chips pager (centered in header, task label removed)
+      val enableModelPickerChip = !isModelInitializing && !inProgress
+      ModelPickerChip(
+        enabled = enableModelPickerChip,
+        task = task,
+        initialModel = model,
+        modelManagerViewModel = modelManagerViewModel,
+        onModelSelected = onModelSelected,
+      )
     },
     modifier = modifier,
-    // The back button.
+    // The back button (lock icon removed for better centering)
     navigationIcon = {
       val enableBackButton = !isModelInitializing && !inProgress
-      IconButton(onClick = onBackClicked, enabled = enableBackButton) {
-        Icon(
-          imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-          contentDescription = stringResource(R.string.cd_navigate_back_icon),
-        )
+      IconButton(onClick = onMenuClicked, enabled = enableBackButton) {
+        Icon(imageVector = Icons.Rounded.Menu, contentDescription = "")
       }
     },
     // The config button for the model (if existed).
@@ -157,7 +128,7 @@ fun ModelPageAppBar(
           ) {
             Icon(
               imageVector = Icons.Rounded.Tune,
-              contentDescription = stringResource(R.string.cd_model_settings_icon),
+              contentDescription = "Model setting button",
               tint = MaterialTheme.colorScheme.onSurface,
               modifier = Modifier.size(20.dp),
             )
@@ -171,8 +142,7 @@ fun ModelPageAppBar(
               modifier = Modifier.size(16.dp),
             )
           } else {
-            val enableResetButton =
-              !isModelInitializing && !modelPreparing && !inProgress && isModelInitialized
+            val enableResetButton = !isModelInitializing && !modelPreparing && isModelInitialized
             IconButton(
               onClick = { onResetSessionClicked(model) },
               enabled = enableResetButton,
@@ -187,7 +157,7 @@ fun ModelPageAppBar(
               ) {
                 Icon(
                   imageVector = Icons.Rounded.MapsUgc,
-                  contentDescription = stringResource(R.string.cd_reset_session_icon),
+                  contentDescription = "",
                   tint = MaterialTheme.colorScheme.onSurface,
                   modifier = Modifier.size(20.dp),
                 )
@@ -201,17 +171,9 @@ fun ModelPageAppBar(
 
   // Config dialog.
   if (showConfigDialog) {
-    // Remove the reset conversation turn count config for non-tiny-garden tasks.
-    //
-    // This may happen when user imports a model with "enable tiny garden" turned on and use the
-    // model in another non-tiny-garden task.
-    val modelConfigs = model.configs.toMutableList()
-    if (task.id != BuiltInTaskId.LLM_TINY_GARDEN) {
-      modelConfigs.removeIf { it.key == ConfigKeys.RESET_CONVERSATION_TURN_COUNT }
-    }
     ConfigDialog(
       title = "Model configs",
-      configs = modelConfigs,
+      configs = model.configs,
       initialValues = model.configValues,
       onDismissed = { showConfigDialog = false },
       onOk = { curConfigValues ->
@@ -222,7 +184,7 @@ fun ModelPageAppBar(
         // re-initialized.
         var same = true
         var needReinitialization = false
-        for (config in modelConfigs) {
+        for (config in model.configs) {
           val key = config.key.label
           val oldValue =
             convertValueToTargetType(
@@ -248,24 +210,21 @@ fun ModelPageAppBar(
 
         // Save the config values to Model.
         val oldConfigValues = model.configValues
-        model.prevConfigValues = oldConfigValues
         model.configValues = curConfigValues
         modelManagerViewModel.updateConfigValuesUpdateTrigger()
 
-        if (!task.handleModelConfigChangesInTask) {
-          // Force to re-initialize the model with the new configs.
-          if (needReinitialization) {
-            modelManagerViewModel.initializeModel(
-              context = context,
-              task = task,
-              model = model,
-              force = true,
-            )
-          }
-
-          // Notify.
-          onConfigChanged(oldConfigValues, model.configValues)
+        // Force to re-initialize the model with the new configs.
+        if (needReinitialization) {
+          modelManagerViewModel.initializeModel(
+            context = context,
+            task = task,
+            model = model,
+            force = true,
+          )
         }
+
+        // Notify.
+        onConfigChanged(oldConfigValues, model.configValues)
       },
     )
   }

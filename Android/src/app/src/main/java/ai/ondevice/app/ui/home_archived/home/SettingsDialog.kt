@@ -20,7 +20,6 @@ import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,8 +35,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -66,10 +63,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import ai.ondevice.app.BuildConfig
@@ -145,7 +140,7 @@ fun SettingsDialog(
         ) {
           val context = LocalContext.current
           // Theme switcher.
-          Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+          Column(modifier = Modifier.fillMaxWidth()) {
             Text(
               "Theme",
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
@@ -189,7 +184,7 @@ fun SettingsDialog(
 
           // HF Token management.
           Column(
-            modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
           ) {
             Text(
@@ -231,20 +226,9 @@ fun SettingsDialog(
               ) {
                 Text("Clear")
               }
-              val handleSaveToken = {
-                modelManagerViewModel.saveAccessToken(
-                  accessToken = customHfToken,
-                  refreshToken = "",
-                  expiresAt = System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 365 * 10,
-                )
-                hfToken = modelManagerViewModel.getTokenStatusAndData().data
-                focusManager.clearFocus()
-              }
               BasicTextField(
                 value = customHfToken,
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { handleSaveToken() }),
                 modifier =
                   Modifier.fillMaxWidth()
                     .padding(top = 4.dp)
@@ -278,11 +262,18 @@ fun SettingsDialog(
                       innerTextField()
                     }
                     if (customHfToken.isNotEmpty()) {
-                      IconButton(modifier = Modifier.offset(x = 1.dp), onClick = handleSaveToken) {
-                        Icon(
-                          Icons.Rounded.CheckCircle,
-                          contentDescription = stringResource(R.string.cd_done_icon),
-                        )
+                      IconButton(
+                        modifier = Modifier.offset(x = 1.dp),
+                        onClick = {
+                          modelManagerViewModel.saveAccessToken(
+                            accessToken = customHfToken,
+                            refreshToken = "",
+                            expiresAt = System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 365 * 10,
+                          )
+                          hfToken = modelManagerViewModel.getTokenStatusAndData().data
+                        },
+                      ) {
+                        Icon(Icons.Rounded.CheckCircle, contentDescription = "")
                       }
                     }
                   }
@@ -292,7 +283,7 @@ fun SettingsDialog(
           }
 
           // Third party licenses.
-          Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+          Column(modifier = Modifier.fillMaxWidth()) {
             Text(
               "Third-party libraries",
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
@@ -310,51 +301,12 @@ fun SettingsDialog(
           }
 
           // Tos
-          Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+          Column(modifier = Modifier.fillMaxWidth()) {
             Text(
               stringResource(R.string.settings_dialog_tos_title),
               style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
             )
             OutlinedButton(onClick = { showTos = true }) { Text("View Terms of Services") }
-          }
-
-          // Privacy Policy
-          Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
-            Text(
-              "Privacy Policy",
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
-            )
-            OutlinedButton(
-              onClick = {
-                val intent =
-                  Intent(Intent.ACTION_VIEW, Uri.parse("https://ondevice.ai/privacy"))
-                context.startActivity(intent)
-              }
-            ) {
-              Text("View Privacy Policy")
-            }
-          }
-
-          // Help & Support
-          Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
-            Text(
-              "Help & Support",
-              style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
-            )
-            Text(
-              stringResource(R.string.support_contact_text),
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            OutlinedButton(
-              onClick = {
-                val intent =
-                  Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@ondevice.ai"))
-                context.startActivity(intent)
-              }
-            ) {
-              Text("Send Email")
-            }
           }
         }
 
@@ -371,7 +323,10 @@ fun SettingsDialog(
   }
 
   if (showTos) {
-    TosDialog(onTosAccepted = { showTos = false }, viewingMode = true)
+      TosDialog(
+        onDismiss = { showTos = false },
+        onAccept = { showTos = false }
+     )
   }
 }
 

@@ -93,34 +93,33 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
+import androidx.core.os.bundleOf
 import ai.ondevice.app.GalleryTopAppBar
 import ai.ondevice.app.R
 import ai.ondevice.app.data.AppBarAction
 import ai.ondevice.app.data.AppBarActionType
 import ai.ondevice.app.data.BuiltInTaskId
+import ai.ondevice.app.data.ModelDownloadStatusType
 import ai.ondevice.app.data.Category
 import ai.ondevice.app.data.CategoryInfo
-import ai.ondevice.app.data.ConfigKeys
-import ai.ondevice.app.data.DEFAULT_TEMPERATURE
 import ai.ondevice.app.data.Task
+import ai.ondevice.app.firebaseAnalytics
 import ai.ondevice.app.proto.ImportedModel
 import ai.ondevice.app.ui.common.RevealingText
 import ai.ondevice.app.ui.common.SwipingText
 import ai.ondevice.app.ui.common.TaskIcon
-import ai.ondevice.app.ui.common.buildTrackableUrlAnnotatedString
 import ai.ondevice.app.ui.common.rememberDelayedAnimationProgress
 import ai.ondevice.app.ui.common.tos.TosDialog
 import ai.ondevice.app.ui.common.tos.TosViewModel
+import ai.ondevice.app.ui.firstlaunch.FirstLaunchManager
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import ai.ondevice.app.ui.theme.customColors
 import ai.ondevice.app.ui.theme.homePageTitleStyle
@@ -148,16 +147,12 @@ object HomeScreenDestination {
 }
 
 private val PREDEFINED_CATEGORY_ORDER = listOf(Category.LLM.id, Category.EXPERIMENTAL.id)
-
 private val PREDEFINED_LLM_TASK_ORDER =
   listOf(
     BuiltInTaskId.LLM_ASK_IMAGE,
     BuiltInTaskId.LLM_ASK_AUDIO,
-    BuiltInTaskId.LLM_CHAT,
     BuiltInTaskId.LLM_PROMPT_LAB,
-    BuiltInTaskId.LLM_TINY_GARDEN,
-    BuiltInTaskId.LLM_MOBILE_ACTIONS,
-    BuiltInTaskId.MP_SCRAPBOOK,
+    BuiltInTaskId.LLM_CHAT,
   )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -166,10 +161,30 @@ fun HomeScreen(
   modelManagerViewModel: ModelManagerViewModel,
   tosViewModel: TosViewModel,
   navigateToTaskScreen: (Task) -> Unit,
-  enableAnimation: Boolean,
+  navigateToModelScreen: (String, String) -> Unit,
+  navigateToModelSelection: () -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   val uiState by modelManagerViewModel.uiState.collectAsState()
+  
+  // Auto-navigate to chat if model is downloaded
+  val chatTask = remember(uiState.tasks) { 
+    uiState.tasks.find { it.id == BuiltInTaskId.LLM_CHAT } 
+  }
+  val downloadedChatModel = remember(uiState.modelDownloadStatus, chatTask) {
+    chatTask?.models?.firstOrNull { model ->
+      uiState.modelDownloadStatus[model.name]?.status == ModelDownloadStatusType.SUCCEEDED
+    }
+  }
+  
+  // Navigate to chat with model immediately if downloaded and ToS accepted
+  LaunchedEffect(downloadedChatModel) {
+    if (downloadedChatModel != null && chatTask != null && tosViewModel.getIsTosAccepted()) {
+      // Navigate directly to chat screen with model loaded
+      navigateToModelScreen(chatTask.id, downloadedChatModel.name)
+    }
+  }
+  
   var showSettingsDialog by remember { mutableStateOf(false) }
   var showImportModelSheet by remember { mutableStateOf(false) }
   var showUnsupportedFileTypeDialog by remember { mutableStateOf(false) }
@@ -178,7 +193,6 @@ fun HomeScreen(
   var showImportDialog by remember { mutableStateOf(false) }
   var showImportingDialog by remember { mutableStateOf(false) }
   var showTosDialog by remember { mutableStateOf(!tosViewModel.getIsTosAccepted()) }
-  var showMobileActionsChallengeDialog by remember { mutableStateOf(false) }
   val selectedLocalModelFileUri = remember { mutableStateOf<Uri?>(null) }
   val selectedImportedModelInfo = remember { mutableStateOf<ImportedModel?>(null) }
   val coroutineScope = rememberCoroutineScope()
@@ -189,6 +203,41 @@ fun HomeScreen(
   val tasks = uiState.tasks
   val categoryMap: Map<String, CategoryInfo> =
     remember(tasks) { tasks.associateBy { it.category.id }.mapValues { it.value.category } }
+  val tasksByCategories: Map<String, List<Task>> =
+    remember(tasks) {
+      val groupedTasks = tasks.groupBy { it.category.id }
+      val groupedSortedTasks: MutableMap<String, List<Task>> = mutableMapOf()
+      // Sort the tasks in LLM category by pre-defined order. Sort other tasks by label.
+      for (categoryId in groupedTasks.keys) {
+        val sortedTasks =
+          groupedTasks[categoryId]!!.sortedWith { a, b ->
+            if (categoryId == Category.LLM.id) {
+              val indexA = PREDEFINED_LLM_TASK_ORDER.indexOf(a.id)
+              val indexB = PREDEFINED_LLM_TASK_ORDER.indexOf(b.id)
+              if (indexA != -1 && indexB != -1) {
+                indexA.compareTo(indexB)
+              } else if (indexA != -1) {
+                -1
+              } else if (indexB != -1) {
+                1
+              } else {
+                val ca = categoryMap[a.id]!!
+                val cb = categoryMap[b.id]!!
+                val caLabel = getCategoryLabel(context = context, category = ca)
+                val cbLabel = getCategoryLabel(context = context, category = cb)
+                caLabel.compareTo(cbLabel)
+              }
+            } else {
+              a.label.compareTo(b.label)
+            }
+          }
+        for ((index, task) in sortedTasks.withIndex()) {
+          task.index = index
+        }
+        groupedSortedTasks[categoryId] = sortedTasks
+      }
+      groupedSortedTasks
+    }
   val sortedCategories =
     remember(categoryMap) {
       categoryMap.keys
@@ -297,13 +346,11 @@ fun HomeScreen(
           //
           // Fade in and move down at the same time.
           val progress =
-            if (!enableAnimation) 1f
-            else
-              rememberDelayedAnimationProgress(
-                initialDelay = ANIMATION_INIT_DELAY - 50,
-                animationDurationMs = TOP_APP_BAR_ANIMATION_DURATION,
-                animationLabel = "top bar",
-              )
+            rememberDelayedAnimationProgress(
+              initialDelay = ANIMATION_INIT_DELAY - 50,
+              animationDurationMs = TOP_APP_BAR_ANIMATION_DURATION,
+              animationLabel = "top bar",
+            )
           Box(
             modifier =
               Modifier.graphicsLayer {
@@ -323,14 +370,12 @@ fun HomeScreen(
         },
         floatingActionButton = {
           // A floating action button to show "import model" bottom sheet.
-          val cdImportModelFab = stringResource(R.string.cd_import_model_button)
           SmallFloatingActionButton(
             onClick = { showImportModelSheet = true },
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.semantics { contentDescription = cdImportModelFab },
           ) {
-            Icon(Icons.Filled.Add, contentDescription = null)
+            Icon(Icons.Filled.Add, "")
           }
         },
       ) { innerPadding ->
@@ -349,15 +394,20 @@ fun HomeScreen(
 
               // App title and intro text.
               Column(
-                modifier =
-                  Modifier.padding(horizontal = 40.dp, vertical = 48.dp).semantics(
-                    mergeDescendants = true
-                  ) {},
+                modifier = Modifier.padding(horizontal = 40.dp, vertical = 48.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
               ) {
-                AppTitle(enableAnimation = enableAnimation)
-                IntroText(enableAnimation = enableAnimation)
+                AppTitle()
+                IntroText()
               }
+
+              // Story 10: Privacy advantages card for first-launch emphasis
+              ai.ondevice.app.ui.common.PrivacyAdvantagesCard(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 40.dp)
+                  .padding(bottom = 24.dp)
+              )
 
               // Tab header for categories.
               //
@@ -371,7 +421,6 @@ fun HomeScreen(
                 CategoryTabHeader(
                   sortedCategories = sortedCategories,
                   selectedIndex = selectedCategoryIndex,
-                  enableAnimation = enableAnimation,
                   onCategorySelected = { index ->
                     selectedCategoryIndex = index
                     scope.launch { pagerState.animateScrollToPage(page = index) }
@@ -384,18 +433,9 @@ fun HomeScreen(
               TaskList(
                 pagerState = pagerState,
                 sortedCategories = sortedCategories,
-                tasksByCategories = uiState.tasksByCategory,
-                enableAnimation = enableAnimation,
-                navigateToTaskScreen = { task ->
-                  if (task.id == BuiltInTaskId.LLM_MOBILE_ACTIONS && task.models.isEmpty()) {
-                    showMobileActionsChallengeDialog = true
-                  } else {
-                    navigateToTaskScreen(task)
-                  }
-                },
+                tasksByCategories = tasksByCategories,
+                navigateToTaskScreen = navigateToTaskScreen,
               )
-
-              Spacer(modifier = Modifier.height(64.dp))
             }
 
             SnackbarHost(
@@ -411,9 +451,19 @@ fun HomeScreen(
   // Show TOS dialog for users to accept.
   if (showTosDialog) {
     TosDialog(
-      onTosAccepted = {
+      onDismiss = {},
+      onAccept = {
         showTosDialog = false
         tosViewModel.acceptTos()
+
+        // Check if any model is downloaded
+        if (downloadedChatModel != null && chatTask != null) {
+          // Model already downloaded - go to chat
+          navigateToModelScreen(chatTask.id, downloadedChatModel.name)
+        } else {
+          // No model downloaded - go to model selection
+          navigateToModelSelection()
+        }
       }
     )
   }
@@ -427,33 +477,6 @@ fun HomeScreen(
     )
   }
 
-  if (showMobileActionsChallengeDialog) {
-    MobileActionsChallengeDialog(
-      onDismiss = { showMobileActionsChallengeDialog = false },
-      onLoadModel = {
-        // Show file picker.
-        val intent =
-          Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "*/*"
-            // Single select.
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-          }
-        filePickerLauncher.launch(intent)
-      },
-      onSendEmail = {
-        context.startActivity(
-          Intent(Intent.ACTION_SEND).apply {
-            data = "mailto:".toUri()
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Finetune FunctionGemma 270M for Mobile Actions")
-            putExtra(Intent.EXTRA_TEXT, "https://ondevice.ai/docs/mobile-actions")
-          }
-        )
-      },
-    )
-  }
-
   // Import model bottom sheet.
   if (showImportModelSheet) {
     ModalBottomSheet(onDismissRequest = { showImportModelSheet = false }, sheetState = sheetState) {
@@ -462,38 +485,33 @@ fun HomeScreen(
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp),
       )
-      val cbImportFromLocalFile = stringResource(R.string.cd_import_model_from_local_file_button)
       Box(
         modifier =
           Modifier.clickable {
-              coroutineScope.launch {
-                // Give it sometime to show the click effect.
-                delay(200)
-                showImportModelSheet = false
+            coroutineScope.launch {
+              // Give it sometime to show the click effect.
+              delay(200)
+              showImportModelSheet = false
 
-                // Show file picker.
-                val intent =
-                  Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*"
-                    // Single select.
-                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
-                  }
-                filePickerLauncher.launch(intent)
-              }
+              // Show file picker.
+              val intent =
+                Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                  addCategory(Intent.CATEGORY_OPENABLE)
+                  type = "*/*"
+                  // Single select.
+                  putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false)
+                }
+              filePickerLauncher.launch(intent)
             }
-            .semantics {
-              role = Role.Button
-              contentDescription = cbImportFromLocalFile
-            }
+          }
       ) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(6.dp),
           modifier = Modifier.fillMaxWidth().padding(16.dp),
         ) {
-          Icon(Icons.AutoMirrored.Outlined.NoteAdd, contentDescription = null)
-          Text("From local model file", modifier = Modifier.clearAndSetSemantics {})
+          Icon(Icons.AutoMirrored.Outlined.NoteAdd, contentDescription = "")
+          Text("From local model file")
         }
       }
     }
@@ -502,10 +520,6 @@ fun HomeScreen(
   // Import dialog
   if (showImportDialog) {
     selectedLocalModelFileUri.value?.let { uri ->
-      // If it is from the Mobile Actions challenge flow.
-      val supportMobileActions = showMobileActionsChallengeDialog
-      showMobileActionsChallengeDialog = false
-
       ModelImportDialog(
         uri = uri,
         onDismiss = { showImportDialog = false },
@@ -514,12 +528,6 @@ fun HomeScreen(
           showImportDialog = false
           showImportingDialog = true
         },
-        defaultValues =
-          mapOf(
-            ConfigKeys.SUPPORT_MOBILE_ACTIONS to supportMobileActions,
-            ConfigKeys.DEFAULT_TEMPERATURE to
-              (if (supportMobileActions) 0.0f else DEFAULT_TEMPERATURE),
-          ),
       )
     }
   }
@@ -547,13 +555,6 @@ fun HomeScreen(
   // Alert dialog for unsupported file type.
   if (showUnsupportedFileTypeDialog) {
     AlertDialog(
-      icon = {
-        Icon(
-          Icons.Rounded.Error,
-          contentDescription = stringResource(R.string.cd_error),
-          tint = MaterialTheme.colorScheme.error,
-        )
-      },
       onDismissRequest = { showUnsupportedFileTypeDialog = false },
       title = { Text("Unsupported file type") },
       text = { Text("Only \".task\" or \".litertlm\" file type is supported.") },
@@ -568,13 +569,6 @@ fun HomeScreen(
   // Alert dialog for unsupported web model.
   if (showUnsupportedWebModelDialog) {
     AlertDialog(
-      icon = {
-        Icon(
-          Icons.Rounded.Error,
-          contentDescription = stringResource(R.string.cd_error),
-          tint = MaterialTheme.colorScheme.error,
-        )
-      },
       onDismissRequest = { showUnsupportedWebModelDialog = false },
       title = { Text("Unsupported model type") },
       text = { Text("Looks like the model is a web-only model and is not supported by the app.") },
@@ -589,11 +583,7 @@ fun HomeScreen(
   if (uiState.loadingModelAllowlistError.isNotEmpty()) {
     AlertDialog(
       icon = {
-        Icon(
-          Icons.Rounded.Error,
-          contentDescription = stringResource(R.string.cd_error),
-          tint = MaterialTheme.colorScheme.error,
-        )
+        Icon(Icons.Rounded.Error, contentDescription = "", tint = MaterialTheme.colorScheme.error)
       },
       title = { Text(uiState.loadingModelAllowlistError) },
       text = { Text("Please check your internet connection and try again later.") },
@@ -611,7 +601,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun AppTitle(enableAnimation: Boolean) {
+private fun AppTitle() {
   val firstLineText = stringResource(R.string.app_name_first_part)
   val secondLineText = stringResource(R.string.app_name_second_part)
   val titleColor = MaterialTheme.customColors.appTitleGradientColors[1]
@@ -627,52 +617,48 @@ private fun AppTitle(enableAnimation: Boolean) {
   // animation. This second animation is positioned directly on top of the first, appearing just as
   // the initial reveal is finishing or has just completed, creating a layered and dynamic visual
   // effect.
-  Box(modifier = Modifier.clearAndSetSemantics {}) {
+  Box {
     var delay = ANIMATION_INIT_DELAY
-    if (enableAnimation) {
-      SwipingText(
-        text = firstLineText,
-        style = titleStyle,
-        color = titleColor,
-        animationDelay = delay,
-        animationDurationMs = TITLE_FIRST_LINE_ANIMATION_DURATION,
-      )
-      delay += (TITLE_FIRST_LINE_ANIMATION_DURATION * 0.3).toLong()
-    }
+    SwipingText(
+      text = firstLineText,
+      style = titleStyle,
+      color = titleColor,
+      animationDelay = delay,
+      animationDurationMs = TITLE_FIRST_LINE_ANIMATION_DURATION,
+    )
+    delay += (TITLE_FIRST_LINE_ANIMATION_DURATION * 0.3).toLong()
     SwipingText(
       text = firstLineText,
       style = titleStyle,
       color = MaterialTheme.colorScheme.onSurface,
-      animationDelay = if (enableAnimation) delay else 0,
-      animationDurationMs = if (enableAnimation) TITLE_FIRST_LINE_ANIMATION_DURATION else 0,
+      animationDelay = delay,
+      animationDurationMs = TITLE_FIRST_LINE_ANIMATION_DURATION,
     )
   }
-  // Second line text "AI" and its animation.
+  // Second line text "Edge Gallery" and its animation.
   //
   // The initial animation is the same as the first line text. Right before it is done, the final
   // text with a gradient is revealed.
-  Box(modifier = Modifier.clearAndSetSemantics {}) {
+  Box {
     var delay = TITLE_SECOND_LINE_ANIMATION_START
-    if (enableAnimation) {
-      SwipingText(
-        text = secondLineText,
-        style = titleStyle,
-        color = titleColor,
-        modifier = Modifier.offset(y = (-16).dp),
-        animationDelay = delay,
-        animationDurationMs = TITLE_SECOND_LINE_ANIMATION_DURATION,
-      )
-      delay += (TITLE_SECOND_LINE_ANIMATION_DURATION * 0.3).toInt()
-      SwipingText(
-        text = secondLineText,
-        style = titleStyle,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.offset(y = (-16).dp),
-        animationDelay = delay,
-        animationDurationMs = TITLE_SECOND_LINE_ANIMATION_DURATION,
-      )
-      delay += (TITLE_SECOND_LINE_ANIMATION_DURATION * 0.6).toInt()
-    }
+    SwipingText(
+      text = secondLineText,
+      style = titleStyle,
+      color = titleColor,
+      modifier = Modifier.offset(y = (-16).dp),
+      animationDelay = delay,
+      animationDurationMs = TITLE_SECOND_LINE_ANIMATION_DURATION,
+    )
+    delay += (TITLE_SECOND_LINE_ANIMATION_DURATION * 0.3).toInt()
+    SwipingText(
+      text = secondLineText,
+      style = titleStyle,
+      color = MaterialTheme.colorScheme.onSurface,
+      modifier = Modifier.offset(y = (-16).dp),
+      animationDelay = delay,
+      animationDurationMs = TITLE_SECOND_LINE_ANIMATION_DURATION,
+    )
+    delay += (TITLE_SECOND_LINE_ANIMATION_DURATION * 0.6).toInt()
     RevealingText(
       text = secondLineText,
       style =
@@ -680,14 +666,14 @@ private fun AppTitle(enableAnimation: Boolean) {
           brush = linearGradient(colors = MaterialTheme.customColors.appTitleGradientColors)
         ),
       modifier = Modifier.offset(x = (-16).dp, y = (-16).dp),
-      animationDelay = if (enableAnimation) delay else 0,
-      animationDurationMs = if (enableAnimation) TITLE_SECOND_LINE_ANIMATION_DURATION2 else 0,
+      animationDelay = delay,
+      animationDurationMs = TITLE_SECOND_LINE_ANIMATION_DURATION2,
     )
   }
 }
 
 @Composable
-private fun IntroText(enableAnimation: Boolean) {
+private fun IntroText() {
   val url = "https://huggingface.co/litert-community"
   val linkColor = MaterialTheme.customColors.linkColor
   val uriHandler = LocalUriHandler.current
@@ -696,22 +682,31 @@ private fun IntroText(enableAnimation: Boolean) {
   //
   // fade in + slide up.
   val progress =
-    if (!enableAnimation) 1f
-    else
-      rememberDelayedAnimationProgress(
-        initialDelay = TITLE_SECOND_LINE_ANIMATION_START,
-        animationDurationMs = CONTENT_COMPOSABLES_ANIMATION_DURATION,
-        animationLabel = "intro text animation",
-      )
+    rememberDelayedAnimationProgress(
+      initialDelay = TITLE_SECOND_LINE_ANIMATION_START,
+      animationDurationMs = CONTENT_COMPOSABLES_ANIMATION_DURATION,
+      animationLabel = "intro text animation",
+    )
 
   val introText = buildAnnotatedString {
     append("${stringResource(R.string.app_intro)} ")
-    append(
-      buildTrackableUrlAnnotatedString(
-        url = url,
-        linkText = stringResource(R.string.litert_community_label),
-      )
-    )
+    // TODO: Consolidate the link clicking logic into ui/common/ClickableLink.kt.
+    withLink(
+      link =
+        LinkAnnotation.Url(
+          url = url,
+          styles =
+            TextLinkStyles(
+              style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)
+            ),
+          linkInteractionListener = { _ ->
+            firebaseAnalytics?.logEvent("resource_link_click", bundleOf("link_destination" to url))
+            uriHandler.openUri(url)
+          },
+        )
+    ) {
+      append(stringResource(R.string.litert_community_label))
+    }
   }
   Text(
     introText,
@@ -728,7 +723,6 @@ private fun IntroText(enableAnimation: Boolean) {
 private fun CategoryTabHeader(
   sortedCategories: List<CategoryInfo>,
   selectedIndex: Int,
-  enableAnimation: Boolean,
   onCategorySelected: (Int) -> Unit,
 ) {
   val context = LocalContext.current
@@ -736,13 +730,11 @@ private fun CategoryTabHeader(
   val listState = rememberLazyListState()
 
   val progress =
-    if (!enableAnimation) 1f
-    else
-      rememberDelayedAnimationProgress(
-        initialDelay = TASK_LIST_ANIMATION_START,
-        animationDurationMs = CONTENT_COMPOSABLES_ANIMATION_DURATION,
-        animationLabel = "task card animation",
-      )
+    rememberDelayedAnimationProgress(
+      initialDelay = TASK_LIST_ANIMATION_START,
+      animationDurationMs = CONTENT_COMPOSABLES_ANIMATION_DURATION,
+      animationLabel = "task card animation",
+    )
 
   LazyRow(
     state = listState,
@@ -805,7 +797,6 @@ private fun TaskList(
   pagerState: PagerState,
   sortedCategories: List<CategoryInfo>,
   tasksByCategories: Map<String, List<Task>>,
-  enableAnimation: Boolean,
   navigateToTaskScreen: (Task) -> Unit,
 ) {
   // Model list animation:
@@ -813,22 +804,11 @@ private fun TaskList(
   // 1.  Slide Up: The entire column of task cards translates upwards,
   // 2.  Fade in one by one: The task card fade in one by one. See TaskCard for details.
   val progress =
-    if (!enableAnimation) 1f
-    else
-      rememberDelayedAnimationProgress(
-        initialDelay = TASK_LIST_ANIMATION_START,
-        animationDurationMs = CONTENT_COMPOSABLES_ANIMATION_DURATION,
-        animationLabel = "task card animation",
-      )
-
-  // Tracks when the initial animation is done.
-  //
-  var initialAnimationDone by remember { mutableStateOf(false) }
-  LaunchedEffect(Unit) {
-    // Use 5 iterations to make sure all visible task cards are animated.
-    delay(((TASK_CARD_ANIMATION_DURATION + TASK_CARD_ANIMATION_DELAY_OFFSET) * 5).toLong())
-    initialAnimationDone = true
-  }
+    rememberDelayedAnimationProgress(
+      initialDelay = TASK_LIST_ANIMATION_START,
+      animationDurationMs = CONTENT_COMPOSABLES_ANIMATION_DURATION,
+      animationLabel = "task card animation",
+    )
 
   HorizontalPager(
     state = pagerState,
@@ -848,7 +828,6 @@ private fun TaskList(
         TaskCard(
           task = task,
           index = index,
-          animate = (pageIndex == 0 || pageIndex == 1) && !initialAnimationDone && enableAnimation,
           onClick = { navigateToTaskScreen(task) },
           modifier = Modifier.fillMaxWidth(),
         )
@@ -859,13 +838,7 @@ private fun TaskList(
 }
 
 @Composable
-private fun TaskCard(
-  task: Task,
-  index: Int,
-  animate: Boolean,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-) {
+private fun TaskCard(task: Task, index: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
   // Observes the model count and updates the model count label with a fade-in/fade-out animation
   // whenever the count changes.
   val modelCount by remember {
@@ -906,22 +879,17 @@ private fun TaskCard(
   // visible sequentially, starting after an initial delay and then with an additional offset for
   // subsequent cards.
   val progress =
-    if (animate)
-      rememberDelayedAnimationProgress(
-        initialDelay = TASK_LIST_ANIMATION_START + index * TASK_CARD_ANIMATION_DELAY_OFFSET,
-        animationDurationMs = TASK_CARD_ANIMATION_DURATION,
-        animationLabel = "task card animation",
-      )
-    else 1f
+    rememberDelayedAnimationProgress(
+      initialDelay = TASK_LIST_ANIMATION_START + index * TASK_CARD_ANIMATION_DELAY_OFFSET,
+      animationDurationMs = TASK_CARD_ANIMATION_DURATION,
+      animationLabel = "task card animation",
+    )
 
-  val cbTask = stringResource(R.string.cd_task_card, task.label, task.models.size)
   Card(
     modifier =
-      modifier
-        .clip(RoundedCornerShape(24.dp))
-        .clickable(onClick = onClick)
-        .graphicsLayer { alpha = progress }
-        .semantics { contentDescription = cbTask },
+      modifier.clip(RoundedCornerShape(24.dp)).clickable(onClick = onClick).graphicsLayer {
+        alpha = progress
+      },
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.customColors.taskCardBgColor),
   ) {
     Row(
@@ -931,26 +899,15 @@ private fun TaskCard(
     ) {
       // Title and model count
       Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Text(
-            task.label,
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleMedium,
-          )
-          if (task.experimental) {
-            Icon(
-              painter = painterResource(R.drawable.ic_experiment),
-              contentDescription = "Experimental",
-              modifier = Modifier.size(20.dp).padding(start = 4.dp),
-              tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-        }
+        Text(
+          task.label,
+          color = MaterialTheme.colorScheme.onSurface,
+          style = MaterialTheme.typography.titleMedium,
+        )
         Text(
           curModelCountLabel,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           style = MaterialTheme.typography.bodyMedium,
-          modifier = Modifier.clearAndSetSemantics {},
         )
       }
 
@@ -987,3 +944,14 @@ private fun getCategoryLabel(context: Context, category: CategoryInfo): String {
   }
   return context.getString(R.string.category_unlabeled)
 }
+
+// @Preview
+// @Composable
+// fun HomeScreenPreview() {
+//   GalleryTheme {
+//     HomeScreen(
+//       modelManagerViewModel = PreviewModelManagerViewModel(context = LocalContext.current),
+//       navigateToTaskScreen = {},
+//     )
+//   }
+// }

@@ -1,4 +1,4 @@
-/* Copyright 2025 Google LLC
+/* Copyright 2025 OnDevice Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -33,6 +33,23 @@ enum Theme {
   THEME_AUTO = 3;
 }
 
+// Epic 5: Text size preference for accessibility
+enum TextSize {
+  TEXT_SIZE_UNSPECIFIED = 0;
+  TEXT_SIZE_SMALL = 1;
+  TEXT_SIZE_MEDIUM = 2;  // Default
+  TEXT_SIZE_LARGE = 3;
+}
+
+// Epic 5: Auto-cleanup configuration for old conversations
+enum AutoCleanup {
+  AUTO_CLEANUP_UNSPECIFIED = 0;
+  AUTO_CLEANUP_NEVER = 1;  // Default - never auto-delete
+  AUTO_CLEANUP_30_DAYS = 2;
+  AUTO_CLEANUP_90_DAYS = 3;
+  AUTO_CLEANUP_1_YEAR = 4;
+}
+
 message AccessTokenData {
   string access_token = 1;
   string refresh_token = 2;
@@ -56,8 +73,6 @@ message LlmConfig {
   float default_temperature = 5;
   bool support_image = 6;
   bool support_audio = 7;
-  bool support_tiny_garden = 8;
-  bool support_mobile_actions = 9;
 }
 
 message Settings {
@@ -66,11 +81,28 @@ message Settings {
   repeated string text_input_history = 3;
   repeated ImportedModel imported_model = 4;
   bool is_tos_accepted = 5;
-  bool has_run_tiny_garden = 6;
+
+  // Epic 5: Settings & Data Management
+  TextSize text_size = 6;  // Story 5.4: Text size adjustment
+  AutoCleanup auto_cleanup = 7;  // Story 5.3: Auto-cleanup configuration
+  int64 storage_budget_bytes = 8;  // Story 5.2: Storage budget (default 4GB = 4294967296)
+
+  // Self-hosted Gemma: Terms acceptance tracking
+  int64 gemma_terms_accepted_timestamp = 9;  // 0 = not accepted, >0 = Unix timestamp of acceptance
+
+  // Story 8: Custom Instructions - Persistent instructions prepended to every prompt
+  string custom_instructions = 10;
+
+  // User Profile - Personalized greetings
+  string user_full_name = 11;  // User's full name (e.g., "John Doe")
+  string user_nickname = 12;  // User's preferred nickname (e.g., "Johnny")
 }
 
 message UserData {
   AccessTokenData access_token_data = 1;
+  bool gemma_license_accepted = 2;
+  int64 gemma_license_accepted_at_ms = 3;
+  bool onboarding_completed = 4;
 }
 
 enum FillMode {

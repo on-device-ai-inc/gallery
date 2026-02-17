@@ -52,16 +52,23 @@
 | Screen | Purpose | Location |
 |--------|---------|----------|
 | `MainActivity` | Entry point | `ui/` |
-| `ChatScreen` | Chat interface | `ui/chat/` |
-| `ModelSelectionScreen` | Browse models | `ui/models/` |
-| `SettingsScreen` | Settings | `ui/settings/` |
+| `LlmChatScreen` | Unified chat (text + image + audio) | `ui/llmchat/` |
+| `ModelSelectionScreen` | First-launch model selection | `ui/modelselection/` |
+| `SettingsScreen` | Settings hub | `ui/settings/` |
+| `CustomInstructionsScreen` | System prompt editor | `ui/settings/` |
+| `ModelParametersScreen` | Temp/topK/topP sliders | `ui/settings/` |
+| `PrivacyCenterScreen` | Privacy controls | `ui/settings/` |
+| `StorageManagementScreen` | Storage management | `ui/settings/` |
+| `ConversationListScreen` | Past conversations list | `ui/conversationlist/` |
+| `ConversationDetailScreen` | Single conversation view | `ui/conversationdetail/` |
 
 ### ViewModels
 | ViewModel | Purpose | Location |
 |-----------|---------|----------|
-| `ChatViewModel` | Chat state | `ui/chat/` |
-| `ModelViewModel` | Model state | `ui/models/` |
+| `LlmChatViewModel` | Chat + inference state | `ui/llmchat/` |
 | `SettingsViewModel` | Settings state | `ui/settings/` |
+| `ConversationListViewModel` | Conversation list state | `ui/conversationlist/` |
+| `ConversationDetailViewModel` | Conversation detail state | `ui/conversationdetail/` |
 
 ### Components
 | Component | Purpose | Location |
@@ -98,6 +105,11 @@
 | 2026-02-17 | `ChatDisclaimerRow` | Disclaimer row after AI messages: `ui/common/chat/ChatDisclaimerRow.kt` |
 | 2026-02-17 | `ErrorDialog` | Error dialog with support contact: `ui/common/ErrorDialog.kt` |
 | 2026-02-17 | Legal assets | Privacy/Terms HTML: `assets/legal/privacy.html`, `assets/legal/terms.html` |
+| 2026-02-17 | Navigation refactor | 10-route GoraAI nav graph; settings/, modelselection/, conversationlist/, conversationdetail/ |
+| 2026-02-17 | `SettingsScreen` (+ 8 sub-screens) | Settings hub + CustomInstructions, ModelParams, Privacy, Storage: `ui/settings/` |
+| 2026-02-17 | `ModelSelectionScreen` | First-launch model selection: `ui/modelselection/` |
+| 2026-02-17 | `ConversationListScreen` + VM + State | Conversation history list: `ui/conversationlist/` |
+| 2026-02-17 | `ConversationDetailScreen` + VM + State | Single conversation view: `ui/conversationdetail/` |
 
 ---
 
@@ -105,7 +117,12 @@
 
 | Component | Reason | Replacement |
 |-----------|--------|-------------|
-| | | |
+| `ui/home/HomeScreen.kt` | GoraAI chat-first flow removes task picker | Archived to `ui/home_archived/` |
+| `customtasks/tinygarden/` | Not in GoraAI target state | Removed |
+| `customtasks/mobileactions/` | Not in GoraAI target state | Removed |
+| `BuiltInTaskId.LLM_TINY_GARDEN` | Removed with TinyGarden | N/A |
+| `BuiltInTaskId.LLM_MOBILE_ACTIONS` | Removed with MobileActions | N/A |
+| `isLegacyTasks()` | Replaced by GoraAI `isBuiltInTask()` | `isBuiltInTask()` in `data/Tasks.kt` |
 
 ---
 

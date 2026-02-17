@@ -56,15 +56,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import ai.ondevice.app.R
 import ai.ondevice.app.data.Accelerator
 import ai.ondevice.app.data.BooleanSwitchConfig
 import ai.ondevice.app.data.Config
-import ai.ondevice.app.data.ConfigKey
 import ai.ondevice.app.data.ConfigKeys
 import ai.ondevice.app.data.DEFAULT_MAX_TOKEN
 import ai.ondevice.app.data.DEFAULT_TEMPERATURE
@@ -98,7 +95,7 @@ private val IMPORT_CONFIGS_LLM: List<Config> =
     NumberSliderConfig(
       key = ConfigKeys.DEFAULT_MAX_TOKENS,
       sliderMin = 100f,
-      sliderMax = 4096f,
+      sliderMax = 1024f,
       defaultValue = DEFAULT_MAX_TOKEN.toFloat(),
       valueType = ValueType.INT,
     ),
@@ -125,8 +122,6 @@ private val IMPORT_CONFIGS_LLM: List<Config> =
     ),
     BooleanSwitchConfig(key = ConfigKeys.SUPPORT_IMAGE, defaultValue = false),
     BooleanSwitchConfig(key = ConfigKeys.SUPPORT_AUDIO, defaultValue = false),
-    BooleanSwitchConfig(key = ConfigKeys.SUPPORT_TINY_GARDEN, defaultValue = false),
-    BooleanSwitchConfig(key = ConfigKeys.SUPPORT_MOBILE_ACTIONS, defaultValue = false),
     SegmentedButtonConfig(
       key = ConfigKeys.COMPATIBLE_ACCELERATORS,
       defaultValue = Accelerator.CPU.label,
@@ -136,12 +131,7 @@ private val IMPORT_CONFIGS_LLM: List<Config> =
   )
 
 @Composable
-fun ModelImportDialog(
-  uri: Uri,
-  onDismiss: () -> Unit,
-  onDone: (ImportedModel) -> Unit,
-  defaultValues: Map<ConfigKey, Any> = emptyMap(),
-) {
+fun ModelImportDialog(uri: Uri, onDismiss: () -> Unit, onDone: (ImportedModel) -> Unit) {
   val context = LocalContext.current
   val info = remember { getFileSizeAndDisplayNameFromUri(context = context, uri = uri) }
   val fileSize by remember { mutableLongStateOf(info.first) }
@@ -155,10 +145,6 @@ fun ModelImportDialog(
       put(ConfigKeys.NAME.label, fileName)
       // TODO: support other types.
       put(ConfigKeys.MODEL_TYPE.label, "LLM")
-
-      for ((key, value) in defaultValues) {
-        put(key.label, value)
-      }
     }
   }
   val values: SnapshotStateMap<String, Any> = remember {
@@ -251,18 +237,6 @@ fun ModelImportDialog(
                   valueType = ValueType.BOOLEAN,
                 )
                   as Boolean
-              val supportTinyGarden =
-                convertValueToTargetType(
-                  value = values.get(ConfigKeys.SUPPORT_TINY_GARDEN.label)!!,
-                  valueType = ValueType.BOOLEAN,
-                )
-                  as Boolean
-              val supportMobileActions =
-                convertValueToTargetType(
-                  value = values.get(ConfigKeys.SUPPORT_MOBILE_ACTIONS.label)!!,
-                  valueType = ValueType.BOOLEAN,
-                )
-                  as Boolean
               val importedModel: ImportedModel =
                 ImportedModel.newBuilder()
                   .setFileName(fileName)
@@ -276,8 +250,6 @@ fun ModelImportDialog(
                       .setDefaultTemperature(defaultTemperature)
                       .setSupportImage(supportImage)
                       .setSupportAudio(supportAudio)
-                      .setSupportMobileActions(supportMobileActions)
-                      .setSupportTinyGarden(supportTinyGarden)
                       .build()
                   )
                   .build()
@@ -360,7 +332,7 @@ fun ModelImportingDialog(
           ) {
             Icon(
               Icons.Rounded.Error,
-              contentDescription = stringResource(R.string.cd_error),
+              contentDescription = "",
               tint = MaterialTheme.colorScheme.error,
             )
             Text(

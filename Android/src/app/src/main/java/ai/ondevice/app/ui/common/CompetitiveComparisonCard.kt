@@ -13,21 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package ai.ondevice.app.customtasks.tinygarden
 
-import ai.ondevice.app.customtasks.common.CustomTask
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import dagger.multibindings.IntoSet
+package ai.ondevice.app.ui.common
 
-@Module
-@InstallIn(SingletonComponent::class)
-internal object TinyGardenTaskModule {
-  @Provides
-  @IntoSet
-  fun provideTask(): CustomTask {
-    return TinyGardenTask()
-  }
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+
+/** Stub — full implementation pending. */
+@Composable
+fun CompetitiveComparisonCard(modifier: Modifier = Modifier) {
+    // TODO: Implement on-device vs cloud comparison card
 }

@@ -73,7 +73,7 @@ data class Model(
    *
    * See [Config] for more details
    */
-  var configs: List<Config> = listOf(),
+  val configs: List<Config> = listOf(),
 
   /**
    * (optional)
@@ -159,13 +159,13 @@ data class Model(
    * "External Files Directory", which is: /storage/emulated/0/Android/data/<app_id>/files/.
    *
    * The <app_id> depends on how the app was built:
-   * - `ai.ondevice.app` for builds from the GitHub source.
-   * - `ai.ondevice.app` for other builds (Play store, internal, etc).
+   * - `com.google.aiedge.gallery` for builds from the GitHub source.
+   * - `com.google.ai.edge.gallery` for other builds (Play store, internal, etc).
    *
    * For example, if this field is set to "my_model/local_dir/", then the location you should push
    * files to is (assuming non-github builds):
    *
-   * /storage/emulated/0/Android/data/ai.ondevice.app/files/my_model/local_dir/
+   * /storage/emulated/0/Android/data/com.google.ai.edge.gallery/files/my_model/local_dir/
    *
    * You can get the full path to a specific file within your code using `Model.getPath(Context,
    * fileNameToGet)`.
@@ -210,14 +210,29 @@ data class Model(
   /** Whether the LLM model supports audio input. */
   val llmSupportAudio: Boolean = false,
 
-  /** Whether the LLM model supports tiny garden. */
-  val llmSupportTinyGarden: Boolean = false,
-
-  /** Whether the LLM model supports mobile actions. */
-  val llmSupportMobileActions: Boolean = false,
-
   /** Whether the model is imported or not. */
   val imported: Boolean = false,
+
+  // Self-hosted Gemma: Additional fields for secure model distribution
+  //
+
+  /** Whether the model requires Gemma Terms acceptance before download. */
+  val requiresGemmaTerms: Boolean = false,
+
+  /** Primary download URL (takes precedence over `url` field if set). */
+  val downloadUrl: String = "",
+
+  /** Fallback URLs to try if primary download fails. */
+  val fallbackUrls: List<String> = listOf(),
+
+  /** SHA-256 checksum for download verification. */
+  val sha256: String = "",
+
+  /** Minimum free storage space required (in bytes). If 0, uses 20% buffer over model size. */
+  val minFreeStorageBytes: Long = 0L,
+
+  /** Whether this model requires WiFi for download. */
+  val requiresWifi: Boolean = false,
 
   // The following fields are managed by the app. Don't need to set manually.
   //
@@ -227,7 +242,6 @@ data class Model(
   // TODO(jingjin): use a "queue" system to manage model init and cleanup.
   var cleanUpAfterInit: Boolean = false,
   var configValues: Map<String, Any> = mapOf(),
-  var prevConfigValues: Map<String, Any> = mapOf(),
   var totalBytes: Long = 0L,
   var accessToken: String? = null,
 ) {
@@ -266,7 +280,9 @@ data class Model(
     val baseDir =
       listOf(context.getExternalFilesDir(null)?.absolutePath ?: "", normalizedName, version)
         .joinToString(File.separator)
-    return if (this.isZip && this.unzipDir.isNotEmpty()) {
+    // For zip models, only use unzipDir when requesting the default downloadFileName
+    // This ensures .tmp files and other variations use the actual fileName parameter
+    return if (this.isZip && this.unzipDir.isNotEmpty() && fileName == downloadFileName) {
       listOf(baseDir, this.unzipDir).joinToString(File.separator)
     } else {
       listOf(baseDir, fileName).joinToString(File.separator)
@@ -330,5 +346,57 @@ data class ModelDownloadStatus(
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Configs.
 
+val MOBILENET_CONFIGS: List<Config> =
+  listOf(
+    NumberSliderConfig(
+      key = ConfigKeys.MAX_RESULT_COUNT,
+      sliderMin = 1f,
+      sliderMax = 5f,
+      defaultValue = 3f,
+      valueType = ValueType.INT,
+    ),
+    BooleanSwitchConfig(key = ConfigKeys.USE_GPU, defaultValue = false),
+  )
+
+val IMAGE_GENERATION_CONFIGS: List<Config> =
+  listOf(
+    NumberSliderConfig(
+      key = ConfigKeys.ITERATIONS,
+      sliderMin = 5f,
+      sliderMax = 50f,
+      defaultValue = 10f,
+      valueType = ValueType.INT,
+      needReinitialization = false,
+    )
+  )
+
+// REMOVED: Google-hosted models (MobileBert, MobileNet)
+// All LLM models now hosted on HuggingFace - see model_allowlist.json
+
+const val IMAGE_GENERATION_INFO =
+  "Powered by [MediaPipe Image Generation API](https://ai.google.dev/edge/mediapipe/solutions/vision/image_generator/android)"
+
+val MODEL_IMAGE_GENERATION_STABLE_DIFFUSION: Model =
+  Model(
+    name = "Stable diffusion",
+    downloadFileName = "sd15.zip",
+    isZip = true,
+    unzipDir = "sd15",
+    url = "https://huggingface.co/na5h13/stable-diffusion-v1-5-mediapipe/resolve/main/sd15.zip",
+    sizeInBytes = 1906219565L,
+    showRunAgainButton = false,
+    showBenchmarkButton = false,
+    info = IMAGE_GENERATION_INFO,
+    configs = IMAGE_GENERATION_CONFIGS,
+    learnMoreUrl = "https://huggingface.co/na5h13/stable-diffusion-v1-5-mediapipe",
+  )
+
 val EMPTY_MODEL: Model =
   Model(name = "empty", downloadFileName = "empty.tflite", url = "", sizeInBytes = 0L)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Model collections for different tasks.
+// REMOVED: Text and Image Classification models (now using HuggingFace-only models from allowlist)
+
+val MODELS_IMAGE_GENERATION: MutableList<Model> =
+  mutableListOf(MODEL_IMAGE_GENERATION_STABLE_DIFFUSION)
