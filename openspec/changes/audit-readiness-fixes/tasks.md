@@ -195,18 +195,21 @@
 
 ## CI/Build Tasks
 
-- [ ] **Build 1**: Verify ktlint passes
+- [x] **Build 1**: Verify ktlint passes
   - Command: CI runs ktlint automatically
   - Acceptance: No new linting errors
+  - ✅ Completed: ktlint passed on all 3 CI runs
 
-- [ ] **Build 2**: Verify CI build succeeds
+- [x] **Build 2**: Verify CI build succeeds
   - Push code, monitor GitHub Actions
   - Acceptance: CI status GREEN
+  - ✅ Completed: CI Run 22082567832 (Phase 3+4) = SUCCESS; 22082759369 (Docs) = SUCCESS
 
 - [ ] **Build 3**: Download and verify APK
   - Download APK from CI artifacts
   - Install on device: `adb install -r app-debug.apk`
   - Acceptance: APK installs successfully
+  - ⏳ APK downloaded to /tmp/apk-phase3/app-debug.apk - needs device install (adb not available on DGX Spark)
 
 - [ ] **Build 4**: Manual smoke test on device
   - Launch app
@@ -215,6 +218,7 @@
   - Test legal information access
   - Test support email
   - Acceptance: All critical features work
+  - ⏳ Requires device (Samsung S22 Ultra) and adb connection
 
 ## Visual Verification Tasks
 
@@ -240,19 +244,21 @@
 
 ## Documentation Tasks
 
-- [ ] **Doc 1**: Update LESSONS_LEARNED.md
-  - Add lesson: "Audit Readiness Checklist for Rebrand"
-  - Document: Copyright updates, legal integration, support contact patterns
-  - Include: Automation commands used (sed patterns)
-  - Acceptance: Lesson captured with examples
+- [x] **Doc 1**: Update LESSONS_LEARNED.md
+  - Added: Audit Readiness Checklist for Rebrand
+  - Added: Batch copyright update command pattern
+  - Added: LazyColumn disclaimer pattern
+  - Added: Hook path issue lesson
+  - ✅ Completed
 
 - [ ] **Doc 2**: Create audit readiness report
   - File: `openspec/changes/audit-readiness-fixes/audit-report.md`
   - Content: Before/after comparison, compliance checklist, evidence
   - Include: Screenshots, grep results, CI status
   - Acceptance: Complete audit trail documented
+  - ⏳ Pending (will create after visual verification)
 
-- [ ] **Doc 3**: Update CODE_INDEX.md if new files added
+- [x] **Doc 3**: Update CODE_INDEX.md if new files added
   - Add: ChatDisclaimerRow.kt
   - Add: LegalInformationDialog.kt
   - Add: LegalWebViewScreen.kt (if created)
