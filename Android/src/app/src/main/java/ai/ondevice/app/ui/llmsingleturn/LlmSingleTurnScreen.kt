@@ -133,7 +133,7 @@ fun LlmSingleTurnScreen(
         inProgress = uiState.inProgress,
         modelPreparing = uiState.preparing,
         onConfigChanged = { _, _ -> },
-        onBackClicked = { handleNavigateUp() },
+        onMenuClicked = { handleNavigateUp() },
         onModelSelected = { prevModel, newSelectedModel ->
           scope.launch(Dispatchers.Default) {
             if (prevModel.name != newSelectedModel.name) {

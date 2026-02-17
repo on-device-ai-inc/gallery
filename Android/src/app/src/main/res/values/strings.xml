@@ -123,6 +123,9 @@
   <string name="warning_no_function_call" translatable="false">No function recognized</string>
   <string name="snackbar_no_function_call" translatable="false">No function recognized</string>
   <string name="unknown_error" translatable="false">Unknown error</string>
+  <string name="error_inference_crashed" translatable="false">Model stopped responding</string>
+  <string name="error_inference_crashed_detail" translatable="false">Restarting the session</string>
+  <string name="error_model_allowlist_failed" translatable="false">Couldn\'t load model list</string>
 
   <plurals name="parameter" translatable="false">
     <item quantity="one">Parameter</item>

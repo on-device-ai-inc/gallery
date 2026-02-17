@@ -195,8 +195,7 @@ fun GalleryNavHost(
   // TOS Dialog (Option A: Show before first launch)
   if (showTosDialog) {
     TosDialog(
-      onDismiss = {}, // No dismiss - must accept to continue
-      onAccept = {
+      onTosAccepted = {
         tosViewModel.acceptTos()
         showTosDialog = false
       }

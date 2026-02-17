@@ -185,8 +185,7 @@ fun SettingsScreen(
     // ToS Dialog
     if (showTos) {
         TosDialog(
-            onDismiss = { showTos = false },
-            onAccept = { showTos = false }
+            onTosAccepted = { showTos = false }
         )
     }
 

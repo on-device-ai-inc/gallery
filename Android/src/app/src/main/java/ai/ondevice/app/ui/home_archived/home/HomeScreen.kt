@@ -451,8 +451,7 @@ fun HomeScreen(
   // Show TOS dialog for users to accept.
   if (showTosDialog) {
     TosDialog(
-      onDismiss = {},
-      onAccept = {
+      onTosAccepted = {
         showTosDialog = false
         tosViewModel.acceptTos()
 

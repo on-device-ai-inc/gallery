@@ -324,8 +324,7 @@ fun SettingsDialog(
 
   if (showTos) {
       TosDialog(
-        onDismiss = { showTos = false },
-        onAccept = { showTos = false }
+        onTosAccepted = { showTos = false }
      )
   }
 }

@@ -480,7 +480,7 @@ fun ChatPanel(
                   Box(modifier = messageBubbleModifier) {
                     when (message) {
                       // Text
-                      is ChatMessageText -> MessageBodyText(message = message)
+                      is ChatMessageText -> MessageBodyText(message = message, inProgress = uiState.inProgress)
 
                       // Image
                       is ChatMessageImage -> {
