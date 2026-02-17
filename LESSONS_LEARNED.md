@@ -586,6 +586,12 @@ Key: **WAYLAND_DISPLAY=wayland-1** (not wayland-0)
 | 2026-02-16 | Audit readiness: Check copyrights, URLs, legal docs, support contacts, disclaimer | Compliance |
 | 2026-02-16 | Hook path issue: PreToolUse hooks use relative paths - if CWD changes, hooks fail | Hooks |
 | 2026-02-16 | LazyColumn disclaimer: Add `item {}` block AFTER `itemsIndexed` to show footer row | Android/Compose |
+| 2026-02-17 | Room tests go in `androidTest/` not `test/` — SQLite requires Android runtime | Room/Testing |
+| 2026-02-17 | KSP version must match Kotlin exactly: Kotlin 2.1.0 → KSP 2.1.0-1.0.29 | Room/KSP |
+| 2026-02-17 | Target has no DatabaseModule — DB providers go directly in AppModule.kt | Architecture |
+| 2026-02-17 | Target injects ConversationDao directly into ViewModels — no Repository wrapper | Architecture |
+| 2026-02-17 | adb lib path on DGX Spark: `LD_LIBRARY_PATH=/tmp/adb-extract/usr/lib/aarch64-linux-gnu/android` | DGX/ADB |
+| 2026-02-17 | libs.versions.toml is at `Android/src/gradle/` not `Android/src/app/gradle/` | Project Structure |
 
 ---
 ---
