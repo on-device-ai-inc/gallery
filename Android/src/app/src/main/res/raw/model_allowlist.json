@@ -130,32 +130,21 @@
       "taskTypes": ["llm_chat", "llm_prompt_lab"]
     },
     {
-      "name": "Qwen2.5-Omni-7B",
-      "modelId": "On-device/qwen2.5-omni-7b-litert-lm",
-      "modelFile": "qwen2.5-omni-7b-int4.litertlm",
-      "description": "**🚀 Premium Multimodal Model** - [Qwen2.5-Omni-7B](https://huggingface.co/Qwen/Qwen2.5-Omni-7B) with integrated Whisper audio encoder, 128K context window, and streaming speech generation. Supports text, vision, audio, and video understanding. **Note**: Requires conversion - see /scripts/CONVERSION_GUIDE.md",
-      "sizeInBytes": 1887436800,
-      "minDeviceMemoryInGb": 12,
-      "commitHash": "main",
-      "llmSupportImage": true,
-      "llmSupportAudio": true,
-      "downloadUrl": "https://huggingface.co/On-device/qwen2.5-omni-7b-litert-lm/resolve/main/qwen2.5-omni-7b-int4.litertlm",
-      "fallbackUrls": [
-        "https://huggingface.co/Qwen/Qwen2.5-Omni-7B/resolve/main/model.safetensors"
-      ],
-      "sha256": "pending_conversion",
-      "requiresWifi": true,
+      "name": "Qwen2.5-1.5B-Instruct",
+      "modelId": "litert-community/Qwen2.5-1.5B-Instruct",
+      "modelFile": "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm",
+      "description": "A variant of [Qwen/Qwen2.5-1.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct) ready for deployment on Android using [LiteRT-LM](https://github.com/google-ai-edge/LiteRT-LM/blob/main/kotlin/README.md).",
+      "sizeInBytes": 1597931520,
+      "minDeviceMemoryInGb": 6,
+      "commitHash": "19edb84c69a0212f29a6ef17ba0d6f278b6a1614",
       "defaultConfig": {
-        "topK": 64,
-        "topP": 0.95,
-        "temperature": 1.0,
-        "maxTokens": 8192,
+        "topK": 20,
+        "topP": 0.8,
+        "temperature": 0.7,
+        "maxTokens": 4096,
         "accelerators": "gpu,cpu"
       },
-      "taskTypes": ["llm_chat", "llm_prompt_lab", "llm_ask_image", "llm_ask_audio"],
-      "bestForTaskTypes": ["llm_ask_audio"],
-      "experimental": true,
-      "conversionRequired": true
+      "taskTypes": ["llm_chat", "llm_prompt_lab"]
     }
   ]
 }
