@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,23 +45,37 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Pause
+import android.content.Intent
+import android.speech.tts.TextToSpeech
+import java.util.Locale
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -83,23 +98,26 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import ai.ondevice.app.R
+import androidx.compose.ui.text.style.TextAlign
 import ai.ondevice.app.data.BuiltInTaskId
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.common.AudioAnimation
 import ai.ondevice.app.ui.common.ErrorDialog
+import ai.ondevice.app.ui.common.copyToClipboard
+import ai.ondevice.app.ui.common.chat.CompactingStatusChip
 import ai.ondevice.app.ui.modelmanager.ModelInitializationStatusType
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import ai.ondevice.app.ui.theme.customColors
@@ -116,7 +134,7 @@ fun ChatPanel(
   viewModel: ChatViewModel,
   innerPadding: PaddingValues,
   onSendMessage: (Model, List<ChatMessage>) -> Unit,
-  onRunAgainClicked: (Model, ChatMessage) -> Unit,
+  onRunAgainClicked: (Model, ChatMessage, RegenerateStyle) -> Unit,
   onBenchmarkClicked: (Model, ChatMessage, warmUpIterations: Int, benchmarkIterations: Int) -> Unit,
   navigateUp: () -> Unit,
   modifier: Modifier = Modifier,
@@ -166,11 +184,29 @@ fun ChatPanel(
   // Remember the LazyListState to control scrolling
   val listState = rememberLazyListState()
   val density = LocalDensity.current
+
+  // Track if user has manually scrolled away from bottom
+  var userHasScrolledUp by remember { mutableStateOf(false) }
+
+  // Detect manual user scrolling
+  LaunchedEffect(listState.isScrollInProgress) {
+    if (listState.isScrollInProgress) {
+      // User is scrolling - check if they're scrolling up
+      val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+      if (lastVisibleItem != null && messages.isNotEmpty()) {
+        val isAtBottom = lastVisibleItem.index >= messages.size - 1
+        if (!isAtBottom) {
+          userHasScrolledUp = true
+        }
+      }
+    }
+  }
   var showBenchmarkConfigsDialog by remember { mutableStateOf(false) }
   val benchmarkMessage: MutableState<ChatMessage?> = remember { mutableStateOf(null) }
 
   var showMessageLongPressedSheet by remember { mutableStateOf(false) }
-  var longPressedMessageIndex by remember { mutableIntStateOf(-1) }
+  val longPressedMessage: MutableState<ChatMessage?> = remember { mutableStateOf(null) }
+  var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
   var showErrorDialog by remember { mutableStateOf(false) }
 
@@ -204,20 +240,40 @@ fun ChatPanel(
     lastMessage.value?.latencyMs,
   ) {
     if (messages.isNotEmpty()) {
-      val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.last()
-      // Determines if an automatic scroll is necessary. It is true if:
-      // 1. The last item is not yet fully visible
-      // OR
-      // 2. The scroll position is close to the bottom (within 90 pixels of the end offset. 90 is
-      //    slightly taller than the "show stats" chip).
-      val canScroll =
-        lastVisibleItem.index < messages.size - 1 ||
-          lastVisibleItem.offset + lastVisibleItem.size - listState.layoutInfo.viewportEndOffset <
-            90
-      // Only scroll if showingStatsByModel is not changed. In other words, when showingStatsByModel
-      // changes we want the display to not scroll.
-      if (uiState.showingStatsByModel === lastShowingStatsByModel.value && canScroll) {
-        scrollToBottom(listState = listState, animate = true)
+      val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+      if (lastVisibleItem != null) {
+        // Check if user is already at or near the bottom
+        val isNearBottom = lastVisibleItem.index >= messages.size - 1 ||
+          (lastVisibleItem.offset + lastVisibleItem.size - listState.layoutInfo.viewportEndOffset < 90)
+
+        // Reset userHasScrolledUp flag if they're back at bottom
+        if (isNearBottom) {
+          userHasScrolledUp = false
+        }
+
+        // Check if this is a long response (>2000 chars) - user should read from top
+        val lastMsg = lastMessage.value
+        val isLongResponse = lastMsg is ChatMessageText &&
+                             lastMsg.content.length > 2000 &&
+                             lastMsg.latencyMs > 0 // Just completed
+
+        // Only auto-scroll if:
+        // 1. User hasn't manually scrolled up, OR
+        // 2. A new message was added (messages.size changed)
+        // 3. NOT a long response completion (let user read from top)
+        val shouldAutoScroll = (!userHasScrolledUp || isNearBottom) && !isLongResponse
+
+        // Determines if an automatic scroll is necessary
+        val canScroll =
+          lastVisibleItem.index < messages.size - 1 ||
+            lastVisibleItem.offset + lastVisibleItem.size - listState.layoutInfo.viewportEndOffset < 90
+
+        // Only scroll if conditions are met
+        if (shouldAutoScroll &&
+            uiState.showingStatsByModel === lastShowingStatsByModel.value &&
+            canScroll) {
+          scrollToBottom(listState = listState, animate = true)
+        }
       }
     }
     lastShowingStatsByModel.value = uiState.showingStatsByModel
@@ -268,11 +324,41 @@ fun ChatPanel(
       modifier = modifier.padding(innerPadding).consumeWindowInsets(innerPadding).imePadding()
     ) {
       Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.weight(1f)) {
-        val cdChatPanel = stringResource(R.string.cd_chat_panel)
-        LazyColumn(
+        // Show greeting when empty, LazyColumn when has messages
+        if (task.id == BuiltInTaskId.LLM_CHAT && messages.isEmpty()) {
+          // Personalized greeting for empty chat
+          Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+          ) {
+            Image(
+              painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+              contentDescription = "OnDevice Logo",
+              modifier = Modifier.size(160.dp).padding(bottom = 4.dp)
+            )
+            
+            val greeting = remember {
+              val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+              when (hour) {
+                in 5..11 -> "morning"
+                in 12..17 -> "afternoon"
+                else -> "evening"
+              }
+            }
+            
+            Text(
+              text = "How can I help you this $greeting?",
+              style = MaterialTheme.typography.headlineMedium,
+              textAlign = TextAlign.Center,
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          }
+        } else {
+          LazyColumn(
           modifier =
             Modifier.fillMaxSize().nestedScroll(nestedScrollConnection).semantics {
-              contentDescription = cdChatPanel
+              contentDescription = "Chat panel"
             },
           state = listState,
           verticalArrangement = Arrangement.Top,
@@ -316,9 +402,10 @@ fun ChatPanel(
             ) messageColumn@{
               // Sender row.
               var agentName = stringResource(task.agentNameRes)
-              if (message.accelerator.isNotEmpty()) {
-                agentName = "$agentName on ${message.accelerator}"
-              }
+              // Removed "on CPU" suffix for cleaner UI like Claude
+              // if (message.accelerator.isNotEmpty()) {
+              //   agentName = "$agentName on ${message.accelerator}"
+              // }
               MessageSender(
                 message = message,
                 agentName = agentName,
@@ -327,17 +414,25 @@ fun ChatPanel(
 
               // Message body.
               when (message) {
-                // Loading.
-                is ChatMessageLoading -> MessageBodyLoading()
+                // Loading - replace with compacting indicator if compacting.
+                is ChatMessageLoading -> {
+                  if (uiState.isCompacting) {
+                    CompactingStatusChip()
+                  } else {
+                    MessageBodyLoading()
+                  }
+                }
+
+                // Long response status box.
+                is ChatMessageLongResponseStatus -> {
+                  LongResponseStatusBox(topic = message.topic)
+                }
 
                 // Info.
                 is ChatMessageInfo -> MessageBodyInfo(message = message)
 
                 // Warning
                 is ChatMessageWarning -> MessageBodyWarning(message = message)
-
-                // Error
-                is ChatMessageError -> MessageBodyError(message = message)
 
                 // Config values change.
                 is ChatMessageConfigValuesChange -> MessageBodyConfigUpdate(message = message)
@@ -380,7 +475,7 @@ fun ChatPanel(
                         detectTapGestures(
                           onLongPress = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            longPressedMessageIndex = index
+                            longPressedMessage.value = message
                             showMessageLongPressedSheet = true
                           }
                         )
@@ -389,8 +484,7 @@ fun ChatPanel(
                   Box(modifier = messageBubbleModifier) {
                     when (message) {
                       // Text
-                      is ChatMessageText ->
-                        MessageBodyText(message = message, inProgress = uiState.inProgress)
+                      is ChatMessageText -> MessageBodyText(message = message)
 
                       // Image
                       is ChatMessageImage -> {
@@ -430,76 +524,182 @@ fun ChatPanel(
                   }
 
                   if (message.side == ChatSide.AGENT) {
-                    Row(
-                      verticalAlignment = Alignment.CenterVertically,
-                      horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                      LatencyText(message = message)
-                      // A button to show stats for the LLM message.
-                      if (
-                        task.id.startsWith("llm_") &&
-                          message is ChatMessageText
-                          // This means we only want to show the action button when the message is
-                          // done
-                          // generating, at which point the latency will be set.
-                          &&
-                          message.latencyMs >= 0
-                      ) {
-                        val showingStats =
-                          viewModel.isShowingStats(model = selectedModel, message = message)
-                        MessageActionButton(
-                          label = if (showingStats) "Hide stats" else "Show stats",
-                          icon = Icons.Outlined.Timer,
-                          onClick = {
-                            // Toggle showing stats.
-                            viewModel.toggleShowingStats(selectedModel, message)
+                    // Action buttons row (icon-only: Copy, Regenerate, Share, Play)
+                    if (message is ChatMessageText && message.latencyMs >= 0) {
+                      val context = LocalContext.current
+                      var showShareSheet by remember { mutableStateOf(false) }
+                      var isPlaying by remember { mutableStateOf(false) }
+                      var tts by remember { mutableStateOf<TextToSpeech?>(null) }
 
-                            // Add the stats message after the LLM message.
-                            if (
-                              viewModel.isShowingStats(model = selectedModel, message = message)
-                            ) {
-                              val llmBenchmarkResult = message.llmBenchmarkResult
-                              val isLastMessage =
-                                viewModel.getMessageIndex(
-                                  model = selectedModel,
-                                  message = message,
-                                ) == messages.lastIndex
-                              if (llmBenchmarkResult != null) {
-                                viewModel.insertMessageAfter(
-                                  model = selectedModel,
-                                  anchorMessage = message,
-                                  messageToAdd = llmBenchmarkResult,
-                                )
-                                // Scroll to bottom if showing the stats for the last message.
-                                if (isLastMessage) {
-                                  scope.launch {
-                                    delay(100L)
-                                    scrollToBottom(listState = listState, animate = true)
-                                  }
-                                }
+                      // Initialize TTS
+                      DisposableEffect(Unit) {
+                        tts = TextToSpeech(context) { status ->
+                          if (status == TextToSpeech.SUCCESS) {
+                            tts?.language = Locale.getDefault()
+                          }
+                        }
+                        onDispose {
+                          tts?.stop()
+                          tts?.shutdown()
+                        }
+                      }
+
+                      Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                      ) {
+                        // Copy button (icon-only)
+                        IconButton(
+                          onClick = { copyToClipboard(context, message.content, "AI Response") },
+                          modifier = Modifier.size(36.dp)
+                        ) {
+                          Icon(
+                            Icons.Rounded.ContentCopy,
+                            contentDescription = "Copy",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                          )
+                        }
+
+                        // Regenerate button (icon-only)
+                        val messageIndex = viewModel.getMessageIndex(model = selectedModel, message = message)
+                        val previousUserMessage = if (messageIndex > 0) {
+                          messages.take(messageIndex).lastOrNull {
+                            it is ChatMessageText && it.side == ChatSide.USER
+                          }
+                        } else null
+                        if (previousUserMessage != null) {
+                          var showRegenerateMenu by remember { mutableStateOf(false) }
+
+                          IconButton(
+                            onClick = { showRegenerateMenu = true },
+                            enabled = !uiState.inProgress,
+                            modifier = Modifier.size(36.dp)
+                          ) {
+                            Icon(
+                              Icons.Rounded.Refresh,
+                              contentDescription = "Regenerate",
+                              modifier = Modifier.size(18.dp),
+                              tint = if (!uiState.inProgress) MaterialTheme.colorScheme.onSurfaceVariant
+                                     else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                          }
+
+                          if (showRegenerateMenu) {
+                            RegenerateMenu(
+                              onDismiss = { showRegenerateMenu = false },
+                              onStyleSelected = { style ->
+                                onRunAgainClicked(selectedModel, previousUserMessage, style)
+                                showRegenerateMenu = false
                               }
-                            }
-                            // Remove the stats message.
-                            else {
-                              // `message` here is the one before the stats message to be removed.
-                              val curMessageIndex =
-                                viewModel.getMessageIndex(model = selectedModel, message = message)
-                              val isLastMessage = curMessageIndex == messages.lastIndex - 1
-                              viewModel.removeMessageAt(
-                                model = selectedModel,
-                                index = curMessageIndex + 1,
-                              )
-                              // Scroll to bottom if hiding the stats for the last message.
-                              if (isLastMessage) {
-                                scope.launch {
-                                  delay(100L)
-                                  scrollToBottom(listState = listState, animate = true)
-                                }
-                              }
+                            )
+                          }
+                        }
+
+                        // Share button (icon-only)
+                        IconButton(
+                          onClick = { showShareSheet = true },
+                          modifier = Modifier.size(36.dp)
+                        ) {
+                          Icon(
+                            Icons.Rounded.Share,
+                            contentDescription = "Share",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                          )
+                        }
+
+                        // Play button (TTS - icon-only)
+                        IconButton(
+                          onClick = {
+                            if (isPlaying) {
+                              tts?.stop()
+                              isPlaying = false
+                            } else {
+                              tts?.speak(message.content, TextToSpeech.QUEUE_FLUSH, null, "response_tts")
+                              isPlaying = true
                             }
                           },
-                          enabled = !uiState.inProgress,
-                        )
+                          modifier = Modifier.size(36.dp)
+                        ) {
+                          Icon(
+                            if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            contentDescription = if (isPlaying) "Pause" else "Play",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                          )
+                        }
+                      }
+
+                      // Share bottom sheet
+                      if (showShareSheet) {
+                        var shareOption by remember { mutableStateOf("response") }
+                        ModalBottomSheet(
+                          onDismissRequest = { showShareSheet = false }
+                        ) {
+                          Column(
+                            modifier = Modifier.padding(16.dp)
+                          ) {
+                            Text(
+                              "Share as Markdown",
+                              style = MaterialTheme.typography.titleMedium,
+                              modifier = Modifier.padding(bottom = 16.dp)
+                            )
+
+                            Row(
+                              verticalAlignment = Alignment.CenterVertically,
+                              modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { shareOption = "response" }
+                                .padding(vertical = 12.dp)
+                            ) {
+                              RadioButton(
+                                selected = shareOption == "response",
+                                onClick = { shareOption = "response" }
+                              )
+                              Text("Last response only", modifier = Modifier.padding(start = 8.dp))
+                            }
+
+                            Row(
+                              verticalAlignment = Alignment.CenterVertically,
+                              modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { shareOption = "conversation" }
+                                .padding(vertical = 12.dp)
+                            ) {
+                              RadioButton(
+                                selected = shareOption == "conversation",
+                                onClick = { shareOption = "conversation" }
+                              )
+                              Text("Entire conversation", modifier = Modifier.padding(start = 8.dp))
+                            }
+
+                            Button(
+                              onClick = {
+                                val shareText = if (shareOption == "response") {
+                                  "**AI Response:**\n\n${message.content}"
+                                } else {
+                                  messages.filterIsInstance<ChatMessageText>().joinToString("\n\n") { msg ->
+                                    if (msg.side == ChatSide.USER) "**You:** ${msg.content}"
+                                    else "**AI:** ${msg.content}"
+                                  }
+                                }
+                                val sendIntent = Intent().apply {
+                                  action = Intent.ACTION_SEND
+                                  putExtra(Intent.EXTRA_TEXT, shareText)
+                                  type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Share via"))
+                                showShareSheet = false
+                              },
+                              modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp)
+                            ) {
+                              Text("Share")
+                            }
+                          }
+                        }
                       }
                     }
                   } else if (message.side == ChatSide.USER) {
@@ -512,7 +712,7 @@ fun ChatPanel(
                         MessageActionButton(
                           label = stringResource(R.string.run_again),
                           icon = Icons.Rounded.Refresh,
-                          onClick = { onRunAgainClicked(selectedModel, message) },
+                          onClick = { onRunAgainClicked(selectedModel, message, RegenerateStyle.STANDARD) },
                           enabled = !uiState.inProgress,
                         )
                       }
@@ -536,10 +736,21 @@ fun ChatPanel(
             }
           }
 
-          // Disclaimer row after last AI message
-          if (messages.isNotEmpty() && messages.last().side == ChatSide.AGENT) {
+          // Show disclaimer below the most recent AI response only
+          // Only when: last message is from AI, not currently generating, and messages exist
+          if (messages.isNotEmpty() &&
+              lastMessage.value?.side == ChatSide.AGENT &&
+              lastMessage.value?.type == ChatMessageType.TEXT &&
+              !uiState.inProgress) {
             item {
-              ChatDisclaimerRow()
+              Column(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(start = 12.dp, end = 60.dp, top = 0.dp, bottom = 6.dp),
+                horizontalAlignment = Alignment.Start
+              ) {
+                MessageDisclaimerRow()
+              }
             }
           }
         }
@@ -549,12 +760,7 @@ fun ChatPanel(
         // Show an info message for ask image task to get users started.
         if (task.id == BuiltInTaskId.LLM_ASK_IMAGE && messages.isEmpty()) {
           Column(
-            modifier =
-              Modifier.padding(horizontal = 16.dp).fillMaxSize().semantics(
-                mergeDescendants = true
-              ) {
-                liveRegion = LiveRegionMode.Polite
-              },
+            modifier = Modifier.padding(horizontal = 16.dp).fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
           ) {
@@ -567,15 +773,10 @@ fun ChatPanel(
             )
           }
         }
-        // Show an info message for ask audio task to get users started.
+        // Show an info message for ask image task to get users started.
         else if (task.id == BuiltInTaskId.LLM_ASK_AUDIO && messages.isEmpty()) {
           Column(
-            modifier =
-              Modifier.padding(horizontal = 16.dp).fillMaxSize().semantics(
-                mergeDescendants = true
-              ) {
-                liveRegion = LiveRegionMode.Polite
-              },
+            modifier = Modifier.padding(horizontal = 16.dp).fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
           ) {
@@ -590,6 +791,15 @@ fun ChatPanel(
         }
       }
 
+      } // end Box
+
+      Surface(
+        shadowElevation = 8.dp,
+        tonalElevation = 3.dp,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        modifier = Modifier.fillMaxWidth()
+      ) {
+      Column {
       MessageInputText(
         task = task,
         modelManagerViewModel = modelManagerViewModel,
@@ -630,12 +840,14 @@ fun ChatPanel(
         onAmplitudeChanged = { curAmplitude = it },
         showPromptTemplatesInMenu = false,
         showImagePickerInMenu =
-          selectedModel.llmSupportImage && task.id === BuiltInTaskId.LLM_ASK_IMAGE,
+          selectedModel.llmSupportImage,  // Show for any model with image support
         showAudioItemsInMenu =
-          selectedModel.llmSupportAudio && task.id === BuiltInTaskId.LLM_ASK_AUDIO,
+          selectedModel.llmSupportAudio,  // Show for any model with audio support
         showStopButtonWhenInProgress = showStopButtonInInputWhenInProgress,
       )
-    }
+      } // end Column
+      } // end Surface
+    } // close parent container
   }
 
   // Error dialog.
@@ -659,12 +871,10 @@ fun ChatPanel(
 
   // Sheet to show when a message is long-pressed.
   if (showMessageLongPressedSheet) {
-    val message =
-      uiState.messagesByModel
-        .getOrDefault(selectedModel.name, listOf())
-        .getOrNull(longPressedMessageIndex)
+    val message = longPressedMessage.value
     if (message != null && message is ChatMessageText) {
       val clipboard = LocalClipboard.current
+      val context = LocalContext.current
 
       ModalBottomSheet(
         onDismissRequest = { showMessageLongPressedSheet = false },
@@ -692,18 +902,101 @@ fun ChatPanel(
             Row(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(6.dp),
-              modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
+              modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
             ) {
               Icon(
                 Icons.Rounded.ContentCopy,
-                contentDescription = stringResource(R.string.cd_copy_to_clipboard_icon),
+                contentDescription = "",
                 modifier = Modifier.size(18.dp),
               )
               Text("Copy text")
             }
           }
+
+          // Share text.
+          Box(
+            modifier =
+              Modifier.fillMaxWidth().clickable {
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                  type = "text/plain"
+                  putExtra(Intent.EXTRA_TEXT, message.content)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Share message"))
+                showMessageLongPressedSheet = false
+              }
+          ) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp),
+              modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+            ) {
+              Icon(
+                Icons.Rounded.Share,
+                contentDescription = "",
+                modifier = Modifier.size(18.dp),
+              )
+              Text("Share")
+            }
+          }
+
+          // Delete message.
+          Box(
+            modifier =
+              Modifier.fillMaxWidth().clickable {
+                showMessageLongPressedSheet = false
+                showDeleteConfirmDialog = true
+              }
+          ) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp),
+              modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+            ) {
+              Icon(
+                Icons.Rounded.Delete,
+                contentDescription = "",
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.error
+              )
+              Text("Delete", color = MaterialTheme.colorScheme.error)
+            }
+          }
         }
       }
+    }
+  }
+
+  // Delete confirmation dialog
+  if (showDeleteConfirmDialog) {
+    val message = longPressedMessage.value
+    if (message != null) {
+      androidx.compose.material3.AlertDialog(
+        onDismissRequest = { showDeleteConfirmDialog = false },
+        title = { Text("Delete message?") },
+        text = { Text("This message will be removed from this chat.") },
+        confirmButton = {
+          androidx.compose.material3.TextButton(
+            onClick = {
+              val messageIndex = viewModel.getMessageIndex(model = selectedModel, message = message)
+              if (messageIndex >= 0) {
+                viewModel.removeMessageAt(model = selectedModel, index = messageIndex)
+              }
+              showDeleteConfirmDialog = false
+              longPressedMessage.value = null
+              scope.launch { snackbarHostState.showSnackbar("Message deleted") }
+            }
+          ) {
+            Text("Delete", color = MaterialTheme.colorScheme.error)
+          }
+        },
+        dismissButton = {
+          androidx.compose.material3.TextButton(
+            onClick = { showDeleteConfirmDialog = false }
+          ) {
+            Text("Cancel")
+          }
+        }
+      )
     }
   }
 }
@@ -712,9 +1005,9 @@ private suspend fun scrollToBottom(listState: LazyListState, animate: Boolean = 
   val itemCount = listState.layoutInfo.totalItemsCount
   if (itemCount > 0) {
     if (animate) {
-      listState.animateScrollToItem(itemCount - 1, scrollOffset = 1000000)
+      listState.animateScrollToItem(itemCount - 1, scrollOffset = 10000)
     } else {
-      listState.scrollToItem(itemCount - 1, scrollOffset = 1000000)
+      listState.scrollToItem(itemCount - 1, scrollOffset = 10000)
     }
   }
 }

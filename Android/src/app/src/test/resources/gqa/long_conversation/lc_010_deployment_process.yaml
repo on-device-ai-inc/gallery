@@ -1,0 +1,12 @@
+# GQA Test Case: Deployment Process
+test_case_id: "lc_010"
+category: "long_conversation"
+description: "44-message discussion about app deployment to Play Store"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "How do I deploy my app to Play Store?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Generate signed APK/AAB, create Play Console account, fill in store listing, submit for review.", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What are deployment steps?", expected_keywords: ["signed APK", "Play Console", "review"], importance: "high"}
+expected_compression_behavior: ["Should preserve deployment steps"]

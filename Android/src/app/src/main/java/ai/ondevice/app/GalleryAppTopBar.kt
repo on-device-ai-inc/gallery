@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,16 @@ package ai.ondevice.app
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,9 +70,9 @@ fun GalleryTopAppBar(
         ) {
           if (title == stringResource(R.string.app_name)) {
             Icon(
-              painterResource(R.drawable.logo),
+              painterResource(R.drawable.neural_circuit_logo),
               modifier = Modifier.size(20.dp),
-              contentDescription = null,
+              contentDescription = "",
               tint = Color.Unspecified,
             )
           }
@@ -98,11 +101,26 @@ fun GalleryTopAppBar(
       when (leftAction?.actionType) {
         AppBarActionType.NAVIGATE_UP -> {
           IconButton(onClick = leftAction.actionFn) {
+            Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "")
+          }
+        }
+
+        AppBarActionType.REFRESH_MODELS -> {
+          IconButton(onClick = leftAction.actionFn) {
             Icon(
-              imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-              contentDescription = stringResource(R.string.cd_navigate_back_icon),
+              imageVector = Icons.Rounded.Refresh,
+              contentDescription = "",
+              tint = MaterialTheme.colorScheme.secondary,
             )
           }
+        }
+
+        AppBarActionType.REFRESHING_MODELS -> {
+          CircularProgressIndicator(
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            strokeWidth = 3.dp,
+            modifier = Modifier.padding(start = 16.dp).size(20.dp),
+          )
         }
 
         else -> {}
@@ -116,10 +134,14 @@ fun GalleryTopAppBar(
           IconButton(onClick = rightAction.actionFn) {
             Icon(
               imageVector = Icons.Rounded.Settings,
-              contentDescription = stringResource(R.string.cd_app_settings_icon),
+              contentDescription = "",
               tint = MaterialTheme.colorScheme.onSurface,
             )
           }
+        }
+
+        AppBarActionType.MODEL_SELECTOR -> {
+          Text("ms")
         }
 
         // Click a button to navigate up.

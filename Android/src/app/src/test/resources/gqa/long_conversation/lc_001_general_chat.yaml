@@ -1,0 +1,350 @@
+# GQA Test Case: Long General Chat Conversation
+# Category: Long Conversation
+# Purpose: Test compression quality on extended casual conversation
+
+test_case_id: "lc_001"
+category: "long_conversation"
+description: "50-message general discussion covering daily activities, weather, and plans"
+token_budget: 4096
+target_compression_ratio: 0.3
+
+messages:
+  - role: "user"
+    content: "Good morning! How's your day starting?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: true
+
+  - role: "assistant"
+    content: "Good morning! My day is starting well, thank you for asking. I'm ready to help you with whatever you need. How about you? How are you doing this morning?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Pretty good! The weather is nice today. I'm thinking about going for a walk later."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "That sounds lovely! A walk on a nice day can be really refreshing. Do you have a favorite route or park you like to visit?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Yeah, there's a park near my house with a nice trail. It's about 2 miles around."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "A 2-mile trail sounds perfect for a leisurely walk. Do you usually listen to music or podcasts while you walk, or do you prefer to just enjoy the surroundings?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Usually podcasts. I've been listening to a lot of tech podcasts lately."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Tech podcasts are great for staying updated! Are there any particular shows you'd recommend? I'm always curious what people are listening to."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "I really like 'All-In' and 'Hard Fork'. They cover interesting tech and business topics."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Those are excellent choices! 'All-In' has great discussions on tech, business, and economics. 'Hard Fork' is wonderful for staying current with tech news. Do you have a favorite episode from either?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "The recent episode about AI was fascinating. They discussed how it's changing software development."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "AI's impact on software development is definitely a hot topic right now. It's changing how developers work, from code completion to debugging. Have you noticed any changes in your own work or projects?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Yeah, I've started using AI coding assistants. They're pretty helpful for boilerplate code."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "That's a smart way to use them! AI assistants are particularly good at generating boilerplate and repetitive code, which frees up time for more creative problem-solving. What language do you primarily code in?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Mostly Python and JavaScript. Sometimes Kotlin for Android development."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "That's a great tech stack! Python and JavaScript cover so much ground, and Kotlin is excellent for Android. Are you working on any interesting projects right now?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "I'm building a mobile app for tracking hiking trails. Using Kotlin with Compose."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "A hiking trails app sounds fantastic! Jetpack Compose is a great choice for that - the declarative UI approach works well for mapping and location features. Will it include GPS tracking and offline maps?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Yes! GPS tracking for sure, and I'm working on the offline maps feature now. It's tricky."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Offline maps can definitely be challenging! You'll need to handle tile caching, storage management, and determining which map areas to download. Are you using a mapping library like Mapbox or Google Maps?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "I'm using Mapbox. Their offline support is pretty good, but I need to figure out the storage limits."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Mapbox is a solid choice! For storage, you'll want to let users select specific regions to download rather than entire states. Also consider implementing automatic cleanup of old map data. What's your target file size per region?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "I'm thinking around 100-200MB per region. Trying to balance quality and storage."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "That's a reasonable range! You might want to offer different quality tiers - basic (50MB), standard (150MB), and high-detail (300MB) - so users can choose based on their needs and available storage."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Oh that's a great idea! I hadn't thought about quality tiers. That would give users more flexibility."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Glad you like it! Quality tiers are common in navigation apps. You could also add a feature to show estimated download sizes before users commit. Makes for better UX."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Definitely adding that. By the way, do you think I should include social features? Like sharing trails?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Social features can add a lot of value! Trail sharing, ratings, and reviews are popular. You could also add photo sharing from hikes. Just be mindful of privacy - some hikers prefer not to broadcast their locations."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Good point about privacy. Maybe I'll make sharing opt-in and let people share after the hike is done."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "That's the right approach! Post-hike sharing with optional location blurring is safer. You could also add a feature to share trail recommendations without revealing exact GPS data."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "I like that. Okay, I should probably get back to coding. Thanks for the ideas!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "You're welcome! Best of luck with the hiking app - it sounds like a really useful project. And enjoy your walk later!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Thanks! I will. Talk to you later."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "See you later! Have a great day!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Actually, one more question - what's the best way to handle battery drain with GPS tracking?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Great question! Battery optimization is crucial for GPS apps. Key strategies: reduce location update frequency when user isn't moving much, use coarse location when high precision isn't needed, and batch updates. Also consider a 'battery saver mode' that reduces tracking accuracy."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "How often should I poll for location updates? Every second seems excessive."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "You're right - every second is overkill for hiking. For trails, every 5-10 seconds is usually sufficient. For slow-moving scenarios or when stationary, you can reduce to 15-30 seconds. Android's FusedLocationProvider can handle this intelligently."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Perfect. So I should use FusedLocationProvider instead of LocationManager?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Yes, definitely use FusedLocationProvider! It's part of Google Play Services and combines GPS, WiFi, and cell tower data for better accuracy with lower battery usage. LocationManager is older and less efficient."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Got it. I'll look into implementing that. Is there good documentation for it?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Yes! The Android documentation for FusedLocationProvider is quite good. There are also great tutorials on the Android Developers blog. Focus on the LocationRequest API for setting update intervals and priority levels."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Awesome. I'll check that out. Now I really need to get back to work!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Ha! I'll let you go this time. Happy coding, and don't forget about that walk later!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "I won't! See ya."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Bye! Good luck with the app!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Wait, one last thing - should I worry about different Android versions with GPS?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Yes, definitely test across versions! Android 10+ requires background location permission separately, and Android 12+ has precision vs approximate location choices. Make sure your permission requests handle these properly."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Noted. I'll make sure to test on different API levels. Thanks again!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "You're welcome! Test on at least API 29, 31, and 33 to cover the major permission changes. Now go build that app!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Will do!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "👍"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+evaluation_queries:
+  - query: "What app is the user building?"
+    expected_keywords: ["hiking", "trails", "mobile app", "Kotlin", "Compose"]
+    importance: "high"
+
+  - query: "What mapping library did they decide to use?"
+    expected_keywords: ["Mapbox", "offline", "maps"]
+    importance: "high"
+
+  - query: "What was suggested about battery optimization?"
+    expected_keywords: ["FusedLocationProvider", "5-10 seconds", "battery saver"]
+    importance: "medium"
+
+  - query: "What feature idea was discussed for user flexibility?"
+    expected_keywords: ["quality tiers", "download sizes", "basic", "standard", "high-detail"]
+    importance: "medium"
+
+  - query: "What Android API levels should be tested?"
+    expected_keywords: ["API 29", "31", "33", "permissions"]
+    importance: "low"
+
+expected_compression_behavior:
+  - "Should preserve main topic: hiking trails app development"
+  - "Should retain key technical decisions: Mapbox, FusedLocationProvider, quality tiers"
+  - "Should maintain important details: battery optimization, permission handling"
+  - "Can compress generic greetings and transitions"
+  - "Should preserve actionable recommendations"

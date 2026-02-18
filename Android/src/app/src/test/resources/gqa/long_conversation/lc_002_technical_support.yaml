@@ -1,0 +1,250 @@
+# GQA Test Case: Technical Support Troubleshooting Session
+# Category: Long Conversation
+# Purpose: Test compression on extended troubleshooting conversation with back-and-forth
+
+test_case_id: "lc_002"
+category: "long_conversation"
+description: "Technical support session troubleshooting app crash with detailed logs and solutions"
+token_budget: 4096
+target_compression_ratio: 0.3
+
+messages:
+  - role: "user"
+    content: "My app keeps crashing when I try to open the camera. Can you help?"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: true
+
+  - role: "assistant"
+    content: "I'll help you troubleshoot the camera crash. First, can you tell me: What device are you using, and what Android version is it running?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Samsung Galaxy S22, Android 13."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Thanks! When does the crash happen - immediately when you tap the camera button, or after the camera preview appears?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Right when I tap the camera button. The app just closes instantly."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Got it. This is likely a permission issue. Can you go to Settings > Apps > [Your App Name] > Permissions and check if Camera permission is granted?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Let me check... Yes, camera permission is allowed."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Interesting. Since permission is granted, let's check the crash logs. Can you open the app, trigger the crash, then share any error message you see? Or if you're a developer, can you check logcat?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "I'm the developer. Here's the logcat error: java.lang.RuntimeException: Fail to connect to camera service"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Ah, 'Fail to connect to camera service' usually means another app is using the camera, or the camera service is locked. Are you using CameraX or Camera2 API?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "CameraX. I just implemented it yesterday."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Got it. With CameraX, this often happens if you're not properly releasing the camera in onPause() or onDestroy(). Can you share your camera initialization code?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Here's my code:\n```kotlin\nval cameraProviderFuture = ProcessCameraProvider.getInstance(this)\ncameraProviderFuture.addListener({\n    val cameraProvider = cameraProviderFuture.get()\n    cameraProvider.bindToLifecycle(this, cameraSelector, preview)\n}, ContextCompat.getMainExecutor(this))\n```"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "I see the issue! You're binding to lifecycle but not unbinding. You need to call `cameraProvider.unbindAll()` before binding again. Also, wrap the binding in a try-catch. Here's the fix:\n\n```kotlin\ntry {\n    cameraProvider.unbindAll()\n    cameraProvider.bindToLifecycle(this, cameraSelector, preview)\n} catch(e: Exception) {\n    Log.e(TAG, \"Camera binding failed\", e)\n}\n```"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Should I also add anything in onPause or onDestroy?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Good question! If you're using `bindToLifecycle()`, CameraX handles cleanup automatically when the lifecycle is destroyed. However, you can add `cameraProvider.unbindAll()` in onDestroy() for explicit cleanup."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Okay, I'll try that fix. Give me a minute to implement it."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Take your time! Test it thoroughly - try opening the camera, minimizing the app, reopening, and closing multiple times to make sure it doesn't crash."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Still crashing! Same error. Here's the updated code:\n```kotlin\noverride fun onCreate(savedInstanceState: Bundle?) {\n    super.onCreate(savedInstanceState)\n    startCamera()\n}\n\nprivate fun startCamera() {\n    val cameraProviderFuture = ProcessCameraProvider.getInstance(this)\n    cameraProviderFuture.addListener({\n        val cameraProvider = cameraProviderFuture.get()\n        try {\n            cameraProvider.unbindAll()\n            cameraProvider.bindToLifecycle(this, cameraSelector, preview)\n        } catch(e: Exception) {\n            Log.e(TAG, \"Camera binding failed\", e)\n        }\n    }, ContextCompat.getMainExecutor(this))\n}\n```"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "I notice you're calling `startCamera()` in `onCreate()`. Is your `cameraSelector` and `preview` initialized before you call `startCamera()`? If not, that's your problem."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Oh! No, I initialize them after. Should I initialize them before calling startCamera()?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Exactly! You need to initialize the preview and camera selector BEFORE binding. Here's the proper order:\n\n```kotlin\n// 1. Initialize preview\npreview = Preview.Builder().build()\npreviewView?.let { preview.setSurfaceProvider(it.surfaceProvider) }\n\n// 2. Initialize camera selector\ncameraSelector = CameraSelector.DEFAULT_BACK_CAMERA\n\n// 3. THEN call startCamera()\nstartCamera()\n```"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "That makes sense! Let me reorganize my code."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Good! Also make sure your PreviewView is properly added to your layout XML and you're getting the reference correctly with findViewById() or ViewBinding."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Success! The camera is working now. Thanks!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Excellent! Glad it's working. Just remember: always initialize your use cases (Preview, ImageCapture, etc.) before binding to the lifecycle."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Will do. One more question - how do I add image capture functionality now?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "To add image capture, create an ImageCapture use case and bind it alongside preview:\n\n```kotlin\nimageCapture = ImageCapture.Builder()\n    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)\n    .build()\n\ncameraProvider.bindToLifecycle(\n    this, \n    cameraSelector, \n    preview, \n    imageCapture  // Add this\n)\n```\n\nThen call `imageCapture.takePicture()` when you want to capture."
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "What parameters does takePicture need?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "`takePicture()` needs output options and a callback:\n\n```kotlin\nval outputOptions = ImageCapture.OutputFileOptions\n    .Builder(photoFile)\n    .build()\n\nimageCapture.takePicture(\n    outputOptions,\n    ContextCompat.getMainExecutor(this),\n    object : ImageCapture.OnImageSavedCallback {\n        override fun onImageSaved(output: ImageCapture.OutputFileResults) {\n            // Success\n        }\n        override fun onError(exception: ImageCaptureException) {\n            // Handle error\n        }\n    }\n)\n```"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Where should I create the photoFile? In the app's cache directory?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "Good question! For photos you want to keep, use external storage with MediaStore:\n\n```kotlin\nval contentValues = ContentValues().apply {\n    put(MediaStore.MediaColumns.DISPLAY_NAME, \"IMG_${System.currentTimeMillis()}.jpg\")\n    put(MediaStore.MediaColumns.MIME_TYPE, \"image/jpeg\")\n    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)\n}\n\nval outputOptions = ImageCapture.OutputFileOptions\n    .Builder(contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)\n    .build()\n```\n\nThis saves to the Pictures folder and appears in gallery apps."
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Perfect! Do I need any special permissions for that?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "On Android 10+, you don't need WRITE_EXTERNAL_STORAGE permission if you use MediaStore. The system handles permissions automatically. Just make sure you have CAMERA permission, which you already do."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "user"
+    content: "Awesome! I'll implement that now. Thanks for all the help!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+  - role: "assistant"
+    content: "You're welcome! Feel free to come back if you run into any issues. Happy coding!"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+
+evaluation_queries:
+  - query: "What was the root cause of the camera crash?"
+    expected_keywords: ["initialize", "preview", "cameraSelector", "before", "binding"]
+    importance: "high"
+
+  - query: "What CameraX API is being used?"
+    expected_keywords: ["CameraX", "ProcessCameraProvider", "bindToLifecycle"]
+    importance: "high"
+
+  - query: "How do you add image capture functionality?"
+    expected_keywords: ["ImageCapture", "Builder", "bind", "preview"]
+    importance: "medium"
+
+  - query: "Where should photos be saved?"
+    expected_keywords: ["MediaStore", "Pictures", "EXTERNAL_CONTENT_URI"]
+    importance: "medium"
+
+expected_compression_behavior:
+  - "Should preserve critical error: 'Fail to connect to camera service'"
+  - "Should retain the solution: initialize use cases before binding"
+  - "Should maintain code snippets that solved the problem"
+  - "Can compress conversational back-and-forth that didn't solve issue"
+  - "Should preserve starred messages (original problem and solutions)"

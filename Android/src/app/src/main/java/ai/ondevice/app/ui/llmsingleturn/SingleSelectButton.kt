@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ fun SingleSelectButton(
           .padding(start = 8.dp),
     ) {
       Text("${config.label}: $selectedOption", style = MaterialTheme.typography.labelLarge)
-      Icon(Icons.Rounded.ArrowDropDown, contentDescription = null)
+      Icon(Icons.Rounded.ArrowDropDown, contentDescription = "")
     }
 
     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {

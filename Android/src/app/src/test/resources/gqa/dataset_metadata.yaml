@@ -1,0 +1,65 @@
+# GQA Dataset Metadata
+# Golden QA Dataset for Context Compression Quality Validation
+
+dataset_name: "GQA-006 Golden QA Dataset"
+version: "1.0.0"
+created_date: "2026-01-13"
+last_updated: "2026-01-13"
+
+description: |
+  Golden QA dataset containing 50+ test cases for validating context compression quality.
+  Tests compression across 5 categories to ensure information preservation, accuracy, and efficiency.
+
+categories:
+  - name: "long_conversation"
+    count: 10
+    description: "Extended conversations (40-100 messages) testing compression of lengthy dialogues"
+
+  - name: "code_discussion"
+    count: 10
+    description: "Technical discussions with code snippets, testing preservation of technical details"
+
+  - name: "multi_topic"
+    count: 10
+    description: "Conversations covering multiple topics, testing topic transition handling"
+
+  - name: "importance_preservation"
+    count: 10
+    description: "Messages with importance markers (starred, system-generated)"
+
+  - name: "summarization_quality"
+    count: 10
+    description: "Tests accuracy of conversation summarization and key point extraction"
+
+total_test_cases: 50
+
+evaluation_criteria:
+  target_pass_rate: 0.90
+  target_compression_ratio: 0.30
+  max_execution_time_per_case_ms: 5000
+
+test_runner:
+  class: "ai.ondevice.app.evaluation.GoldenQARunnerTest"
+  location: "app/src/test/java/ai/ondevice/app/evaluation/GoldenQARunnerTest.kt"
+
+quality_targets:
+  - "Preserve all starred messages"
+  - "Preserve all system-generated messages"
+  - "Maintain conversation context and flow"
+  - "Retain technical details and code snippets"
+  - "Preserve key decisions and conclusions"
+  - "Handle topic transitions gracefully"
+
+known_limitations:
+  - "Inference engine mocked in CI (skipInference=true)"
+  - "Requires actual LLM for full evaluation queries"
+  - "Token counting may vary by model"
+
+maintenance:
+  update_frequency: "quarterly"
+  review_schedule: "after major compression algorithm changes"
+
+notes: |
+  This dataset is designed to be run in CI/CD pipelines to catch regressions
+  in context compression quality. Each test case includes evaluation queries
+  that validate information preservation after compression.

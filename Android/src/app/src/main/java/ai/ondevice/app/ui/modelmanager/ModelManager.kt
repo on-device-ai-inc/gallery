@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,13 +43,13 @@ import ai.ondevice.app.data.Task
 fun ModelManager(
   task: Task,
   viewModel: ModelManagerViewModel,
-  enableAnimation: Boolean,
   navigateUp: () -> Unit,
   onModelClicked: (Model) -> Unit,
   modifier: Modifier = Modifier,
+  customTitle: String? = null,  // Override title for Model Downloads screen
 ) {
-  // Set title based on the task.
-  val title = task.label
+  // Set title - use custom title if provided, otherwise use task label
+  val title = customTitle ?: task.label
   // Model count.
   val modelCount by remember {
     derivedStateOf {
@@ -85,7 +85,6 @@ fun ModelManager(
       task = task,
       modelManagerViewModel = viewModel,
       contentPadding = innerPadding,
-      enableAnimation = enableAnimation,
       onModelClicked = onModelClicked,
       modifier = Modifier.fillMaxSize(),
     )

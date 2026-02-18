@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package ai.ondevice.app.data
 
 import androidx.datastore.core.DataStore
 import ai.ondevice.app.proto.AccessTokenData
-import ai.ondevice.app.proto.Cutout
-import ai.ondevice.app.proto.CutoutCollection
+import ai.ondevice.app.proto.AutoCleanup
 import ai.ondevice.app.proto.ImportedModel
 import ai.ondevice.app.proto.Settings
+import ai.ondevice.app.proto.TextSize
 import ai.ondevice.app.proto.Theme
 import ai.ondevice.app.proto.UserData
 import kotlinx.coroutines.flow.first
@@ -51,24 +51,43 @@ interface DataStoreRepository {
 
   fun acceptTos()
 
-  fun getHasRunTinyGarden(): Boolean
+  // Self-hosted Gemma: Terms acceptance tracking
+  fun isGemmaTermsAccepted(): Boolean
 
-  fun setHasRunTinyGarden(hasRun: Boolean)
+  fun acceptGemmaTerms()
 
-  fun addCutout(cutout: Cutout)
+  fun getGemmaTermsAcceptanceTimestamp(): Long
 
-  fun getAllCutouts(): List<Cutout>
+  // Epic 5: Settings & Data Management
 
-  fun setCutout(newCutout: Cutout)
+  // Story 5.4: Text size adjustment
+  fun saveTextSize(textSize: TextSize)
+  fun readTextSize(): TextSize
 
-  fun setCutouts(cutouts: List<Cutout>)
+  // Story 5.3: Auto-cleanup configuration
+  fun saveAutoCleanup(autoCleanup: AutoCleanup)
+  fun readAutoCleanup(): AutoCleanup
+
+  // Story 5.2: Storage budget
+  fun saveStorageBudget(budgetBytes: Long)
+  fun readStorageBudget(): Long
+
+  // Story 8: Custom Instructions
+  fun saveCustomInstructions(instructions: String)
+  fun readCustomInstructions(): String
+
+  // User Profile - Personalized greetings
+  fun saveUserFullName(fullName: String)
+  fun readUserFullName(): String
+  fun saveUserNickname(nickname: String)
+  fun readUserNickname(): String
 }
 
-/** Repository for managing data using Proto DataStore. */
+/** Repository for managing data using Proto DataStore and EncryptedSharedPreferences. */
 class DefaultDataStoreRepository(
   private val dataStore: DataStore<Settings>,
   private val userDataDataStore: DataStore<UserData>,
-  private val cutoutDataStore: DataStore<CutoutCollection>,
+  private val secureTokenStorage: SecureTokenStorage,
 ) : DataStoreRepository {
   override fun saveTextInputHistory(history: List<String>) {
     runBlocking {
@@ -101,29 +120,26 @@ class DefaultDataStoreRepository(
   }
 
   override fun saveAccessTokenData(accessToken: String, refreshToken: String, expiresAt: Long) {
+    // Save to EncryptedSharedPreferences (primary storage)
+    secureTokenStorage.saveTokens(accessToken, refreshToken, expiresAt)
+
     runBlocking {
-      // Clear the entry in old data store.
+      // Clear tokens from old Proto DataStore (migration cleanup)
       dataStore.updateData { settings ->
         settings.toBuilder().setAccessTokenData(AccessTokenData.getDefaultInstance()).build()
       }
-
       userDataDataStore.updateData { userData ->
-        userData
-          .toBuilder()
-          .setAccessTokenData(
-            AccessTokenData.newBuilder()
-              .setAccessToken(accessToken)
-              .setRefreshToken(refreshToken)
-              .setExpiresAtMs(expiresAt)
-              .build()
-          )
-          .build()
+        userData.toBuilder().clearAccessTokenData().build()
       }
     }
   }
 
   override fun clearAccessTokenData() {
+    // Clear from EncryptedSharedPreferences (primary storage)
+    secureTokenStorage.clearTokens()
+
     runBlocking {
+      // Also clear from old Proto DataStore (migration cleanup)
       dataStore.updateData { settings -> settings.toBuilder().clearAccessTokenData().build() }
       userDataDataStore.updateData { userData ->
         userData.toBuilder().clearAccessTokenData().build()
@@ -132,9 +148,32 @@ class DefaultDataStoreRepository(
   }
 
   override fun readAccessTokenData(): AccessTokenData? {
+    // Try reading from EncryptedSharedPreferences first (primary storage)
+    val secureTokens = secureTokenStorage.readTokens()
+    if (secureTokens != null) {
+      return secureTokens
+    }
+
+    // Migration: Check if tokens exist in old Proto DataStore
     return runBlocking {
       val userData = userDataDataStore.data.first()
-      userData.accessTokenData
+      val protoTokens = userData.accessTokenData
+
+      // If tokens exist in Proto DataStore, migrate to EncryptedSharedPreferences
+      if (protoTokens != null && protoTokens.accessToken.isNotEmpty()) {
+        secureTokenStorage.saveTokens(
+          protoTokens.accessToken,
+          protoTokens.refreshToken,
+          protoTokens.expiresAtMs
+        )
+        // Clear from Proto DataStore after migration
+        userDataDataStore.updateData { data ->
+          data.toBuilder().clearAccessTokenData().build()
+        }
+        return@runBlocking protoTokens
+      }
+
+      null
     }
   }
 
@@ -166,52 +205,127 @@ class DefaultDataStoreRepository(
     }
   }
 
-  override fun getHasRunTinyGarden(): Boolean {
+  // Self-hosted Gemma: Terms acceptance tracking implementation
+
+  override fun isGemmaTermsAccepted(): Boolean {
     return runBlocking {
       val settings = dataStore.data.first()
-      settings.hasRunTinyGarden
+      settings.gemmaTermsAcceptedTimestamp > 0
     }
   }
 
-  override fun setHasRunTinyGarden(hasRun: Boolean) {
+  override fun acceptGemmaTerms() {
     runBlocking {
-      dataStore.updateData { settings -> settings.toBuilder().setHasRunTinyGarden(hasRun).build() }
-    }
-  }
-
-  override fun addCutout(cutout: Cutout) {
-    runBlocking {
-      cutoutDataStore.updateData { cutouts -> cutouts.toBuilder().addCutout(cutout).build() }
-    }
-  }
-
-  override fun getAllCutouts(): List<Cutout> {
-    return runBlocking { cutoutDataStore.data.first().cutoutList }
-  }
-
-  override fun setCutout(newCutout: Cutout) {
-    runBlocking {
-      cutoutDataStore.updateData { cutouts ->
-        var index = -1
-        for (i in 0..<cutouts.cutoutCount) {
-          val cutout = cutouts.cutoutList.get(i)
-          if (cutout.id == newCutout.id) {
-            index = i
-            break
-          }
-        }
-        if (index >= 0) {
-          cutouts.toBuilder().setCutout(index, newCutout).build()
-        } else {
-          cutouts
-        }
+      dataStore.updateData { settings ->
+        settings.toBuilder()
+          .setGemmaTermsAcceptedTimestamp(System.currentTimeMillis())
+          .build()
       }
     }
   }
 
-  override fun setCutouts(cutouts: List<Cutout>) {
-    runBlocking {
-      cutoutDataStore.updateData { CutoutCollection.newBuilder().addAllCutout(cutouts).build() }
+  override fun getGemmaTermsAcceptanceTimestamp(): Long {
+    return runBlocking {
+      val settings = dataStore.data.first()
+      settings.gemmaTermsAcceptedTimestamp
     }
+  }
+
+  // Epic 5: Settings & Data Management implementation
+
+  override fun saveTextSize(textSize: TextSize) {
+    runBlocking {
+      dataStore.updateData { settings -> settings.toBuilder().setTextSize(textSize).build() }
+    }
+  }
+
+  override fun readTextSize(): TextSize {
+    return runBlocking {
+      val settings = dataStore.data.first()
+      val textSize = settings.textSize
+      // Default to MEDIUM if unspecified
+      if (textSize == TextSize.TEXT_SIZE_UNSPECIFIED) TextSize.TEXT_SIZE_MEDIUM else textSize
+    }
+  }
+
+  override fun saveAutoCleanup(autoCleanup: AutoCleanup) {
+    runBlocking {
+      dataStore.updateData { settings -> settings.toBuilder().setAutoCleanup(autoCleanup).build() }
+    }
+  }
+
+  override fun readAutoCleanup(): AutoCleanup {
+    return runBlocking {
+      val settings = dataStore.data.first()
+      val autoCleanup = settings.autoCleanup
+      // Default to NEVER if unspecified
+      if (autoCleanup == AutoCleanup.AUTO_CLEANUP_UNSPECIFIED) AutoCleanup.AUTO_CLEANUP_NEVER else autoCleanup
+    }
+  }
+
+  override fun saveStorageBudget(budgetBytes: Long) {
+    runBlocking {
+      dataStore.updateData { settings -> settings.toBuilder().setStorageBudgetBytes(budgetBytes).build() }
+    }
+  }
+
+  override fun readStorageBudget(): Long {
+    return runBlocking {
+      val settings = dataStore.data.first()
+      val budget = settings.storageBudgetBytes
+      // Default to 4GB if not set (0)
+      if (budget == 0L) DEFAULT_STORAGE_BUDGET_BYTES else budget
+    }
+  }
+
+  override fun saveCustomInstructions(instructions: String) {
+    runBlocking {
+      dataStore.updateData { settings ->
+        settings.toBuilder().setCustomInstructions(instructions).build()
+      }
+    }
+  }
+
+  override fun readCustomInstructions(): String {
+    return runBlocking {
+      val settings = dataStore.data.first()
+      settings.customInstructions
+    }
+  }
+
+  // User Profile implementation
+
+  override fun saveUserFullName(fullName: String) {
+    runBlocking {
+      dataStore.updateData { settings ->
+        settings.toBuilder().setUserFullName(fullName).build()
+      }
+    }
+  }
+
+  override fun readUserFullName(): String {
+    return runBlocking {
+      val settings = dataStore.data.first()
+      settings.userFullName
+    }
+  }
+
+  override fun saveUserNickname(nickname: String) {
+    runBlocking {
+      dataStore.updateData { settings ->
+        settings.toBuilder().setUserNickname(nickname).build()
+      }
+    }
+  }
+
+  override fun readUserNickname(): String {
+    return runBlocking {
+      val settings = dataStore.data.first()
+      settings.userNickname
+    }
+  }
+
+  companion object {
+    const val DEFAULT_STORAGE_BUDGET_BYTES = 4L * 1024 * 1024 * 1024  // 4GB
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import ai.ondevice.app.R
 import kotlin.math.ceil
 
 @Composable
@@ -53,7 +51,7 @@ fun MessageBodyImage(
 
     Image(
       bitmap = imageBitMap,
-      contentDescription = stringResource(R.string.cd_user_image),
+      contentDescription = "",
       modifier =
         modifier.height(imageHeight.dp).width(imageWidth.dp).clickable {
           onImageClicked(message.bitmaps, 0)
@@ -84,8 +82,7 @@ fun MessageBodyImage(
             val imageBitMap = message.imageBitMaps[imageIndex]
             Image(
               bitmap = imageBitMap,
-              contentDescription =
-                stringResource(R.string.cd_user_image_in_group, imageIndex + 1, imageCount),
+              contentDescription = "",
               modifier =
                 Modifier.height(100.dp).width(100.dp).clickable {
                   onImageClicked(message.bitmaps, imageIndex)

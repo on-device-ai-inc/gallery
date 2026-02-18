@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,27 +39,28 @@ data class AllowedModel(
   val disabled: Boolean? = null,
   val llmSupportImage: Boolean? = null,
   val llmSupportAudio: Boolean? = null,
-  val llmSupportTinyGarden: Boolean? = null,
-  val llmSupportMobileActions: Boolean? = null,
   val minDeviceMemoryInGb: Int? = null,
   val bestForTaskTypes: List<String>? = null,
   val localModelFilePathOverride: String? = null,
-  val url: String? = null,
+  // Self-hosted Gemma fields
+  val requiresGemmaTerms: Boolean? = null,
+  val downloadUrl: String? = null,
+  val fallbackUrls: List<String>? = null,
+  val sha256: String? = null,
+  val requiresWifi: Boolean? = null,
 ) {
   fun toModel(): Model {
-    // Construct HF download url.
-    val downloadUrl =
-      url ?: "https://huggingface.co/$modelId/resolve/$commitHash/$modelFile?download=true"
+    // Construct HF download url from modelId (legacy) or use new downloadUrl field
+    val constructedUrl = "https://huggingface.co/$modelId/resolve/$commitHash/$modelFile?download=true"
+    val modelUrl = downloadUrl ?: constructedUrl
 
     // Config.
     val isLlmModel =
       taskTypes.contains(BuiltInTaskId.LLM_CHAT) ||
         taskTypes.contains(BuiltInTaskId.LLM_PROMPT_LAB) ||
         taskTypes.contains(BuiltInTaskId.LLM_ASK_AUDIO) ||
-        taskTypes.contains(BuiltInTaskId.LLM_ASK_IMAGE) ||
-        taskTypes.contains(BuiltInTaskId.LLM_MOBILE_ACTIONS) ||
-        taskTypes.contains(BuiltInTaskId.LLM_TINY_GARDEN)
-    var configs: MutableList<Config> = mutableListOf()
+        taskTypes.contains(BuiltInTaskId.LLM_ASK_IMAGE)
+    var configs: List<Config> = listOf()
     if (isLlmModel) {
       val defaultTopK: Int = defaultConfig.topK ?: DEFAULT_TOPK
       val defaultTopP: Float = defaultConfig.topP ?: DEFAULT_TOPP
@@ -79,13 +80,12 @@ data class AllowedModel(
       }
       configs =
         createLlmChatConfigs(
-            defaultTopK = defaultTopK,
-            defaultTopP = defaultTopP,
-            defaultTemperature = defaultTemperature,
-            defaultMaxToken = defaultMaxToken,
-            accelerators = accelerators,
-          )
-          .toMutableList()
+          defaultTopK = defaultTopK,
+          defaultTopP = defaultTopP,
+          defaultTemperature = defaultTemperature,
+          defaultMaxToken = defaultMaxToken,
+          accelerators = accelerators,
+        )
     }
 
     // Misc.
@@ -100,7 +100,7 @@ data class AllowedModel(
       name = name,
       version = commitHash,
       info = description,
-      url = downloadUrl,
+      url = constructedUrl,  // Legacy field for fallback
       sizeInBytes = sizeInBytes,
       minDeviceMemoryInGb = minDeviceMemoryInGb,
       configs = configs,
@@ -110,10 +110,14 @@ data class AllowedModel(
       learnMoreUrl = "https://huggingface.co/${modelId}",
       llmSupportImage = llmSupportImage == true,
       llmSupportAudio = llmSupportAudio == true,
-      llmSupportTinyGarden = llmSupportTinyGarden == true,
-      llmSupportMobileActions = llmSupportMobileActions == true,
       bestForTaskIds = bestForTaskTypes ?: listOf(),
       localModelFilePathOverride = localModelFilePathOverride ?: "",
+      // Self-hosted Gemma fields
+      requiresGemmaTerms = requiresGemmaTerms ?: false,
+      downloadUrl = modelUrl,
+      fallbackUrls = fallbackUrls ?: listOf(),
+      sha256 = sha256 ?: "",
+      requiresWifi = requiresWifi ?: false,
     )
   }
 

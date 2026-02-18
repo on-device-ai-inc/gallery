@@ -1,0 +1,12 @@
+# GQA Test Case: Performance Optimization
+test_case_id: "lc_007"
+category: "long_conversation"
+description: "48-message performance optimization discussion"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "My RecyclerView scrolls slowly. How to fix?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use DiffUtil, optimize item layout, and enable RecyclerView caching.", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "How to optimize RecyclerView?", expected_keywords: ["DiffUtil", "caching", "layout"], importance: "high"}
+expected_compression_behavior: ["Should preserve optimization techniques"]

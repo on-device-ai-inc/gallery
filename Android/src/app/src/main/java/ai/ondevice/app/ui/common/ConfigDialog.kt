@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -203,6 +202,7 @@ fun LabelRow(config: LabelConfig, values: SnapshotStateMap<String, Any>) {
       try {
         values[config.key.label] as String
       } catch (e: Exception) {
+        Log.w(TAG, "Failed to get label value for ${config.key.label}", e)
         ""
       }
     Text(label, style = MaterialTheme.typography.bodyMedium)
@@ -225,6 +225,7 @@ fun getTextFieldDisplayValue(valueType: ValueType, value: Float): String {
       }
     }
   } catch (e: Exception) {
+    Log.w(TAG, "Failed to format value $value as $valueType", e)
     ""
   }
 }
@@ -238,7 +239,7 @@ fun getTextFieldDisplayValue(valueType: ValueType, value: Float): String {
  */
 @Composable
 fun NumberSliderRow(config: NumberSliderConfig, values: SnapshotStateMap<String, Any>) {
-  Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+  Column(modifier = Modifier.fillMaxWidth()) {
     // Field label.
     Text(config.key.label, style = MaterialTheme.typography.titleSmall)
 
@@ -260,6 +261,7 @@ fun NumberSliderRow(config: NumberSliderConfig, values: SnapshotStateMap<String,
         try {
           values[config.key.label] as Float
         } catch (e: Exception) {
+          Log.w(TAG, "Failed to get slider value for ${config.key.label}, using 0f", e)
           0f
         }
 
@@ -331,9 +333,10 @@ fun BooleanSwitchRow(config: BooleanSwitchConfig, values: SnapshotStateMap<Strin
     try {
       values[config.key.label] as Boolean
     } catch (e: Exception) {
+      Log.w(TAG, "Failed to get boolean value for ${config.key.label}, using false", e)
       false
     }
-  Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+  Column(modifier = Modifier.fillMaxWidth()) {
     Text(config.key.label, style = MaterialTheme.typography.titleSmall)
     Switch(checked = switchValue, onCheckedChange = { values[config.key.label] = it })
   }
@@ -348,7 +351,7 @@ fun SegmentedButtonRow(config: SegmentedButtonConfig, values: SnapshotStateMap<S
     )
   }
 
-  Column(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
+  Column(modifier = Modifier.fillMaxWidth()) {
     Text(config.key.label, style = MaterialTheme.typography.titleSmall)
     MultiChoiceSegmentedButtonRow {
       config.options.forEachIndexed { index, label ->
@@ -384,3 +387,25 @@ fun SegmentedButtonRow(config: SegmentedButtonConfig, values: SnapshotStateMap<S
     }
   }
 }
+
+// @Composable
+// @Preview(showBackground = true)
+// fun ConfigDialogPreview() {
+//   GalleryTheme {
+//     val defaultValues: MutableMap<String, Any> = mutableMapOf()
+//     for (config in MODEL_TEST1.configs) {
+//       defaultValues[config.key.label] = config.defaultValue
+//     }
+
+//     Column {
+//       ConfigDialog(
+//         title = "Dialog title",
+//         subtitle = "20250413",
+//         configs = MODEL_TEST1.configs,
+//         initialValues = defaultValues,
+//         onDismissed = {},
+//         onOk = {},
+//       )
+//     }
+//   }
+// }

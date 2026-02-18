@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,24 @@
 
 package ai.ondevice.app.ui.llmchat
 
+import ai.ondevice.app.R
+import ai.ondevice.app.data.ConversationDao
+import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.viewModelScope
+import com.google.ai.edge.litertlm.Content
+import com.google.ai.edge.litertlm.Message
 import ai.ondevice.app.data.ConfigKeys
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.common.chat.ChatMessageAudioClip
 import ai.ondevice.app.ui.common.chat.ChatMessageBenchmarkLlmResult
-import ai.ondevice.app.ui.common.chat.ChatMessageError
+import ai.ondevice.app.ui.common.chat.ChatMessageImage
 import ai.ondevice.app.ui.common.chat.ChatMessageLoading
+import ai.ondevice.app.ui.common.chat.ChatMessageLongResponseStatus
 import ai.ondevice.app.ui.common.chat.ChatMessageText
 import ai.ondevice.app.ui.common.chat.ChatMessageType
 import ai.ondevice.app.ui.common.chat.ChatMessageWarning
@@ -34,12 +41,14 @@ import ai.ondevice.app.ui.common.chat.ChatSide
 import ai.ondevice.app.ui.common.chat.ChatViewModel
 import ai.ondevice.app.ui.common.chat.Stat
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
-import com.google.ai.edge.litertlm.ExperimentalApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "AGLlmChatViewModel"
 private val STATS =
@@ -50,21 +59,70 @@ private val STATS =
     Stat(id = "latency", label = "Latency", unit = "sec"),
   )
 
-open class LlmChatViewModelBase() : ChatViewModel() {
+open class LlmChatViewModelBase(
+  conversationDao: ConversationDao,
+  private val personaManager: ai.ondevice.app.persona.PersonaManager? = null
+) : ChatViewModel(conversationDao) {
+
+  // Context compression (lazy initialization)
+  private val compactionManager by lazy {
+    ai.ondevice.app.conversation.CompactionManager(conversationDao)
+  }
+
   fun generateResponse(
     model: Model,
     input: String,
     images: List<Bitmap> = listOf(),
     audioMessages: List<ChatMessageAudioClip> = listOf(),
-    onError: (String) -> Unit,
+    onError: () -> Unit,
   ) {
     val accelerator = model.getStringConfigValue(key = ConfigKeys.ACCELERATOR, defaultValue = "")
+
     viewModelScope.launch(Dispatchers.Default) {
       setInProgress(true)
       setPreparing(true)
 
-      // Loading.
-      addMessage(model = model, message = ChatMessageLoading(accelerator = accelerator))
+      // Save user images if provided
+      if (images.isNotEmpty()) {
+        val imageBitmaps = images.map { it.asImageBitmap() }
+        val imageMessage = ChatMessageImage(
+          bitmaps = images,
+          imageBitMaps = imageBitmaps,
+          side = ChatSide.USER,
+          latencyMs = -1f
+        )
+        addMessage(model = model, message = imageMessage)
+      }
+
+      // Detect if user is requesting a long response (thesis, essay, comprehensive guide, etc.)
+      Log.d(TAG, "🔍 DETECTION DEBUG: Input prompt = \"$input\"")
+      val isLongRequest = LongResponseDetector.detectLongRequest(input)
+      Log.d(TAG, "🔍 DETECTION DEBUG: isLongRequest = $isLongRequest")
+
+      // Show appropriate status indicator
+      if (isLongRequest) {
+        // Long response detected - show status box with topic
+        // For follow-up elaboration requests, provide conversation context
+        val recentAgentMessages = uiState.value.messagesByModel[model.name]
+          ?.filter { it.side == ChatSide.AGENT && it is ChatMessageText }
+          ?.takeLast(3) // Last 3 agent messages for context
+          ?.map { (it as ChatMessageText).content }
+          ?: emptyList()
+
+        val topic = LongResponseDetector.extractTopicFromUserPrompt(input, recentAgentMessages)
+        Log.d(TAG, "🔍 DETECTION DEBUG: Long request detected! Topic = \"$topic\"")
+        Log.d(TAG, "🔍 DETECTION DEBUG: Context messages: ${recentAgentMessages.size}")
+        val statusMessage = ChatMessageLongResponseStatus(
+          topic = topic,
+          side = ChatSide.AGENT,
+          latencyMs = -1f
+        )
+        addMessage(model = model, message = statusMessage)
+      } else {
+        // Normal response - show loading indicator
+        Log.d(TAG, "🔍 DETECTION DEBUG: Short request, using loading indicator")
+        addMessage(model = model, message = ChatMessageLoading(accelerator = accelerator))
+      }
 
       // Wait for instance to be initialized.
       while (model.instance == null) {
@@ -72,9 +130,110 @@ open class LlmChatViewModelBase() : ChatViewModel() {
       }
       delay(500)
 
+      // Prompt Engineering: Inject persona FIRST on first message
+      var enhancedInput = input
+      if (personaManager != null) {
+        try {
+          // Get all messages for this model to check if this is the first user message
+          val existingMessages = uiState.value.messagesByModel[model.name] ?: listOf()
+          val userMessageCount = existingMessages.count { it.side == ChatSide.USER }
+
+          // For Gemma (no system role support), prepend persona to first user message
+          if (userMessageCount == 0) {
+            enhancedInput = personaManager.formatSingleMessageWithPersona(
+              input,
+              ai.ondevice.app.persona.PersonaVariant.BALANCED
+            )
+          }
+        } catch (e: Exception) {
+          Log.w(TAG, "Failed to inject persona, using input as-is", e)
+        }
+      }
+
+      // NOTE: Token limit check now happens BEFORE loading indicator (lines 92-146)
+      // This prevents showing rotating icon when resetting
+
+      // Context Compression: Check if compaction needed
+      try {
+        val threadId = currentThreadId
+        if (threadId != null) {
+          val dbMessages = conversationDao.getMessagesForThread(threadId)
+
+          // Check token count first (fast operation)
+          val currentTokens = ai.ondevice.app.conversation.TokenEstimator.estimate(dbMessages)
+          val triggerThreshold = (ai.ondevice.app.conversation.CompactionManager.MAX_TOKENS *
+                                  ai.ondevice.app.conversation.CompactionManager.TRIGGER_PERCENT).toInt()
+
+          if (currentTokens >= triggerThreshold) {
+            // Show compacting indicator BEFORE starting slow operation
+            setIsCompacting(true)
+            // Small delay to ensure UI renders the indicator
+            delay(100)
+
+            Log.d(TAG, "Starting compaction: $currentTokens tokens (threshold: $triggerThreshold)")
+
+            // CRITICAL FIX: Reset conversation BEFORE summarization to clear KV-cache
+            // This prevents native lib crash when reusing conversation with large state (e.g., PhD thesis response)
+            // The summarization gets context from the TEXT PROMPT (database messages), not from KV-cache
+            val existingState = conversationDao.getConversationState(threadId)
+            val existingSummaryMessage = if (existingState != null && existingState.runningSummary.isNotBlank()) {
+              val formattedSummary = "Previous conversation summary:\n${existingState.runningSummary}"
+              Message.of(listOf(Content.Text(formattedSummary)))
+            } else {
+              null
+            }
+
+            Log.d(TAG, "Resetting conversation BEFORE summarization to clear KV-cache")
+            LlmChatModelHelper.resetConversation(
+              model = model,
+              supportImage = false,  // Summarization is text-only
+              supportAudio = false,
+              systemMessage = existingSummaryMessage
+            )
+
+            val compactionResult = compactionManager.checkAndCompact(
+              threadId,
+              dbMessages,
+              LlmChatModelHelper,
+              model
+            )
+
+            if (compactionResult is ai.ondevice.app.conversation.CompactionResult.Success) {
+              Log.d(TAG, "Conversation compacted: evicted ${compactionResult.evictedCount} turns")
+
+              // CRITICAL: Reset conversation with summary as system message
+              val state = conversationDao.getConversationState(threadId)
+              val summaryMessage = if (state != null && state.runningSummary.isNotBlank()) {
+                // Format summary for LiteRT system message
+                val formattedSummary = "Previous conversation summary:\n${state.runningSummary}"
+                Message.of(listOf(Content.Text(formattedSummary)))
+              } else {
+                null
+              }
+
+              Log.d(TAG, "Resetting conversation AFTER compression with new summary (${state?.runningSummary?.length ?: 0} chars)")
+              LlmChatModelHelper.resetConversation(
+                model = model,
+                supportImage = model.llmSupportImage,
+                supportAudio = model.llmSupportAudio,
+                systemMessage = summaryMessage
+              )
+            }
+
+            // Hide compacting indicator after completion
+            setIsCompacting(false)
+          }
+        }
+      } catch (e: Exception) {
+        Log.w(TAG, "Compaction check failed, continuing without compression", e)
+        setIsCompacting(false)  // Ensure indicator is hidden on error
+      }
+
       // Run inference.
       val instance = model.instance as LlmModelInstance
-      var prefillTokens = images.size * 257
+      // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
+      var prefillTokens = input.split(" ").size
+      prefillTokens += images.size * 257
       val audioClips: MutableList<ByteArray> = mutableListOf()
       for (audioMessage in audioMessages) {
         audioClips.add(audioMessage.genByteArrayForWav())
@@ -91,10 +250,14 @@ open class LlmChatViewModelBase() : ChatViewModel() {
       var decodeSpeed: Float
       val start = System.currentTimeMillis()
 
+      // Re-check if this is a long response (detection already created status message at line 97-111)
+      val isLongResponse = LongResponseDetector.detectLongRequest(input)
+      var accumulatedResponse = ""
+
       try {
         LlmChatModelHelper.runInference(
           model = model,
-          input = input,
+          input = enhancedInput,  // Use persona-enhanced input for first message
           images = images,
           audioClips = audioClips,
           resultListener = { partialResult, done ->
@@ -103,38 +266,58 @@ open class LlmChatViewModelBase() : ChatViewModel() {
             if (firstRun) {
               firstTokenTs = System.currentTimeMillis()
               timeToFirstToken = (firstTokenTs - start) / 1000f
-              @OptIn(ExperimentalApi::class)
-              prefillTokens += instance.conversation.getBenchmarkInfo().lastPrefillTokenCount
               prefillSpeed = prefillTokens / timeToFirstToken
               firstRun = false
               setPreparing(false)
-            } else {
-              decodeTokens++
             }
 
-            // Remove the last message if it is a "loading" message.
-            // This will only be done once.
-            val lastMessage = getLastMessage(model = model)
-            if (lastMessage?.type == ChatMessageType.LOADING) {
-              removeLastMessage(model = model)
+            if (isLongResponse) {
+              // For long responses: accumulate full response, don't stream
+              accumulatedResponse += partialResult
+            } else {
+              // Normal streaming behavior
+              decodeTokens++
 
-              // Add an empty message that will receive streaming results.
-              addMessage(
+              // Remove the last message if it is a "loading" or "long response status" message.
+              // This will only be done once.
+              val lastMessage = getLastMessage(model = model)
+              if (lastMessage?.type == ChatMessageType.LOADING ||
+                  lastMessage?.type == ChatMessageType.LONG_RESPONSE_STATUS) {
+                removeLastMessage(model = model)
+
+                // Add an empty message that will receive streaming results.
+                addMessage(
+                  model = model,
+                  message =
+                    ChatMessageText(content = "", side = ChatSide.AGENT, accelerator = accelerator),
+                )
+              }
+
+              // Incrementally update the streamed partial results.
+              val latencyMs: Long = if (done) System.currentTimeMillis() - start else -1
+              updateLastTextMessageContentIncrementally(
                 model = model,
-                message =
-                  ChatMessageText(content = "", side = ChatSide.AGENT, accelerator = accelerator),
+                partialContent = partialResult,
+                latencyMs = latencyMs.toFloat(),
               )
             }
 
-            // Incrementally update the streamed partial results.
-            val latencyMs: Long = if (done) System.currentTimeMillis() - start else -1
-            updateLastTextMessageContentIncrementally(
-              model = model,
-              partialContent = partialResult,
-              latencyMs = latencyMs.toFloat(),
-            )
-
             if (done) {
+              // For long responses: replace status box with full response
+              if (isLongResponse) {
+                removeLastMessage(model = model)  // Remove status box
+                addMessage(
+                  model = model,
+                  message = ChatMessageText(
+                    content = accumulatedResponse,
+                    side = ChatSide.AGENT,
+                    latencyMs = (curTs - start).toFloat(),
+                    accelerator = accelerator
+                  )
+                )
+                Log.d(TAG, "Long response completed: ${accumulatedResponse.length} chars")
+              }
+
               setInProgress(false)
 
               decodeSpeed = decodeTokens / ((curTs - firstTokenTs) / 1000f)
@@ -142,7 +325,8 @@ open class LlmChatViewModelBase() : ChatViewModel() {
                 decodeSpeed = 0f
               }
 
-              if (lastMessage is ChatMessageText) {
+              val lastMessageForBenchmark = getLastMessage(model = model)
+              if (lastMessageForBenchmark is ChatMessageText) {
                 updateLastTextMessageLlmBenchmarkResult(
                   model = model,
                   llmBenchmarkResult =
@@ -161,37 +345,71 @@ open class LlmChatViewModelBase() : ChatViewModel() {
                     ),
                 )
               }
+
+              // CRITICAL FIX: Save final agent message to database
+              // The initial empty message was saved, but streaming updates were only in UI
+              val finalMessage = getLastMessage(model = model)
+              if (finalMessage is ChatMessageText && finalMessage.side == ChatSide.AGENT) {
+                viewModelScope.launch(Dispatchers.IO) {
+                  try {
+                    // Update the message in database with final content
+                    val threadId = currentThreadId
+                    if (threadId != null) {
+                      // Find the last agent message in DB and update it
+                      val dbMessages = conversationDao.getMessagesForThread(threadId)
+                      val lastAgentMessage = dbMessages.lastOrNull { !it.isUser }
+                      if (lastAgentMessage != null) {
+                        conversationDao.updateMessageContent(
+                          lastAgentMessage.id,
+                          finalMessage.content
+                        )
+                        Log.d(TAG, "Updated agent message in DB: ${finalMessage.content.take(50)}...")
+                      }
+                    }
+                  } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update agent message in database", e)
+                  }
+                }
+              }
             }
           },
           cleanUpListener = {
             setInProgress(false)
             setPreparing(false)
           },
-          onError = { message ->
-            Log.e(TAG, "Error occurred while running inference")
-            setInProgress(false)
-            setPreparing(false)
-            onError(message)
-          },
         )
       } catch (e: Exception) {
         Log.e(TAG, "Error occurred while running inference", e)
         setInProgress(false)
         setPreparing(false)
-        onError(e.message ?: "")
+        onError()
       }
     }
   }
 
   fun stopResponse(model: Model) {
     Log.d(TAG, "Stopping response for model ${model.name}...")
-    if (getLastMessage(model = model) is ChatMessageLoading) {
+
+    val lastMessage = getLastMessage(model = model)
+    if (lastMessage is ChatMessageLoading || lastMessage is ChatMessageLongResponseStatus) {
       removeLastMessage(model = model)
     }
-    setInProgress(false)
-    val instance = model.instance as LlmModelInstance
-    instance.conversation.cancelProcess()
-    Log.d(TAG, "Done stopping response")
+    viewModelScope.launch(Dispatchers.Default) {
+      setInProgress(false)
+      setPreparing(false)
+      // Null-safe cast to prevent crash if model instance is not initialized
+      val instance = model.instance as? LlmModelInstance
+      if (instance != null) {
+        try {
+          instance.conversation.cancelProcess()
+        } catch (e: IllegalStateException) {
+          // Conversation already stopped - this is fine during reset
+          Log.d(TAG, "Conversation already stopped for ${model.name}")
+        }
+      } else {
+        Log.w(TAG, "Cannot stop response - model instance is null for ${model.name}")
+      }
+    }
   }
 
   fun resetSession(task: Task, model: Model) {
@@ -202,12 +420,9 @@ open class LlmChatViewModelBase() : ChatViewModel() {
 
       while (true) {
         try {
-          val supportImage =
-            model.llmSupportImage &&
-              task.id == ai.ondevice.app.data.BuiltInTaskId.LLM_ASK_IMAGE
-          val supportAudio =
-            model.llmSupportAudio &&
-              task.id == ai.ondevice.app.data.BuiltInTaskId.LLM_ASK_AUDIO
+          // Enable features based on model capabilities, not task ID
+          val supportImage = model.llmSupportImage
+          val supportAudio = model.llmSupportAudio
           LlmChatModelHelper.resetConversation(
             model = model,
             supportImage = supportImage,
@@ -215,7 +430,7 @@ open class LlmChatViewModelBase() : ChatViewModel() {
           )
           break
         } catch (e: Exception) {
-          Log.d(TAG, "Failed to reset session. Trying again")
+          Log.d(TAG, "Failed to reset conversation. Trying again")
         }
         delay(200)
       }
@@ -223,18 +438,42 @@ open class LlmChatViewModelBase() : ChatViewModel() {
     }
   }
 
-  fun runAgain(model: Model, message: ChatMessageText, onError: (String) -> Unit) {
+  fun runAgain(
+    model: Model,
+    message: ChatMessageText,
+    style: ai.ondevice.app.ui.common.chat.RegenerateStyle = ai.ondevice.app.ui.common.chat.RegenerateStyle.STANDARD,
+    onError: () -> Unit
+  ) {
     viewModelScope.launch(Dispatchers.Default) {
       // Wait for model to be initialized.
       while (model.instance == null) {
         delay(100)
       }
 
-      // Clone the clicked message and add it.
-      addMessage(model = model, message = message.clone())
+      // Remove the last assistant response that we're regenerating.
+      // This prevents duplicate user messages in chat history.
+      val lastMessage = getLastMessage(model = model)
+      if (lastMessage != null && lastMessage.side == ChatSide.AGENT) {
+        removeLastMessage(model = model)
+      }
 
-      // Run inference.
-      generateResponse(model = model, input = message.content, onError = onError)
+      // Modify prompt based on regeneration style
+      val modifiedInput = when (style) {
+        ai.ondevice.app.ui.common.chat.RegenerateStyle.FASTER ->
+          "${message.content}\n\n[Respond concisely and quickly]"
+        ai.ondevice.app.ui.common.chat.RegenerateStyle.MORE_DETAILED ->
+          "${message.content}\n\n[Provide a detailed, thorough response with examples]"
+        ai.ondevice.app.ui.common.chat.RegenerateStyle.DIFFERENT ->
+          "${message.content}\n\n[Take a different approach or perspective]"
+        ai.ondevice.app.ui.common.chat.RegenerateStyle.SHORTER ->
+          "${message.content}\n\n[Respond in 2-3 sentences maximum]"
+        ai.ondevice.app.ui.common.chat.RegenerateStyle.STANDARD ->
+          message.content
+      }
+
+      // Don't clone and re-add the user message - it's already in the chat!
+      // Run inference with the modified input.
+      generateResponse(model = model, input = modifiedInput, onError = onError)
     }
   }
 
@@ -243,38 +482,57 @@ open class LlmChatViewModelBase() : ChatViewModel() {
     task: Task,
     model: Model,
     modelManagerViewModel: ModelManagerViewModel,
-    errorMessage: String,
+    triggeredMessage: ChatMessageText?,
   ) {
-    // Remove the "loading" message.
-    if (getLastMessage(model = model) is ChatMessageLoading) {
+    // Clean up.
+    modelManagerViewModel.cleanupModel(context = context, task = task, model = model)
+
+    // Remove the "loading" or "long response status" message.
+    val cleanupMessage = getLastMessage(model = model)
+    if (cleanupMessage is ChatMessageLoading || cleanupMessage is ChatMessageLongResponseStatus) {
       removeLastMessage(model = model)
     }
 
-    // Show error message.
-    addMessage(model = model, message = ChatMessageError(content = errorMessage))
+    // Remove the last Text message.
+    if (getLastMessage(model = model) == triggeredMessage) {
+      removeLastMessage(model = model)
+    }
 
-    // Clean up and re-initialize.
-    viewModelScope.launch(Dispatchers.Default) {
-      modelManagerViewModel.cleanupModel(
-        context = context,
-        task = task,
-        model = model,
-        onDone = {
-          modelManagerViewModel.initializeModel(context = context, task = task, model = model)
+    // Add a warning message for re-initializing the session.
+    addMessage(
+      model = model,
+      message = ChatMessageWarning(
+        content = context.getString(R.string.error_inference_crashed) + "\n" +
+          context.getString(R.string.error_inference_crashed_detail)
+      ),
+    )
 
-          // Add a warning message for re-initializing the session.
-          addMessage(
-            model = model,
-            message = ChatMessageWarning(content = "Session re-initialized"),
-          )
-        },
-      )
+    // Add the triggered message back.
+    if (triggeredMessage != null) {
+      addMessage(model = model, message = triggeredMessage)
+    }
+
+    // Re-initialize the session/engine.
+    modelManagerViewModel.initializeModel(context = context, task = task, model = model)
+
+    // Re-generate the response automatically.
+    if (triggeredMessage != null) {
+      generateResponse(model = model, input = triggeredMessage.content, onError = {})
     }
   }
 }
 
-@HiltViewModel class LlmChatViewModel @Inject constructor() : LlmChatViewModelBase()
+@HiltViewModel class LlmChatViewModel @Inject constructor(
+  conversationDao: ConversationDao,
+  personaManager: ai.ondevice.app.persona.PersonaManager
+) : LlmChatViewModelBase(conversationDao, personaManager)
 
-@HiltViewModel class LlmAskImageViewModel @Inject constructor() : LlmChatViewModelBase()
+@HiltViewModel class LlmAskImageViewModel @Inject constructor(
+  conversationDao: ConversationDao,
+  personaManager: ai.ondevice.app.persona.PersonaManager
+) : LlmChatViewModelBase(conversationDao, personaManager)
 
-@HiltViewModel class LlmAskAudioViewModel @Inject constructor() : LlmChatViewModelBase()
+@HiltViewModel class LlmAskAudioViewModel @Inject constructor(
+  conversationDao: ConversationDao,
+  personaManager: ai.ondevice.app.persona.PersonaManager
+) : LlmChatViewModelBase(conversationDao, personaManager)

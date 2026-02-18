@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,10 +127,6 @@ data class CustomColors(
   val recordButtonBgColor: Color = Color.Transparent,
   val waveFormBgColor: Color = Color.Transparent,
   val modelInfoIconColor: Color = Color.Transparent,
-  val warningContainerColor: Color = Color.Transparent,
-  val warningTextColor: Color = Color.Transparent,
-  val errorContainerColor: Color = Color.Transparent,
-  val errorTextColor: Color = Color.Transparent,
 )
 
 val LocalCustomColors = staticCompositionLocalOf { CustomColors() }
@@ -175,17 +171,15 @@ val lightCustomColors =
       ),
     taskIconShapeBgColor = Color.White,
     homeBottomGradient = listOf(Color(0x00F8F9FF), Color(0xffFFEFC9)),
-    agentBubbleBgColor = Color(0xFFe9eef6),
-    userBubbleBgColor = Color(0xFF32628D),
+    // Claude-style message bubbles
+    agentBubbleBgColor = Color.Transparent,
+    userBubbleBgColor = Color(0xFFF0F0F0), // Light grey for readability
     linkColor = Color(0xFF32628D),
     successColor = Color(0xff3d860b),
-    recordButtonBgColor = Color(0xFFEE675C),
+    // Update #3: Changed from red (0xFFEE675C) to grey for recording indicator
+    recordButtonBgColor = Color(0xFF666666),
     waveFormBgColor = Color(0xFFaaaaaa),
     modelInfoIconColor = Color(0xFFCCCCCC),
-    warningContainerColor = Color(0xfffef7e0),
-    warningTextColor = Color(0xffe37400),
-    errorContainerColor = Color(0xfffce8e6),
-    errorTextColor = Color(0xffd93025),
   )
 
 val darkCustomColors =
@@ -228,17 +222,15 @@ val darkCustomColors =
       ),
     taskIconShapeBgColor = Color(0xFF202124),
     homeBottomGradient = listOf(Color(0x00F8F9FF), Color(0x1AF6AD01)),
-    agentBubbleBgColor = Color(0xFF1b1c1d),
-    userBubbleBgColor = Color(0xFF1f3760),
+    // Claude-style message bubbles
+    agentBubbleBgColor = Color.Transparent,
+    userBubbleBgColor = Color(0xFF2C2C2C), // Dark grey matching Claude
     linkColor = Color(0xFF9DCAFC),
     successColor = Color(0xFFA1CE83),
-    recordButtonBgColor = Color(0xFFEE675C),
+    // Update #3: Changed from red (0xFFEE675C) to grey for recording indicator
+    recordButtonBgColor = Color(0xFF888888),
     waveFormBgColor = Color(0xFFaaaaaa),
     modelInfoIconColor = Color(0xFFCCCCCC),
-    warningContainerColor = Color(0xff554c33),
-    warningTextColor = Color(0xfffcc934),
-    errorContainerColor = Color(0xff523a3b),
-    errorTextColor = Color(0xffee675c),
   )
 
 val MaterialTheme.customColors: CustomColors

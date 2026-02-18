@@ -6,18 +6,26 @@
 
 ## Data Layer
 
+### Room Database (Conversation History)
+| File | Purpose | Location |
+|------|---------|----------|
+| `AppDatabase` | Room DB v1, 3 entities | `data/AppDatabase.kt` |
+| `ConversationThread` | Entity: thread metadata | `data/ConversationThread.kt` |
+| `ConversationMessage` | Entity: individual messages | `data/ConversationMessage.kt` |
+| `ConversationState` | Entity: compaction state | `data/ConversationState.kt` |
+| `ConversationDao` | DAO: all CRUD + Flow + search | `data/ConversationDao.kt` |
+| `DatabaseMigrations` | `ALL_MIGRATIONS` array (empty v1) | `data/DatabaseMigrations.kt` |
+
 ### Repositories
 | Repository | Purpose | Location |
 |------------|---------|----------|
-| `ModelRepository` | Model download/management | `data/repository/` |
-| `ChatRepository` | Chat history | `data/repository/` |
-| `SettingsRepository` | User preferences | `data/repository/` |
+| `DataStoreRepository` | Proto DataStore (settings/user data) | `data/DataStoreRepository.kt` |
+| `DownloadRepository` | Model download/management | `data/DownloadRepository.kt` |
 
-### Data Sources
-| Source | Purpose | Location |
+### DI
+| Module | Purpose | Location |
 |--------|---------|----------|
-| `LocalModelDataSource` | Local model storage | `data/local/` |
-| `RemoteModelDataSource` | Model download | `data/remote/` |
+| `AppModule` | Provides DB, DAO, DataStores, lifecycle | `di/AppModule.kt` |
 
 ---
 
@@ -44,16 +52,23 @@
 | Screen | Purpose | Location |
 |--------|---------|----------|
 | `MainActivity` | Entry point | `ui/` |
-| `ChatScreen` | Chat interface | `ui/chat/` |
-| `ModelSelectionScreen` | Browse models | `ui/models/` |
-| `SettingsScreen` | Settings | `ui/settings/` |
+| `LlmChatScreen` | Unified chat (text + image + audio) | `ui/llmchat/` |
+| `ModelSelectionScreen` | First-launch model selection | `ui/modelselection/` |
+| `SettingsScreen` | Settings hub | `ui/settings/` |
+| `CustomInstructionsScreen` | System prompt editor | `ui/settings/` |
+| `ModelParametersScreen` | Temp/topK/topP sliders | `ui/settings/` |
+| `PrivacyCenterScreen` | Privacy controls | `ui/settings/` |
+| `StorageManagementScreen` | Storage management | `ui/settings/` |
+| `ConversationListScreen` | Past conversations list | `ui/conversationlist/` |
+| `ConversationDetailScreen` | Single conversation view | `ui/conversationdetail/` |
 
 ### ViewModels
 | ViewModel | Purpose | Location |
 |-----------|---------|----------|
-| `ChatViewModel` | Chat state | `ui/chat/` |
-| `ModelViewModel` | Model state | `ui/models/` |
+| `LlmChatViewModel` | Chat + inference state | `ui/llmchat/` |
 | `SettingsViewModel` | Settings state | `ui/settings/` |
+| `ConversationListViewModel` | Conversation list state | `ui/conversationlist/` |
+| `ConversationDetailViewModel` | Conversation detail state | `ui/conversationdetail/` |
 
 ### Components
 | Component | Purpose | Location |
@@ -86,9 +101,27 @@
 
 | Date | Component | Description |
 |------|-----------|-------------|
+| 2026-02-17 | Room DB layer | `AppDatabase`, 3 entities, `ConversationDao`, `DatabaseMigrations`: `data/` |
 | 2026-02-17 | `ChatDisclaimerRow` | Disclaimer row after AI messages: `ui/common/chat/ChatDisclaimerRow.kt` |
 | 2026-02-17 | `ErrorDialog` | Error dialog with support contact: `ui/common/ErrorDialog.kt` |
 | 2026-02-17 | Legal assets | Privacy/Terms HTML: `assets/legal/privacy.html`, `assets/legal/terms.html` |
+| 2026-02-17 | Navigation refactor | 10-route GoraAI nav graph; settings/, modelselection/, conversationlist/, conversationdetail/ |
+| 2026-02-17 | `conversation/` package | CompactionManager, ContextBuilder, SummarizationPrompts, TokenEstimator: `conversation/` |
+| 2026-02-17 | `persona/` package | PersonaLibrary, PersonaManager, PersonaVariant (Gemma persona injection): `persona/` |
+| 2026-02-17 | `SecureTokenStorage` | Encrypted API token storage: `data/SecureTokenStorage.kt` |
+| 2026-02-17 | `LongResponseDetector` | Scoring system for long-form response detection: `ui/llmchat/LongResponseDetector.kt` |
+| 2026-02-17 | `ChatMenuSheet` | Gemini-style navigation drawer: `ui/common/ChatMenuSheet.kt` |
+| 2026-02-17 | `RegenerateOption` + `RegenerateMenu` | Regeneration style selector bottom sheet: `ui/common/chat/` |
+| 2026-02-17 | `CompactingStatusChip` | Pulsating chip for context compaction: `ui/common/chat/` |
+| 2026-02-17 | `LongResponseStatusBox` | Status box for long-form generation: `ui/common/chat/` |
+| 2026-02-17 | `MessageDisclaimerRow` | Disclaimer row below AI responses: `ui/common/chat/` |
+| 2026-02-17 | `PrivacyIndicators` | OnDeviceIndicator, PrivacyAdvantagesCard, OfflineCapabilityBadge: `ui/common/PrivacyIndicators.kt` |
+| 2026-02-17 | `FirstLaunchManager` | First-launch model setup detection: `ui/firstlaunch/FirstLaunchManager.kt` |
+| 2026-02-17 | `model_allowlist.json` | Bundled GoraAI model list (Gemma-3n + Qwen + Phi): `res/raw/model_allowlist.json` |
+| 2026-02-17 | `SettingsScreen` (+ 8 sub-screens) | Settings hub + CustomInstructions, ModelParams, Privacy, Storage: `ui/settings/` |
+| 2026-02-17 | `ModelSelectionScreen` | First-launch model selection: `ui/modelselection/` |
+| 2026-02-17 | `ConversationListScreen` + VM + State | Conversation history list: `ui/conversationlist/` |
+| 2026-02-17 | `ConversationDetailScreen` + VM + State | Single conversation view: `ui/conversationdetail/` |
 
 ---
 
@@ -96,7 +129,12 @@
 
 | Component | Reason | Replacement |
 |-----------|--------|-------------|
-| | | |
+| `ui/home/HomeScreen.kt` | GoraAI chat-first flow removes task picker | Archived to `ui/home_archived/` |
+| `customtasks/tinygarden/` | Not in GoraAI target state | Removed |
+| `customtasks/mobileactions/` | Not in GoraAI target state | Removed |
+| `BuiltInTaskId.LLM_TINY_GARDEN` | Removed with TinyGarden | N/A |
+| `BuiltInTaskId.LLM_MOBILE_ACTIONS` | Removed with MobileActions | N/A |
+| `isLegacyTasks()` | Replaced by GoraAI `isBuiltInTask()` | `isBuiltInTask()` in `data/Tasks.kt` |
 
 ---
 

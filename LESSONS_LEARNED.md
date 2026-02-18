@@ -586,6 +586,12 @@ Key: **WAYLAND_DISPLAY=wayland-1** (not wayland-0)
 | 2026-02-16 | Audit readiness: Check copyrights, URLs, legal docs, support contacts, disclaimer | Compliance |
 | 2026-02-16 | Hook path issue: PreToolUse hooks use relative paths - if CWD changes, hooks fail | Hooks |
 | 2026-02-16 | LazyColumn disclaimer: Add `item {}` block AFTER `itemsIndexed` to show footer row | Android/Compose |
+| 2026-02-17 | Room tests go in `androidTest/` not `test/` — SQLite requires Android runtime | Room/Testing |
+| 2026-02-17 | KSP version must match Kotlin exactly: Kotlin 2.1.0 → KSP 2.1.0-1.0.29 | Room/KSP |
+| 2026-02-17 | Target has no DatabaseModule — DB providers go directly in AppModule.kt | Architecture |
+| 2026-02-17 | Target injects ConversationDao directly into ViewModels — no Repository wrapper | Architecture |
+| 2026-02-17 | adb lib path on DGX Spark: `LD_LIBRARY_PATH=/tmp/adb-extract/usr/lib/aarch64-linux-gnu/android` | DGX/ADB |
+| 2026-02-17 | libs.versions.toml is at `Android/src/gradle/` not `Android/src/app/gradle/` | Project Structure |
 
 ---
 ---
@@ -675,3 +681,44 @@ if (messages.isNotEmpty() && messages.last().side == ChatSide.AGENT) {
   }
 }
 ```
+
+---
+
+## Navigation Refactor (2026-02-17) - navigation-refactor OpenSpec
+
+### Copy-from-Target Strategy
+**Rule: When a file should match the GoraAI target state exactly, use `cp /tmp/goraai-target/...` directly. Never surgically patch when the whole file should be replaced.**
+
+Surgical line edits across multiple CI iterations = 3-4 CI runs to fix compilation errors. Full file copy = 1 pass.
+
+### API Drift Pattern (GoraAI LiteRT v0.9.0)
+When copying GoraAI files that use the LiteRT API, watch for these breaking changes:
+- `generateResponse(onError: () -> Unit)` — NO string param (was `{ msg -> }`)
+- `handleError(triggeredMessage: ChatMessageText?)` — NO `errorMessage: String` param
+- `onRunAgainClicked: (Model, ChatMessage, RegenerateStyle) -> Unit` — 3 params (was 2)
+- `TosDialog(onTosAccepted: () -> Unit)` — was `(onDismiss, onAccept)`
+- `ModelPageAppBar(onMenuClicked: () -> Unit)` — was `onBackClicked`
+
+### Compilation Error Recovery — Copy-From-Target Order
+When CI reports `Unresolved reference 'X'`, the fastest fix is:
+1. Check if `X` exists in `/tmp/goraai-target/`
+2. If yes: `cp /tmp/goraai-target/.../X.kt Android/src/.../X.kt`
+3. If no: check if `X` was renamed (grep GoraAI for the concept)
+
+### ADB on DGX Spark (ARM64)
+```bash
+# adb is NOT in PATH on DGX Spark. Use:
+LD_LIBRARY_PATH=/tmp/adb-extract/usr/lib/aarch64-linux-gnu/android \
+  /tmp/adb-extract/usr/lib/android-sdk/platform-tools/adb <command>
+
+# Signature mismatch on install (after uninstall → reinstall):
+adb uninstall ai.ondevice.app && adb install app-debug.apk
+```
+
+### Raw Resources
+`R.raw.model_allowlist` requires `res/raw/model_allowlist.json` to exist.
+GoraAI bundled file is at `/tmp/goraai-target/app/src/main/res/raw/model_allowlist.json`.
+Create the `res/raw/` directory and copy the file if it's missing.
+
+### Change Log
+| 2026-02-17 | navigation-refactor complete | CI green (run 22113198810), app launches with TOS dialog |

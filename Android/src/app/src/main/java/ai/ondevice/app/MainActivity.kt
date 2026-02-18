@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import ai.ondevice.app.ui.theme.GalleryTheme
-import com.google.ai.edge.litertlm.ExperimentalApi
-import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.firebase.analytics.FirebaseAnalytics
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -60,61 +58,14 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
   private val modelManagerViewModel: ModelManagerViewModel by viewModels()
-  private var splashScreenAboutToExit: Boolean = false
-  private var contentSet: Boolean = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-
-    fun setContent() {
-      if (contentSet) {
-        return
-      }
-
-      setContent {
-        GalleryTheme {
-          Surface(modifier = Modifier.fillMaxSize()) {
-            GalleryApp(modelManagerViewModel = modelManagerViewModel)
-
-            // Fade out a "mask" that has the same color as the background of the splash screen
-            // to reveal the actual app content.
-            var startMaskFadeout by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) { startMaskFadeout = true }
-            AnimatedVisibility(
-              !startMaskFadeout,
-              enter = fadeIn(animationSpec = snap(0)),
-              exit =
-                fadeOut(animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)),
-            ) {
-              Box(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-              )
-            }
-          }
-        }
-      }
-
-      @OptIn(ExperimentalApi::class)
-      ExperimentalFlags.enableBenchmark = true
-
-      contentSet = true
-    }
 
     modelManagerViewModel.loadModelAllowlist()
 
     // Show splash screen.
     val splashScreen = installSplashScreen()
-
-    // Set the content when the system-provided splash screen is not shown.
-    //
-    // This is necessary on some Android versions where the splash screen is optimized away (e.g.,
-    // after a force-quit) to ensure the main content is displayed immediately and correctly.
-    lifecycleScope.launch {
-      delay(1000)
-      if (!splashScreenAboutToExit) {
-        setContent()
-      }
-    }
 
     // Cross-fade transition from the splash screen to the main content.
     //
@@ -129,8 +80,6 @@ class MainActivity : ComponentActivity() {
     //    `splashScreenView.remove()` to properly remove the splash screen from the view hierarchy
     //    once it's fully transparent.
     splashScreen.setOnExitAnimationListener { splashScreenView ->
-      splashScreenAboutToExit = true
-
       val now = System.currentTimeMillis()
       val iconAnimationStartMs = splashScreenView.iconAnimationStartMillis
       val duration = splashScreenView.iconAnimationDurationMillis
@@ -143,7 +92,28 @@ class MainActivity : ComponentActivity() {
         if (setContentDelay > 0) {
           delay(setContentDelay)
         }
-        setContent()
+        setContent {
+          GalleryTheme {
+            Surface(modifier = Modifier.fillMaxSize()) {
+              GalleryApp(modelManagerViewModel = modelManagerViewModel)
+
+              // Fade out a "mask" that has the same color as the background of the splash screen
+              // to reveal the actual app content.
+              var startMaskFadeout by remember { mutableStateOf(false) }
+              LaunchedEffect(Unit) { startMaskFadeout = true }
+              AnimatedVisibility(
+                !startMaskFadeout,
+                enter = fadeIn(animationSpec = snap(0)),
+                exit =
+                  fadeOut(animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)),
+              ) {
+                Box(
+                  modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                )
+              }
+            }
+          }
+        }
         fadeOut.start()
       }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ enum class AppBarActionType {
   NO_ACTION,
   APP_SETTING,
   DOWNLOAD_MANAGER,
+  MODEL_SELECTOR,
   NAVIGATE_UP,
+  REFRESH_MODELS,
+  REFRESHING_MODELS,
 }
 
 class AppBarAction(val actionType: AppBarActionType, val actionFn: () -> Unit)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,10 +30,7 @@ import ai.ondevice.app.common.getJsonResponse
 import ai.ondevice.app.customtasks.common.CustomTask
 import ai.ondevice.app.data.Accelerator
 import ai.ondevice.app.data.BuiltInTaskId
-import ai.ondevice.app.data.Category
-import ai.ondevice.app.data.CategoryInfo
 import ai.ondevice.app.data.Config
-import ai.ondevice.app.data.ConfigKeys
 import ai.ondevice.app.data.DataStoreRepository
 import ai.ondevice.app.data.DownloadRepository
 import ai.ondevice.app.data.EMPTY_MODEL
@@ -42,10 +39,8 @@ import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.ModelAllowlist
 import ai.ondevice.app.data.ModelDownloadStatus
 import ai.ondevice.app.data.ModelDownloadStatusType
-import ai.ondevice.app.data.NumberSliderConfig
 import ai.ondevice.app.data.TMP_FILE_EXT
 import ai.ondevice.app.data.Task
-import ai.ondevice.app.data.ValueType
 import ai.ondevice.app.data.createLlmChatConfigs
 import ai.ondevice.app.proto.AccessTokenData
 import ai.ondevice.app.proto.ImportedModel
@@ -57,8 +52,8 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.inject.Inject
-import kotlin.collections.sortedWith
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -73,8 +68,6 @@ private const val TAG = "AGModelManagerViewModel"
 private const val TEXT_INPUT_HISTORY_MAX_SIZE = 50
 private const val MODEL_ALLOWLIST_FILENAME = "model_allowlist.json"
 private const val MODEL_ALLOWLIST_TEST_FILENAME = "model_allowlist_test.json"
-
-private const val TEST_MODEL_ALLOW_LIST = ""
 
 data class ModelInitializationStatus(
   val status: ModelInitializationStatusType,
@@ -108,9 +101,6 @@ data class ModelManagerUiState(
   /** A list of tasks available in the application. */
   val tasks: List<Task>,
 
-  /** Tasks grouped by category. */
-  val tasksByCategory: Map<String, List<Task>>,
-
   /** A map that tracks the download status of each model, indexed by model name. */
   val modelDownloadStatus: Map<String, ModelDownloadStatus>,
 
@@ -141,26 +131,6 @@ data class ModelManagerUiState(
   }
 }
 
-private val RESET_CONVERSATION_TURN_COUNT_CONFIG =
-  NumberSliderConfig(
-    key = ConfigKeys.RESET_CONVERSATION_TURN_COUNT,
-    sliderMin = 1f,
-    sliderMax = 30f,
-    defaultValue = 3f,
-    valueType = ValueType.INT,
-  )
-
-private val PREDEFINED_LLM_TASK_ORDER =
-  listOf(
-    BuiltInTaskId.LLM_ASK_IMAGE,
-    BuiltInTaskId.LLM_ASK_AUDIO,
-    BuiltInTaskId.LLM_CHAT,
-    BuiltInTaskId.LLM_PROMPT_LAB,
-    BuiltInTaskId.LLM_TINY_GARDEN,
-    BuiltInTaskId.LLM_MOBILE_ACTIONS,
-    BuiltInTaskId.MP_SCRAPBOOK,
-  )
-
 /**
  * ViewModel responsible for managing models, their download status, and initialization.
  *
@@ -186,6 +156,7 @@ constructor(
   var curAccessToken: String = ""
 
   override fun onCleared() {
+    super.onCleared()
     authService.dispose()
   }
 
@@ -260,7 +231,7 @@ constructor(
 
   fun deleteModel(task: Task, model: Model) {
     if (model.imported) {
-      deleteFilesFromImportDir(model.downloadFileName)
+      deleteFileFromExternalFilesDir(model.downloadFileName)
     } else {
       deleteDirFromExternalFilesDir(model.normalizedName)
     }
@@ -322,10 +293,18 @@ constructor(
       // Start initialization.
       Log.d(TAG, "Initializing model '${model.name}'...")
       model.initializing = true
-      updateModelInitializationStatus(
-        model = model,
-        status = ModelInitializationStatusType.INITIALIZING,
-      )
+
+      // Show initializing status after a delay. When the delay expires, check if the model has
+      // been initialized or not. If so, skip.
+      launch {
+        delay(500)
+        if (model.instance == null && model.initializing) {
+          updateModelInitializationStatus(
+            model = model,
+            status = ModelInitializationStatusType.INITIALIZING,
+          )
+        }
+      }
 
       val onDone: (error: String) -> Unit = { error ->
         model.initializing = false
@@ -360,7 +339,7 @@ constructor(
     }
   }
 
-  fun cleanupModel(context: Context, task: Task, model: Model, onDone: () -> Unit = {}) {
+  fun cleanupModel(context: Context, task: Task, model: Model) {
     if (model.instance != null) {
       model.cleanUpAfterInit = false
       Log.d(TAG, "Cleaning up model '${model.name}'...")
@@ -372,7 +351,6 @@ constructor(
           status = ModelInitializationStatusType.NOT_INITIALIZED,
         )
         Log.d(TAG, "Clean up model '${model.name}' done")
-        onDone()
       }
       getCustomTaskByTaskId(id = task.id)
         ?.cleanUpModelFn(
@@ -409,14 +387,6 @@ constructor(
     }
 
     _uiState.update { newUiState }
-  }
-
-  fun setInitializationStatus(model: Model, status: ModelInitializationStatus) {
-    val curStatus = uiState.value.modelInitializationStatus.toMutableMap()
-    if (curStatus.containsKey(model.name)) {
-      curStatus[model.name] = status
-      _uiState.update { _uiState.value.copy(modelInitializationStatus = curStatus) }
-    }
   }
 
   fun addTextInputHistory(text: String) {
@@ -498,8 +468,6 @@ constructor(
             BuiltInTaskId.LLM_ASK_IMAGE,
             BuiltInTaskId.LLM_ASK_AUDIO,
             BuiltInTaskId.LLM_PROMPT_LAB,
-            BuiltInTaskId.LLM_TINY_GARDEN,
-            BuiltInTaskId.LLM_MOBILE_ACTIONS,
           )
       )) {
       // Remove duplicated imported model if existed.
@@ -511,20 +479,9 @@ constructor(
       if (
         (task.id == BuiltInTaskId.LLM_ASK_IMAGE && model.llmSupportImage) ||
           (task.id == BuiltInTaskId.LLM_ASK_AUDIO && model.llmSupportAudio) ||
-          (task.id == BuiltInTaskId.LLM_TINY_GARDEN && model.llmSupportTinyGarden) ||
-          (task.id == BuiltInTaskId.LLM_MOBILE_ACTIONS && model.llmSupportMobileActions) ||
-          (task.id != BuiltInTaskId.LLM_ASK_IMAGE &&
-            task.id != BuiltInTaskId.LLM_ASK_AUDIO &&
-            task.id != BuiltInTaskId.LLM_TINY_GARDEN &&
-            task.id != BuiltInTaskId.LLM_MOBILE_ACTIONS)
+          (task.id != BuiltInTaskId.LLM_ASK_IMAGE && task.id != BuiltInTaskId.LLM_ASK_AUDIO)
       ) {
         task.models.add(model)
-        if (task.id == BuiltInTaskId.LLM_TINY_GARDEN) {
-          val newConfigs = model.configs.toMutableList()
-          newConfigs.add(RESET_CONVERSATION_TURN_COUNT_CONFIG)
-          model.configs = newConfigs
-          model.preProcess()
-        }
       }
       task.updateTrigger.value = System.currentTimeMillis()
     }
@@ -742,31 +699,34 @@ constructor(
         // Try to read the test allowlist first.
         Log.d(TAG, "Loading test model allowlist.")
         modelAllowlist = readModelAllowlistFromDisk(fileName = MODEL_ALLOWLIST_TEST_FILENAME)
-
-        // Local test only.
-        val gson = Gson()
-        modelAllowlist = gson.fromJson(TEST_MODEL_ALLOW_LIST, ModelAllowlist::class.java)
-
         if (modelAllowlist == null) {
-          // Load from github.
-          val url =
-            "https://raw.githubusercontent.com/on-device-ai-inc/on-device-ai/refs/heads/main/model_allowlists/${BuildConfig.VERSION_NAME.replace(".", "_")}.json"
-          Log.d(TAG, "Loading model allowlist from internet. Url: $url")
-          val data = getJsonResponse<ModelAllowlist>(url = url)
-          modelAllowlist = data?.jsonObj
+          // Load from bundled raw resource (model_allowlist.json with DeepSeek/Qwen/Phi models).
+          Log.d(TAG, "Loading model allowlist from bundled resource.")
+          try {
+            val inputStream = context.resources.openRawResource(R.raw.model_allowlist)
+            val content = inputStream.bufferedReader().use { it.readText() }
+            val gson = Gson()
+            modelAllowlist = gson.fromJson(content, ModelAllowlist::class.java)
+
+            if (modelAllowlist != null) {
+              Log.d(TAG, "Done: loading model allowlist from bundled resource")
+              saveModelAllowlistToDisk(modelAllowlistContent = content)
+            }
+          } catch (e: Exception) {
+            Log.e(TAG, "Failed to load model allowlist from bundled resource", e)
+          }
 
           if (modelAllowlist == null) {
-            Log.w(TAG, "Failed to load model allowlist from internet. Trying to load it from disk")
+            Log.w(TAG, "Failed to load bundled model allowlist. Trying to load it from disk")
             modelAllowlist = readModelAllowlistFromDisk()
-          } else {
-            Log.d(TAG, "Done: loading model allowlist from internet")
-            saveModelAllowlistToDisk(modelAllowlistContent = data?.textContent ?: "{}")
           }
         }
 
         if (modelAllowlist == null) {
           _uiState.update {
-            uiState.value.copy(loadingModelAllowlistError = "Failed to load model list")
+            uiState.value.copy(
+              loadingModelAllowlistError = context.getString(R.string.error_model_allowlist_failed)
+            )
           }
           return@launch
         }
@@ -775,37 +735,15 @@ constructor(
 
         // Convert models in the allowlist.
         val curTasks = customTasks.map { it.task }
-        val nameToModel = mutableMapOf<String, Model>()
         for (allowedModel in modelAllowlist.models) {
           if (allowedModel.disabled == true) {
             continue
           }
 
           val model = allowedModel.toModel()
-          nameToModel.put(model.name, model)
           for (taskType in allowedModel.taskTypes) {
             val task = curTasks.find { it.id == taskType }
             task?.models?.add(model)
-
-            if (task?.id == BuiltInTaskId.LLM_TINY_GARDEN) {
-              val newConfigs = model.configs.toMutableList()
-              newConfigs.add(RESET_CONVERSATION_TURN_COUNT_CONFIG)
-              model.configs = newConfigs
-            }
-          }
-        }
-
-        // Find models from allowlist if a task's `modelNames` field is not empty.
-        for (task in curTasks) {
-          if (task.modelNames.isNotEmpty()) {
-            for (modelName in task.modelNames) {
-              val model = nameToModel[modelName]
-              if (model == null) {
-                Log.w(TAG, "Model '${modelName}' in task '${task.label}' not found in allowlist.")
-                continue
-              }
-              task.models.add(model)
-            }
           }
         }
 
@@ -813,14 +751,7 @@ constructor(
         processTasks()
 
         // Update UI state.
-        _uiState.update {
-          createUiState()
-            .copy(
-              loadingModelAllowlist = false,
-              tasks = curTasks,
-              tasksByCategory = groupTasksByCategory(),
-            )
-        }
+        _uiState.update { createUiState().copy(loadingModelAllowlist = false, tasks = curTasks) }
 
         // Process pending downloads.
         processPendingDownloads()
@@ -835,12 +766,7 @@ constructor(
     processTasks()
     _uiState.update {
       createUiState()
-        .copy(
-          loadingModelAllowlist = false,
-          tasks = curTasks,
-          loadingModelAllowlistError = "",
-          tasksByCategory = groupTasksByCategory(),
-        )
+        .copy(loadingModelAllowlist = false, tasks = curTasks, loadingModelAllowlistError = "")
     }
   }
 
@@ -864,9 +790,7 @@ constructor(
   ): ModelAllowlist? {
     try {
       Log.d(TAG, "Reading model allowlist from disk: $fileName")
-      val baseDir =
-        if (fileName == MODEL_ALLOWLIST_TEST_FILENAME) File("/data/local/tmp") else externalFilesDir
-      val file = File(baseDir, fileName)
+      val file = File(externalFilesDir, fileName)
       if (file.exists()) {
         val content = file.readText()
         Log.d(TAG, "Model allowlist content from local file: $content")
@@ -896,7 +820,6 @@ constructor(
   private fun createEmptyUiState(): ModelManagerUiState {
     return ModelManagerUiState(
       tasks = listOf(),
-      tasksByCategory = mapOf(),
       modelDownloadStatus = mapOf(),
       modelInitializationStatus = mapOf(),
     )
@@ -937,16 +860,6 @@ constructor(
       if (model.llmSupportAudio) {
         tasks.get(key = BuiltInTaskId.LLM_ASK_AUDIO)?.models?.add(model)
       }
-      if (model.llmSupportTinyGarden) {
-        tasks.get(key = BuiltInTaskId.LLM_TINY_GARDEN)?.models?.add(model)
-        val newConfigs = model.configs.toMutableList()
-        newConfigs.add(RESET_CONVERSATION_TURN_COUNT_CONFIG)
-        model.configs = newConfigs
-        model.preProcess()
-      }
-      if (model.llmSupportMobileActions) {
-        tasks.get(key = BuiltInTaskId.LLM_MOBILE_ACTIONS)?.models?.add(model)
-      }
 
       // Update status.
       modelDownloadStatus[model.name] =
@@ -963,7 +876,6 @@ constructor(
     Log.d(TAG, "model download status: $modelDownloadStatus")
     return ModelManagerUiState(
       tasks = customTasks.map { it.task }.toList(),
-      tasksByCategory = mapOf(),
       modelDownloadStatus = modelDownloadStatus,
       modelInitializationStatus = modelInstances,
       textInputHistory = textInputHistory,
@@ -979,19 +891,16 @@ constructor(
           else -> null // Ignore unknown accelerator labels
         }
       }
-    val configs: MutableList<Config> =
+    val configs: List<Config> =
       createLlmChatConfigs(
-          defaultMaxToken = info.llmConfig.defaultMaxTokens,
-          defaultTopK = info.llmConfig.defaultTopk,
-          defaultTopP = info.llmConfig.defaultTopp,
-          defaultTemperature = info.llmConfig.defaultTemperature,
-          accelerators = accelerators,
-        )
-        .toMutableList()
+        defaultMaxToken = info.llmConfig.defaultMaxTokens,
+        defaultTopK = info.llmConfig.defaultTopk,
+        defaultTopP = info.llmConfig.defaultTopp,
+        defaultTemperature = info.llmConfig.defaultTemperature,
+        accelerators = accelerators,
+      )
     val llmSupportImage = info.llmConfig.supportImage
     val llmSupportAudio = info.llmConfig.supportAudio
-    val llmSupportTinyGarden = info.llmConfig.supportTinyGarden
-    val llmSupportMobileActions = info.llmConfig.supportMobileActions
     val model =
       Model(
         name = info.fileName,
@@ -1004,69 +913,10 @@ constructor(
         imported = true,
         llmSupportImage = llmSupportImage,
         llmSupportAudio = llmSupportAudio,
-        llmSupportTinyGarden = llmSupportTinyGarden,
-        llmSupportMobileActions = llmSupportMobileActions,
       )
     model.preProcess()
 
     return model
-  }
-
-  private fun groupTasksByCategory(): Map<String, List<Task>> {
-    val tasks = customTasks.map { it.task }
-
-    val categoryMap: Map<String, CategoryInfo> =
-      tasks.associateBy { it.category.id }.mapValues { it.value.category }
-
-    val groupedTasks = tasks.groupBy { it.category.id }
-    val groupedSortedTasks: MutableMap<String, List<Task>> = mutableMapOf()
-    // Sort the tasks in categories by pre-defined order. Sort other tasks by label.
-    for (categoryId in groupedTasks.keys) {
-      val sortedTasks =
-        groupedTasks[categoryId]!!.sortedWith { a, b ->
-          if (categoryId == Category.LLM.id) {
-            val order: List<String> =
-              when (categoryId) {
-                Category.LLM.id -> PREDEFINED_LLM_TASK_ORDER
-                else -> listOf()
-              }
-            val indexA = order.indexOf(a.id)
-            val indexB = order.indexOf(b.id)
-            if (indexA != -1 && indexB != -1) {
-              indexA.compareTo(indexB)
-            } else if (indexA != -1) {
-              -1
-            } else if (indexB != -1) {
-              1
-            } else {
-              val ca = categoryMap[a.id]!!
-              val cb = categoryMap[b.id]!!
-              val caLabel = getCategoryLabel(context = context, category = ca)
-              val cbLabel = getCategoryLabel(context = context, category = cb)
-              caLabel.compareTo(cbLabel)
-            }
-          } else {
-            a.label.compareTo(b.label)
-          }
-        }
-      for ((index, task) in sortedTasks.withIndex()) {
-        task.index = index
-      }
-      groupedSortedTasks[categoryId] = sortedTasks
-    }
-
-    return groupedSortedTasks
-  }
-
-  private fun getCategoryLabel(context: Context, category: CategoryInfo): String {
-    val stringRes = category.labelStringRes
-    val label = category.label
-    if (stringRes != null) {
-      return context.getString(stringRes)
-    } else if (label != null) {
-      return label
-    }
-    return context.getString(R.string.category_unlabeled)
   }
 
   /**
@@ -1140,24 +990,6 @@ constructor(
     }
   }
 
-  /**
-   * Deletes files from the the model imports directory whose absolute paths start with a given
-   * prefix.
-   */
-  private fun deleteFilesFromImportDir(fileName: String) {
-    val dir = context.getExternalFilesDir(null) ?: return
-
-    val prefixAbsolutePath = "${context.getExternalFilesDir(null)}${File.separator}$fileName"
-    val filesToDelete =
-      File(dir, IMPORTS_DIR).listFiles { dirFile, name ->
-        File(dirFile, name).absolutePath.startsWith(prefixAbsolutePath)
-      } ?: arrayOf()
-    for (file in filesToDelete) {
-      Log.d(TAG, "Deleting file: ${file.name}")
-      file.delete()
-    }
-  }
-
   private fun deleteDirFromExternalFilesDir(dir: String) {
     if (isFileInExternalFilesDir(dir)) {
       val file = File(externalFilesDir, dir)
@@ -1195,5 +1027,46 @@ constructor(
         )
 
     return downloadedFileExists || unzippedDirectoryExists
+  }
+
+  // Self-hosted Gemma: Terms acceptance and analytics
+
+  fun isGemmaTermsAccepted(): Boolean {
+    return dataStoreRepository.isGemmaTermsAccepted()
+  }
+
+  fun acceptGemmaTerms() {
+    dataStoreRepository.acceptGemmaTerms()
+  }
+
+  fun logGemmaTermsAccepted(modelName: String) {
+    Log.d("Analytics", "gemma_terms_accepted: $modelName at ${System.currentTimeMillis()}")
+    // TODO: Replace with actual analytics SDK (Firebase Analytics, etc.)
+    // Example: analytics.logEvent("gemma_terms_accepted", bundleOf("model_name" to modelName))
+  }
+
+  fun logDownloadSuccess(modelName: String, downloadTimeMs: Long) {
+    Log.d("Analytics", "model_download_success: $modelName, time: ${downloadTimeMs}ms")
+    // TODO: Replace with actual analytics SDK
+    // Example: analytics.logEvent("model_download_success", bundleOf(
+    //   "model_name" to modelName,
+    //   "download_time_ms" to downloadTimeMs
+    // ))
+  }
+
+  fun logDownloadFailure(modelName: String, error: String, usedFallback: Boolean) {
+    Log.e("Analytics", "model_download_failure: $modelName, error: $error, fallback: $usedFallback")
+    // TODO: Replace with actual analytics SDK
+    // Example: analytics.logEvent("model_download_failure", bundleOf(
+    //   "model_name" to modelName,
+    //   "error" to error,
+    //   "used_fallback" to usedFallback
+    // ))
+  }
+
+  fun logChecksumFailure(modelName: String) {
+    Log.e("Analytics", "checksum_verification_failed: $modelName")
+    // TODO: Replace with actual analytics SDK
+    // Example: analytics.logEvent("checksum_verification_failed", bundleOf("model_name" to modelName))
   }
 }

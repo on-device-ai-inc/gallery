@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ package ai.ondevice.app.ui.common.modelitem
 
 // import androidx.compose.ui.tooling.preview.Preview
 // import ai.ondevice.app.ui.theme.GalleryTheme
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.filled.DownloadForOffline
 import androidx.compose.material.icons.rounded.Downloading
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material3.Icon
@@ -32,14 +32,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import ai.ondevice.app.R
 import ai.ondevice.app.data.MODEL_INFO_ICON_SIZE
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.ModelDownloadStatus
 import ai.ondevice.app.data.ModelDownloadStatusType
 import ai.ondevice.app.data.Task
-import ai.ondevice.app.ui.common.getTaskBgGradientColors
 import ai.ondevice.app.ui.theme.customColors
 
 /** Composable function to display an icon representing the download status of a model. */
@@ -56,10 +55,9 @@ fun StatusIcon(
     modifier = modifier,
   ) {
     if (model.localFileRelativeDirPathOverride.isNotEmpty()) {
-      Icon(
-        Icons.Filled.DownloadForOffline,
-        tint = getTaskBgGradientColors(task = task)[1],
-        contentDescription = stringResource(R.string.cd_downloaded_icon),
+      Image(
+        painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+        contentDescription = "",
         modifier = Modifier.size(MODEL_INFO_ICON_SIZE),
       )
     } else {
@@ -68,15 +66,14 @@ fun StatusIcon(
           Icon(
             Icons.AutoMirrored.Outlined.HelpOutline,
             tint = MaterialTheme.customColors.modelInfoIconColor,
-            contentDescription = stringResource(R.string.cd_not_downloaded_icon),
+            contentDescription = "",
             modifier = Modifier.size(MODEL_INFO_ICON_SIZE),
           )
 
         ModelDownloadStatusType.SUCCEEDED -> {
-          Icon(
-            Icons.Filled.DownloadForOffline,
-            tint = getTaskBgGradientColors(task = task)[1],
-            contentDescription = stringResource(R.string.cd_downloaded_icon),
+          Image(
+            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+            contentDescription = "",
             modifier = Modifier.size(MODEL_INFO_ICON_SIZE),
           )
         }
@@ -85,14 +82,14 @@ fun StatusIcon(
           Icon(
             Icons.Rounded.Error,
             tint = Color(0xFFAA0000),
-            contentDescription = stringResource(R.string.cd_download_failed_icon),
+            contentDescription = "",
             modifier = Modifier.size(MODEL_INFO_ICON_SIZE),
           )
 
         ModelDownloadStatusType.IN_PROGRESS ->
           Icon(
             Icons.Rounded.Downloading,
-            contentDescription = stringResource(R.string.cd_downloading_icon),
+            contentDescription = "",
             modifier = Modifier.size(MODEL_INFO_ICON_SIZE),
           )
 

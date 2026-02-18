@@ -1,0 +1,12 @@
+# GQA Test Case: Compose State Management
+test_case_id: "cd_002"
+category: "code_discussion"
+description: "Discussion about state management in Jetpack Compose"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "My Compose UI doesn't update. Why?\n```kotlin\nvar count = 0\nButton(onClick = { count++ }) {\n    Text(\"Count: $count\")\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use mutableStateOf for reactive state:\n```kotlin\nvar count by remember { mutableStateOf(0) }\nButton(onClick = { count++ }) {\n    Text(\"Count: $count\")\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "How to create reactive state in Compose?", expected_keywords: ["mutableStateOf", "remember"], importance: "high"}
+expected_compression_behavior: ["Should preserve code fix", "Should show before/after"]

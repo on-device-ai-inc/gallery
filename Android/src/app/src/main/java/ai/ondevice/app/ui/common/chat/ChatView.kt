@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,15 +58,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import ai.ondevice.app.R
-import ai.ondevice.app.data.BuiltInTaskId
-import ai.ondevice.app.data.ConfigKeys
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.ModelDownloadStatusType
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.common.ModelPageAppBar
+import ai.ondevice.app.ui.common.ChatMenuSheet
 import ai.ondevice.app.ui.modelmanager.ModelInitializationStatusType
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import kotlinx.coroutines.Dispatchers
@@ -89,9 +86,11 @@ fun ChatView(
   viewModel: ChatViewModel,
   modelManagerViewModel: ModelManagerViewModel,
   onSendMessage: (Model, List<ChatMessage>) -> Unit,
-  onRunAgainClicked: (Model, ChatMessage) -> Unit,
+  onRunAgainClicked: (Model, ChatMessage, RegenerateStyle) -> Unit,
   onBenchmarkClicked: (Model, ChatMessage, Int, Int) -> Unit,
   navigateUp: () -> Unit,
+  onNavigateToConversationHistory: () -> Unit = {},
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
   modifier: Modifier = Modifier,
   onResetSessionClicked: (Model) -> Unit = {},
   onStreamImageMessage: (Model, ChatMessageImage) -> Unit = { _, _ -> },
@@ -101,11 +100,14 @@ fun ChatView(
   val uiState by viewModel.uiState.collectAsState()
   val modelManagerUiState by modelManagerViewModel.uiState.collectAsState()
   val selectedModel = modelManagerUiState.selectedModel
+  val conversationCount by viewModel.conversationCount.collectAsState(initial = 0)
+  val recentConversations by viewModel.recentConversations.collectAsState(initial = emptyList())
 
   // Image viewer related.
   var selectedImageIndex by remember { mutableIntStateOf(-1) }
   var allImageViewerImages by remember { mutableStateOf<List<Bitmap>>(listOf()) }
   var showImageViewer by remember { mutableStateOf(false) }
+  var showMenu by remember { mutableStateOf(false) }
 
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
@@ -158,22 +160,13 @@ fun ChatView(
         modelPreparing = uiState.preparing,
         onResetSessionClicked = onResetSessionClicked,
         onConfigChanged = { old, new ->
-          // Filter out config values that are not relevant to the task.
-          //
-          // - The "reset conversation turn count" is only valid for tiny garden task.
-          val filteredOld = old.toMutableMap()
-          val filteredNew = new.toMutableMap()
-          if (task.id != BuiltInTaskId.LLM_TINY_GARDEN) {
-            filteredOld.remove(ConfigKeys.RESET_CONVERSATION_TURN_COUNT.label)
-            filteredNew.remove(ConfigKeys.RESET_CONVERSATION_TURN_COUNT.label)
-          }
           viewModel.addConfigChangedMessage(
-            oldConfigValues = filteredOld,
-            newConfigValues = filteredNew,
+            oldConfigValues = old,
+            newConfigValues = new,
             model = selectedModel,
           )
         },
-        onBackClicked = { handleNavigateUp() },
+        onMenuClicked = { showMenu = true },
         onModelSelected = { prevModel, curModel ->
           if (prevModel.name != curModel.name) {
             modelManagerViewModel.cleanupModel(context = context, task = task, model = prevModel)
@@ -253,11 +246,7 @@ fun ChatView(
             modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.95f)),
           ) { page ->
             allImageViewerImages[page].let { image ->
-              ZoomableImage(
-                bitmap = image.asImageBitmap(),
-                pagerState = pagerState,
-                modifier = Modifier.fillMaxSize(),
-              )
+              ZoomableImage(bitmap = image.asImageBitmap(), pagerState = pagerState)
             }
           }
 
@@ -272,13 +261,38 @@ fun ChatView(
           ) {
             Icon(
               Icons.Rounded.Close,
-              contentDescription = stringResource(R.string.cd_close_image_viewer_icon),
+              contentDescription = "",
               tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
         }
       }
     }
+  }
+
+  // Chat menu bottom sheet
+  if (showMenu) {
+    ChatMenuSheet(
+      onDismiss = { showMenu = false },
+      onNewChat = {
+        onResetSessionClicked(selectedModel)
+      },
+      onViewConversationHistory = {
+        showMenu = false
+        onNavigateToConversationHistory()
+      },
+      onRecentChatClicked = { threadId ->
+        showMenu = false
+        // Load the conversation - this will navigate to history and load the chat
+        viewModel.loadConversation(threadId, selectedModel)
+      },
+      onNavigateToSettings = {  // Epic 5: Settings navigation
+        showMenu = false
+        onNavigateToSettings()
+      },
+      recentConversations = recentConversations,
+      conversationCount = conversationCount
+    )
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,18 +30,21 @@ import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
  *   bottom of your screen's content to account for elements like a bottom navigation bar.
  * @param setAppBarControlsDisabled A callback function that the custom task screen can call to
  *   enable and disable controls (e.g. back button, configs, etc) in the app bar.
- * @param setTopBarVisible A callback function that the custom task screen can call to show and hide
- *   the top bar.
  */
 data class CustomTaskData(
   val modelManagerViewModel: ModelManagerViewModel,
   val bottomPadding: Dp = 0.dp,
   val setAppBarControlsDisabled: (Boolean) -> Unit = {},
-  val setTopBarVisible: (Boolean) -> Unit = {},
-  val setCustomNavigateUpCallback: ((() -> Unit)?) -> Unit = {},
 )
 
 data class CustomTaskDataForBuiltinTask(
   val modelManagerViewModel: ModelManagerViewModel,
   val onNavUp: () -> Unit,
+  val onNavigateToConversationHistory: () -> Unit = {},
+  /** Epic 5: Navigate to Settings screen */
+  val onNavigateToSettings: () -> Unit = {},
+  /** Thread ID to load when returning from conversation history (Update #8: one-step navigation) */
+  val loadConversationId: Long? = null,
+  /** Callback to clear the loadConversationId after it's been processed */
+  val onConversationLoaded: () -> Unit = {},
 )

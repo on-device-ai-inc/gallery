@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ const val KEY_MODEL_START_UNZIPPING = "KEY_MODEL_START_UNZIPPING"
 
 // Default values for LLM models.
 const val DEFAULT_MAX_TOKEN = 1024
-const val DEFAULT_TOPK = 64
-const val DEFAULT_TOPP = 0.95f
+const val DEFAULT_TOPK = 40
+const val DEFAULT_TOPP = 0.9f
 const val DEFAULT_TEMPERATURE = 1.0f
 val DEFAULT_ACCELERATORS = listOf(Accelerator.GPU)
 

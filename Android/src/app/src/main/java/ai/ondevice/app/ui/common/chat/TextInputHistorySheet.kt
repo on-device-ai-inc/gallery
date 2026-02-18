@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,10 +129,7 @@ private fun SheetContent(
         modifier = Modifier.padding(end = 12.dp),
         onClick = { showConfirmDeleteDialog = true },
       ) {
-        Icon(
-          Icons.Rounded.DeleteSweep,
-          contentDescription = stringResource(R.string.cd_clear_input_history_icon),
-        )
+        Icon(Icons.Rounded.DeleteSweep, contentDescription = "")
       }
     }
     LazyColumn(modifier = Modifier.weight(1f)) {
@@ -163,10 +160,7 @@ private fun SheetContent(
               }
             },
           ) {
-            Icon(
-              Icons.Rounded.Delete,
-              contentDescription = stringResource(R.string.cd_delete_input_history_entry_icon),
-            )
+            Icon(Icons.Rounded.Delete, contentDescription = "")
           }
         }
       }

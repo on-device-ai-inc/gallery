@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.res.stringResource
-import ai.ondevice.app.R
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.ModelDownloadStatus
 import ai.ondevice.app.data.ModelDownloadStatusType
@@ -58,7 +56,7 @@ fun DeleteModelButton(
           IconButton(onClick = { showConfirmDeleteDialog = true }) {
             Icon(
               Icons.Outlined.Delete,
-              contentDescription = stringResource(R.string.cd_delete_icon),
+              contentDescription = "",
               tint = MaterialTheme.colorScheme.onSurfaceVariant,
               modifier = Modifier.alpha(0.6f),
             )

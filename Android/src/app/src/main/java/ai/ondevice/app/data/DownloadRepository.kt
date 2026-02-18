@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,10 +98,12 @@ class DefaultDownloadRepository(
     // Create input data.
     val builder = Data.Builder()
     val totalBytes = model.totalBytes + model.extraDataFiles.sumOf { it.sizeInBytes }
+    // Use downloadUrl if available, otherwise fall back to url
+    val actualDownloadUrl = if (model.downloadUrl.isNotEmpty()) model.downloadUrl else model.url
     val inputDataBuilder =
       builder
         .putString(KEY_MODEL_NAME, model.name)
-        .putString(KEY_MODEL_URL, model.url)
+        .putString(KEY_MODEL_URL, actualDownloadUrl)
         .putString(KEY_MODEL_COMMIT_HASH, model.version)
         .putString(KEY_MODEL_DOWNLOAD_MODEL_DIR, model.normalizedName)
         .putString(KEY_MODEL_DOWNLOAD_FILE_NAME, model.downloadFileName)
@@ -214,14 +216,30 @@ class DefaultDownloadRepository(
 
             val startTime = downloadStartTimeSharedPreferences.getLong(model.name, 0L)
             val duration = System.currentTimeMillis() - startTime
-            firebaseAnalytics?.logEvent(
-              "model_download",
-              bundleOf(
-                "event_type" to "success",
-                "model_id" to model.name,
-                "duration_ms" to duration,
-              ),
-            )
+
+            // Enhanced analytics with source tracking (non-blocking)
+            try {
+              val downloadSource = when {
+                model.downloadUrl.contains("On-device", ignoreCase = true) -> "on-device"
+                model.url.contains("On-device", ignoreCase = true) -> "on-device"
+                else -> "google"
+              }
+
+              firebaseAnalytics?.logEvent(
+                "model_download",
+                bundleOf(
+                  "event_type" to "success",
+                  "model_id" to model.name,
+                  "duration_ms" to duration,
+                  "source" to downloadSource,
+                  "success" to true,
+                ),
+              )
+            } catch (e: Exception) {
+              // Analytics failure should never block downloads
+              Log.w(TAG, "Analytics logging failed for success event", e)
+            }
+
             downloadStartTimeSharedPreferences.edit { remove(model.name) }
           }
 
@@ -250,15 +268,42 @@ class DefaultDownloadRepository(
 
             val startTime = downloadStartTimeSharedPreferences.getLong(model.name, 0L)
             val duration = System.currentTimeMillis() - startTime
-            // TODO: Add failure reasons
-            firebaseAnalytics?.logEvent(
-              "model_download",
-              bundleOf(
-                "event_type" to "failure",
-                "model_id" to model.name,
-                "duration_ms" to duration,
-              ),
-            )
+
+            // Enhanced analytics with source and error tracking (non-blocking)
+            try {
+              val downloadSource = when {
+                model.downloadUrl.contains("On-device", ignoreCase = true) -> "on-device"
+                model.url.contains("On-device", ignoreCase = true) -> "on-device"
+                else -> "google"
+              }
+
+              // Extract error code from error message if available
+              val errorCode = when {
+                errorMessage.contains("404", ignoreCase = true) -> "404_not_found"
+                errorMessage.contains("403", ignoreCase = true) -> "403_forbidden"
+                errorMessage.contains("401", ignoreCase = true) -> "401_unauthorized"
+                errorMessage.contains("timeout", ignoreCase = true) -> "timeout"
+                errorMessage.contains("network", ignoreCase = true) -> "network_error"
+                errorMessage.isEmpty() -> "cancelled"
+                else -> "unknown_error"
+              }
+
+              firebaseAnalytics?.logEvent(
+                "model_download",
+                bundleOf(
+                  "event_type" to "failure",
+                  "model_id" to model.name,
+                  "duration_ms" to duration,
+                  "source" to downloadSource,
+                  "success" to false,
+                  "error_code" to errorCode,
+                ),
+              )
+            } catch (e: Exception) {
+              // Analytics failure should never block downloads
+              Log.w(TAG, "Analytics logging failed for failure event", e)
+            }
+
             downloadStartTimeSharedPreferences.edit { remove(model.name) }
           }
 
@@ -275,7 +320,7 @@ class DefaultDownloadRepository(
     }
 
     val channelId = "download_notification"
-    val channelName = "OnDevice AI download notification"
+    val channelName = "AI Edge Gallery download notification"
 
     // Create the NotificationChannel, but only on API 26+ because
     // the NotificationChannel class is new and not in the support library

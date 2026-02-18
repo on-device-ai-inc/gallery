@@ -1,0 +1,19 @@
+# GQA Test Case: Importance Preservation 5
+test_case_id: "ip_005"
+category: "importance_preservation"
+description: "Messages with importance markers (starred, system-generated)"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "Regular message 1", is_starred: false, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Regular response 1", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "user", content: "IMPORTANT: Critical decision point", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "assistant", content: "Acknowledged critical decision", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "system", content: "System notification: Action completed", is_starred: false, is_system_generated: true, is_first_in_conversation: false}
+  - {role: "user", content: "Regular message 2", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "assistant", content: "KEY RECOMMENDATION: Use this approach", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+  - {role: "user", content: "Regular message 3", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What were the starred messages?", expected_keywords: ["Critical decision", "KEY RECOMMENDATION"], importance: "high"}
+  - {query: "What system notifications occurred?", expected_keywords: ["System notification", "Action completed"], importance: "high"}
+expected_compression_behavior: ["MUST preserve all starred messages", "MUST preserve all system-generated messages", "Can compress non-starred regular messages"]

@@ -1,0 +1,12 @@
+# GQA Test Case: Architecture Discussion
+test_case_id: "lc_006"
+category: "long_conversation"
+description: "50-message discussion about MVVM architecture migration"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "Should I migrate from MVC to MVVM?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "MVVM is better for Android. Separates concerns and works well with Jetpack.", is_starred: false, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What architecture is recommended?", expected_keywords: ["MVVM", "Jetpack"], importance: "high"}
+expected_compression_behavior: ["Should preserve architecture decision", "Should retain justification"]

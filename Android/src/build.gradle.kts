@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@
 plugins {
   alias(libs.plugins.android.application) apply false
   alias(libs.plugins.google.services) apply false
+  alias(libs.plugins.firebase.crashlytics) apply false
   alias(libs.plugins.kotlin.android) apply false
   alias(libs.plugins.kotlin.compose) apply false
   alias(libs.plugins.hilt.application) apply false
+
+  id("com.google.devtools.ksp") version "2.1.0-1.0.29" apply false
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,36 +26,30 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.EaseOutExpo
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
 import androidx.core.os.bundleOf
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -64,27 +58,48 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import ai.ondevice.app.ui.conversationlist.ConversationListScreen
+import ai.ondevice.app.ui.conversationdetail.ConversationDetailScreen
+import androidx.navigation.navArgument
 import androidx.navigation.navArgument
 import ai.ondevice.app.customtasks.common.CustomTaskData
 import ai.ondevice.app.customtasks.common.CustomTaskDataForBuiltinTask
+import ai.ondevice.app.data.BuiltInTaskId
 import ai.ondevice.app.data.ModelDownloadStatusType
 import ai.ondevice.app.data.Task
-import ai.ondevice.app.data.isLegacyTasks
+import ai.ondevice.app.data.isBuiltInTask
 import ai.ondevice.app.firebaseAnalytics
 import ai.ondevice.app.ui.common.ErrorDialog
 import ai.ondevice.app.ui.common.ModelPageAppBar
 import ai.ondevice.app.ui.common.chat.ModelDownloadStatusInfoPanel
-import ai.ondevice.app.ui.home.HomeScreen
+import ai.ondevice.app.ui.common.tos.TosDialog
+import ai.ondevice.app.ui.common.tos.TosViewModel
 import ai.ondevice.app.ui.modelmanager.ModelInitializationStatusType
 import ai.ondevice.app.ui.modelmanager.ModelManager
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
+import ai.ondevice.app.ui.settings.SettingsScreen
+import ai.ondevice.app.ui.settings.CustomInstructionsScreen
+import ai.ondevice.app.ui.settings.PrivacyCenterScreen
+import ai.ondevice.app.ui.settings.StorageManagementScreen
+import ai.ondevice.app.ui.settings.ModelParametersScreen
+import ai.ondevice.app.data.DataStoreRepository
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 private const val TAG = "AGGalleryNavGraph"
-private const val ROUTE_HOMESCREEN = "homepage"
-private const val ROUTE_MODEL_LIST = "model_list"
+
+
+private const val ROUTE_PLACEHOLDER = "placeholder"
 private const val ROUTE_MODEL = "route_model"
+private const val ROUTE_CONVERSATION_LIST = "conversation_list"
+private const val ROUTE_CONVERSATION_DETAIL = "conversation_detail/{threadId}"
+private const val ROUTE_SETTINGS = "settings"  // Epic 5: Settings screen
+private const val ROUTE_CUSTOM_INSTRUCTIONS = "custom_instructions"  // Story 8: Custom Instructions
+private const val ROUTE_PRIVACY_CENTER = "privacy_center"  // Story 10: Privacy Center
+private const val ROUTE_STORAGE_MANAGEMENT = "storage_management"  // Story 9: Storage Management
+private const val ROUTE_MODEL_PARAMETERS = "model_parameters"  // Story 7: Model Parameters
+private const val ROUTE_MODEL_SELECTION = "model_selection"  // First-launch model selection
 private const val ENTER_ANIMATION_DURATION_MS = 500
 private val ENTER_ANIMATION_EASING = EaseOutExpo
 private const val ENTER_ANIMATION_DELAY_MS = 100
@@ -126,10 +141,33 @@ fun GalleryNavHost(
   modelManagerViewModel: ModelManagerViewModel,
 ) {
   val lifecycleOwner = LocalLifecycleOwner.current
-  var showModelManager by remember { mutableStateOf(false) }
-  var pickedTask by remember { mutableStateOf<Task?>(null) }
-  var enableHomeScreenAnimation by remember { mutableStateOf(true) }
-  var enableModelListAnimation by remember { mutableStateOf(true) }
+  val modelManagerUiState by modelManagerViewModel.uiState.collectAsState()
+  val tosViewModel: TosViewModel = hiltViewModel()
+
+  // Option A Flow: TOS → Model Selection → Chat
+  var showTosDialog by remember { mutableStateOf(!tosViewModel.getIsTosAccepted()) }
+  var hasAutoNavigated by remember { mutableStateOf(false) }
+
+  LaunchedEffect(modelManagerUiState.modelDownloadStatus, showTosDialog) {
+    if (!hasAutoNavigated && !modelManagerUiState.loadingModelAllowlist && !showTosDialog) {
+      val llmTask = modelManagerViewModel.getTaskById(BuiltInTaskId.LLM_CHAT)
+
+      // Check if any model is downloaded
+      val downloadedModel = llmTask?.models?.firstOrNull { model ->
+        modelManagerUiState.modelDownloadStatus[model.name]?.status == ModelDownloadStatusType.SUCCEEDED
+      }
+
+      if (downloadedModel != null && llmTask != null) {
+        // Model downloaded - navigate directly to chat
+        hasAutoNavigated = true
+        navController.navigate("$ROUTE_MODEL/${llmTask.id}/${downloadedModel.name}")
+      } else if (llmTask != null && llmTask.models.isNotEmpty()) {
+        // No model downloaded - navigate to model selection (first launch)
+        hasAutoNavigated = true
+        navController.navigate(ROUTE_MODEL_SELECTION)
+      }
+    }
+  }
 
   // Track whether app is in foreground.
   DisposableEffect(lifecycleOwner) {
@@ -154,62 +192,163 @@ fun GalleryNavHost(
     onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
   }
 
+  // TOS Dialog (Option A: Show before first launch)
+  if (showTosDialog) {
+    TosDialog(
+      onDismiss = {}, // No dismiss - must accept to continue
+      onAccept = {
+        tosViewModel.acceptTos()
+        showTosDialog = false
+      }
+    )
+  }
+
   NavHost(
     navController = navController,
-    startDestination = ROUTE_HOMESCREEN,
+    // Start with placeholder - auto-navigation will handle routing
+    startDestination = ROUTE_PLACEHOLDER,
     enterTransition = { EnterTransition.None },
     exitTransition = { ExitTransition.None },
+    modifier = modifier.zIndex(1f),
   ) {
-    // Home screen.
-    composable(route = ROUTE_HOMESCREEN) {
-      HomeScreen(
+    // Placeholder root screen
+    composable(route = ROUTE_PLACEHOLDER) { Text("") }
+
+    // Epic 5: Settings Screen
+    composable(
+      route = ROUTE_SETTINGS,
+      enterTransition = { slideEnter() },
+      exitTransition = { slideExit() },
+    ) {
+      SettingsScreen(
+        onNavigateBack = { navController.navigateUp() },
         modelManagerViewModel = modelManagerViewModel,
-        tosViewModel = hiltViewModel(),
-        enableAnimation = enableHomeScreenAnimation,
-        navigateToTaskScreen = { task ->
-          pickedTask = task
-          enableModelListAnimation = true
-          navController.navigate(ROUTE_MODEL_LIST)
-          firebaseAnalytics?.logEvent("capability_select", bundleOf("capability_name" to task.id))
+        onNavigateToModelSelection = {
+          navController.navigate(ROUTE_MODEL_SELECTION)
         },
+        onNavigateToCustomInstructions = {
+          navController.navigate(ROUTE_CUSTOM_INSTRUCTIONS)
+        },
+        onNavigateToPrivacyCenter = {
+          navController.navigate(ROUTE_PRIVACY_CENTER)
+        },
+        onNavigateToStorageManagement = {
+          navController.navigate(ROUTE_STORAGE_MANAGEMENT)
+        },
+        onNavigateToModelParameters = {
+          navController.navigate(ROUTE_MODEL_PARAMETERS)
+        }
       )
     }
 
-    // Model list.
+    // Story 8: Custom Instructions Screen
     composable(
-      route = ROUTE_MODEL_LIST,
-      enterTransition = {
-        if (initialState.destination.route == ROUTE_HOMESCREEN) {
-          slideEnter()
-        } else {
-          EnterTransition.None
-        }
-      },
-      exitTransition = {
-        if (targetState.destination.route == ROUTE_HOMESCREEN) {
-          slideExit()
-        } else {
-          ExitTransition.None
-        }
-      },
+      route = ROUTE_CUSTOM_INSTRUCTIONS,
+      enterTransition = { slideEnter() },
+      exitTransition = { slideExit() },
     ) {
-      pickedTask?.let {
-        ModelManager(
-          viewModel = modelManagerViewModel,
-          task = it,
-          enableAnimation = enableModelListAnimation,
-          onModelClicked = { model ->
-            navController.navigate("$ROUTE_MODEL/${it.id}/${model.name}")
-          },
-          navigateUp = {
-            enableHomeScreenAnimation = false
-            navController.navigateUp()
-          },
-        )
-      }
+      CustomInstructionsScreen(
+        onNavigateBack = { navController.navigateUp() }
+      )
     }
 
-    // Model page.
+    // Story 10: Privacy Center Screen
+    composable(
+      route = ROUTE_PRIVACY_CENTER,
+      enterTransition = { slideEnter() },
+      exitTransition = { slideExit() },
+    ) {
+      PrivacyCenterScreen(
+        onNavigateBack = { navController.navigateUp() },
+        modelManagerViewModel = modelManagerViewModel
+      )
+    }
+
+    // Story 9: Storage Management Screen
+    composable(
+      route = ROUTE_STORAGE_MANAGEMENT,
+      enterTransition = { slideEnter() },
+      exitTransition = { slideExit() },
+    ) {
+      StorageManagementScreen(
+        onNavigateBack = { navController.navigateUp() },
+        modelManagerViewModel = modelManagerViewModel
+      )
+    }
+
+    // Story 7: Model Parameters Screen
+    composable(
+      route = ROUTE_MODEL_PARAMETERS,
+      enterTransition = { slideEnter() },
+      exitTransition = { slideExit() },
+    ) {
+      val selectedModel = modelManagerViewModel.uiState.collectAsState().value.selectedModel
+      ModelParametersScreen(
+        model = selectedModel,
+        onNavigateBack = { navController.navigateUp() },
+        onParametersChanged = { temperature, topK, topP, maxTokens ->
+          // TODO: Persist model parameters to DataStore or Model config
+          // For now, parameters are managed within ModelParametersScreen state
+        }
+      )
+    }
+
+    // Model Selection Screen (First launch onboarding)
+    composable(
+      route = ROUTE_MODEL_SELECTION,
+      enterTransition = { slideEnter() },
+      exitTransition = { slideExit() },
+    ) {
+      ai.ondevice.app.ui.modelselection.ModelSelectionScreen(
+        modelManagerViewModel = modelManagerViewModel,
+        onModelSelected = { model ->
+          // Start download and navigate to chat when complete
+          val llmTask = modelManagerViewModel.getTaskById(BuiltInTaskId.LLM_CHAT)
+          if (llmTask != null) {
+            navController.navigate("$ROUTE_MODEL/${llmTask.id}/${model.name}") {
+              // Clear back stack so user can't go back to model selection
+              popUpTo(ROUTE_PLACEHOLDER) { inclusive = true }
+            }
+          }
+        }
+      )
+    }
+
+    // PHASE 3: Conversation List (Update #8: One-step navigation to active chat)
+    composable(route = ROUTE_CONVERSATION_LIST) {
+      ConversationListScreen(
+        onNavigateToDetail = { threadId ->
+          // One-step navigation: go back to chat and load the conversation
+          // Pass threadId via saved state handle so chat can load it
+          navController.previousBackStackEntry?.savedStateHandle?.set("loadThreadId", threadId)
+          navController.navigateUp()
+        },
+        onNavigateToNewChat = {
+          navController.navigateUp()
+        }
+      )
+    }
+
+    // PHASE 3: Conversation Detail
+    composable(
+      route = ROUTE_CONVERSATION_DETAIL,
+      arguments = listOf(navArgument("threadId") { type = NavType.LongType })
+    ) { backStackEntry ->
+      val threadId = backStackEntry.arguments?.getLong("threadId") ?: 0L
+      ConversationDetailScreen(
+        threadId = threadId,
+        onNavigateBack = { navController.navigateUp() },
+        onContinueChat = { loadThreadId, modelId, taskId ->
+          // Navigate to the chat screen and pass threadId to load conversation
+          navController.navigate("$ROUTE_MODEL/$taskId/$modelId") {
+            popUpTo(ROUTE_CONVERSATION_LIST) { inclusive = false }
+          }
+          // Set loadThreadId in savedStateHandle so chat screen can load the conversation
+          navController.currentBackStackEntry?.savedStateHandle?.set("loadThreadId", loadThreadId)
+        }
+      )
+    }
+
     composable(
       route = "$ROUTE_MODEL/{taskId}/{modelName}",
       arguments =
@@ -222,54 +361,42 @@ fun GalleryNavHost(
     ) { backStackEntry ->
       val modelName = backStackEntry.arguments?.getString("modelName") ?: ""
       val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
-      val scope = rememberCoroutineScope()
-      val context = LocalContext.current
+
+      // Update #8: Observe loadThreadId from conversation history navigation
+      val loadThreadId by backStackEntry.savedStateHandle.getStateFlow<Long?>("loadThreadId", null).collectAsState()
 
       modelManagerViewModel.getModelByName(name = modelName)?.let { model ->
-        LaunchedEffect(Unit) { modelManagerViewModel.selectModel(model) }
+        modelManagerViewModel.selectModel(model)
 
         val customTask = modelManagerViewModel.getCustomTaskByTaskId(id = taskId)
         if (customTask != null) {
-          if (isLegacyTasks(customTask.task.id)) {
+          if (isBuiltInTask(customTask.task.id)) {
             customTask.MainScreen(
               data =
                 CustomTaskDataForBuiltinTask(
                   modelManagerViewModel = modelManagerViewModel,
-                  onNavUp = {
-                    enableModelListAnimation = false
-                    navController.navigateUp()
+                  onNavUp = { navController.navigateUp() },
+                  onNavigateToConversationHistory = {
+                    Log.d(TAG, "onNavigateToConversationHistory callback triggered, navigating to $ROUTE_CONVERSATION_LIST")
+                    navController.navigate(ROUTE_CONVERSATION_LIST)
+                  },
+                  onNavigateToSettings = {
+                    Log.d(TAG, "onNavigateToSettings callback triggered, navigating to $ROUTE_SETTINGS")
+                    navController.navigate(ROUTE_SETTINGS)
+                  },
+                  loadConversationId = loadThreadId,
+                  onConversationLoaded = {
+                    backStackEntry.savedStateHandle["loadThreadId"] = null
                   },
                 )
             )
           } else {
             var disableAppBarControls by remember { mutableStateOf(false) }
-            var hideTopBar by remember { mutableStateOf(false) }
-            var customNavigateUpCallback by remember { mutableStateOf<(() -> Unit)?>(null) }
             CustomTaskScreen(
               task = customTask.task,
               modelManagerViewModel = modelManagerViewModel,
-              onNavigateUp = {
-                if (customNavigateUpCallback != null) {
-                  customNavigateUpCallback?.invoke()
-                } else {
-                  enableModelListAnimation = false
-                  navController.navigateUp()
-
-                  // clean up all models.
-                  scope.launch(Dispatchers.Default) {
-                    for (model in customTask.task.models) {
-                      modelManagerViewModel.cleanupModel(
-                        context = context,
-                        task = customTask.task,
-                        model = model,
-                      )
-                    }
-                  }
-                }
-              },
+              onNavigateUp = { navController.navigateUp() },
               disableAppBarControls = disableAppBarControls,
-              hideTopBar = hideTopBar,
-              useThemeColor = customTask.task.useThemeColor,
             ) { bottomPadding ->
               customTask.MainScreen(
                 data =
@@ -277,8 +404,6 @@ fun GalleryNavHost(
                     modelManagerViewModel = modelManagerViewModel,
                     bottomPadding = bottomPadding,
                     setAppBarControlsDisabled = { disableAppBarControls = it },
-                    setTopBarVisible = { hideTopBar = !it },
-                    setCustomNavigateUpCallback = { customNavigateUpCallback = it },
                   )
               )
             }
@@ -286,6 +411,15 @@ fun GalleryNavHost(
         }
       }
     }
+  }
+
+  // Handle back button at root level to cleanly exit app
+  val activity = androidx.activity.compose.LocalActivity.current
+  val currentRoute = navController.currentBackStackEntry?.destination?.route
+  BackHandler(
+    enabled = currentRoute == ROUTE_PLACEHOLDER
+  ) {
+    activity?.finish()
   }
 
   // Handle incoming intents for deep links
@@ -313,8 +447,6 @@ private fun CustomTaskScreen(
   task: Task,
   modelManagerViewModel: ModelManagerViewModel,
   disableAppBarControls: Boolean,
-  hideTopBar: Boolean,
-  useThemeColor: Boolean,
   onNavigateUp: () -> Unit,
   content: @Composable (bottomPadding: Dp) -> Unit,
 ) {
@@ -324,11 +456,17 @@ private fun CustomTaskScreen(
   val context = LocalContext.current
   var navigatingUp by remember { mutableStateOf(false) }
   var showErrorDialog by remember { mutableStateOf(false) }
-  var appBarHeight by remember { mutableIntStateOf(0) }
 
   val handleNavigateUp = {
     navigatingUp = true
     onNavigateUp()
+
+    // clean up all models.
+    scope.launch(Dispatchers.Default) {
+      for (model in task.models) {
+        modelManagerViewModel.cleanupModel(context = context, task = task, model = model)
+      }
+    }
   }
 
   // Handle system's edge swipe.
@@ -355,64 +493,33 @@ private fun CustomTaskScreen(
 
   Scaffold(
     topBar = {
-      AnimatedVisibility(
-        !hideTopBar,
-        enter = slideInVertically { -it },
-        exit = slideOutVertically { -it },
-      ) {
-        ModelPageAppBar(
-          task = task,
-          model = selectedModel,
-          modelManagerViewModel = modelManagerViewModel,
-          inProgress = disableAppBarControls,
-          modelPreparing = disableAppBarControls,
-          canShowResetSessionButton = false,
-          useThemeColor = useThemeColor,
-          modifier =
-            Modifier.onGloballyPositioned { coordinates -> appBarHeight = coordinates.size.height },
-          hideModelSelector = task.models.size <= 1,
-          onConfigChanged = { _, _ -> },
-          onBackClicked = { handleNavigateUp() },
-          onModelSelected = { prevModel, newSelectedModel ->
-            scope.launch(Dispatchers.Default) {
-              // Clean up prev model.
-              if (prevModel.name != newSelectedModel.name) {
-                modelManagerViewModel.cleanupModel(
-                  context = context,
-                  task = task,
-                  model = prevModel,
-                )
-              }
-
-              // Update selected model.
-              modelManagerViewModel.selectModel(model = newSelectedModel)
+      ModelPageAppBar(
+        task = task,
+        model = selectedModel,
+        modelManagerViewModel = modelManagerViewModel,
+        inProgress = disableAppBarControls,
+        modelPreparing = disableAppBarControls,
+        canShowResetSessionButton = false,
+        onConfigChanged = { _, _ -> },
+        onMenuClicked = { handleNavigateUp() },
+        onModelSelected = { prevModel, newSelectedModel ->
+          scope.launch(Dispatchers.Default) {
+            // Clean up prev model.
+            if (prevModel.name != newSelectedModel.name) {
+              modelManagerViewModel.cleanupModel(context = context, task = task, model = prevModel)
             }
-          },
-        )
-      }
+
+            // Update selected model.
+            modelManagerViewModel.selectModel(model = newSelectedModel)
+          }
+        },
+      )
     }
   ) { innerPadding ->
-    // Calculate the target height in Dp for the content's top padding.
-    val targetPaddingDp =
-      if (!hideTopBar && appBarHeight > 0) {
-        // Convert measured pixel height to Dp
-        with(LocalDensity.current) { appBarHeight.toDp() }
-      } else {
-        WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-      }
-
-    // Animate the actual top padding value.
-    val animatedTopPadding by
-      animateDpAsState(
-        targetValue = targetPaddingDp,
-        animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-        label = "TopPaddingAnimation",
-      )
-
     Box(
       modifier =
         Modifier.padding(
-          top = if (!hideTopBar) innerPadding.calculateTopPadding() else animatedTopPadding,
+          top = innerPadding.calculateTopPadding(),
           start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
           end = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
         )
@@ -439,10 +546,7 @@ private fun CustomTaskScreen(
   if (showErrorDialog) {
     ErrorDialog(
       error = modelInitializationStatus?.error ?: "",
-      onDismiss = {
-        showErrorDialog = false
-        onNavigateUp()
-      },
+      onDismiss = { showErrorDialog = false },
     )
   }
 }

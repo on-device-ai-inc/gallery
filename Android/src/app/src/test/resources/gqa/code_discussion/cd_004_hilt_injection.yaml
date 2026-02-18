@@ -1,0 +1,12 @@
+# GQA Test Case: Hilt Dependency Injection
+test_case_id: "cd_004"
+category: "code_discussion"
+description: "Setting up Hilt for dependency injection"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "How to inject repository into ViewModel with Hilt?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use @HiltViewModel and @Inject:\n```kotlin\n@HiltViewModel\nclass MyViewModel @Inject constructor(\n    private val repository: MyRepository\n) : ViewModel() {\n    // Use repository\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What annotation for Hilt ViewModel?", expected_keywords: ["@HiltViewModel", "@Inject"], importance: "high"}
+expected_compression_behavior: ["Should preserve injection pattern"]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ fun TaskIcon(
     val brush = linearGradient(colors = getTaskBgGradientColors(task = task))
     Image(
       painter = getTaskIconBgShape(task = task),
-      contentDescription = null,
+      contentDescription = "",
       modifier =
         Modifier.fillMaxSize()
           .graphicsLayer(
@@ -106,14 +106,15 @@ fun TaskIcon(
         Modifier.size(width * 0.55f)
           .graphicsLayer { alpha = iconAnimationProgress }
           .scale(iconAnimationProgress),
-      contentDescription = null,
+      contentDescription = "",
     )
   }
 }
 
 @Composable
 private fun getTaskIconBgShape(task: Task): Painter {
-  val colorIndex: Int = task.index % SHAPES.size
+  // Handle uninitialized task.index (default -1) by using absolute value
+  val colorIndex: Int = kotlin.math.abs(task.index) % SHAPES.size
   return painterResource(SHAPES[colorIndex])
 }
 

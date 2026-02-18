@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import ai.ondevice.app.ui.common.chat.ChatMessageBenchmarkLlmResult
 import ai.ondevice.app.ui.common.chat.Stat
 import ai.ondevice.app.ui.llmchat.LlmChatModelHelper
 import ai.ondevice.app.ui.llmchat.LlmModelInstance
-import com.google.ai.edge.litertlm.ExperimentalApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -95,6 +94,9 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
 
       // Run inference.
       val instance = model.instance as LlmModelInstance
+      // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
+      val prefillTokens = input.split(" ").size
+
       var firstRun = true
       var timeToFirstToken = 0f
       var firstTokenTs = 0L
@@ -114,8 +116,6 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
             setPreparing(false)
             firstTokenTs = System.currentTimeMillis()
             timeToFirstToken = (firstTokenTs - start) / 1000f
-            @OptIn(ExperimentalApi::class)
-            val prefillTokens = instance.conversation.getBenchmarkInfo().lastPrefillTokenCount
             prefillSpeed = prefillTokens / timeToFirstToken
             firstRun = false
           } else {
@@ -164,10 +164,6 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
           }
         },
         cleanUpListener = {
-          setPreparing(false)
-          setInProgress(false)
-        },
-        onError = { message ->
           setPreparing(false)
           setInProgress(false)
         },
@@ -224,8 +220,13 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
     Log.d(TAG, "Stopping response for model ${model.name}...")
     viewModelScope.launch(Dispatchers.Default) {
       setInProgress(false)
-      val instance = model.instance as LlmModelInstance
-      instance.conversation.cancelProcess()
+      // Null-safe cast to prevent crash if model instance is not initialized
+      val instance = model.instance as? LlmModelInstance
+      if (instance != null) {
+        instance.conversation.cancelProcess()
+      } else {
+        Log.w(TAG, "Cannot stop response - model instance is null for ${model.name}")
+      }
     }
   }
 

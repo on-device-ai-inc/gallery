@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,25 +24,28 @@ import ai.ondevice.app.ui.theme.customColors
 
 @Composable
 fun getTaskBgColor(task: Task): Color {
-  val colorIndex: Int = (task.index.coerceAtLeast(0)) % MaterialTheme.customColors.taskBgColors.size
+  val size = MaterialTheme.customColors.taskBgColors.size
+  val colorIndex: Int = ((task.index % size) + size) % size
   return MaterialTheme.customColors.taskBgColors[colorIndex]
 }
 
 @Composable
 fun getTaskBgGradientColors(task: Task): List<Color> {
-  val colorIndex: Int = (task.index.coerceAtLeast(0)) % MaterialTheme.customColors.taskBgColors.size
+  val size = MaterialTheme.customColors.taskBgGradientColors.size
+  val colorIndex: Int = ((task.index % size) + size) % size
   return MaterialTheme.customColors.taskBgGradientColors[colorIndex]
 }
 
 @Composable
 fun getTaskIconColor(task: Task): Color {
-  val colorIndex: Int =
-    (task.index.coerceAtLeast(0)) % MaterialTheme.customColors.taskIconColors.size
+  val size = MaterialTheme.customColors.taskIconColors.size
+  val colorIndex: Int = ((task.index % size) + size) % size
   return MaterialTheme.customColors.taskIconColors[colorIndex]
 }
 
 @Composable
 fun getTaskIconColor(index: Int): Color {
-  val colorIndex: Int = (index.coerceAtLeast(0)) % MaterialTheme.customColors.taskIconColors.size
+  val size = MaterialTheme.customColors.taskIconColors.size
+  val colorIndex: Int = ((index % size) + size) % size
   return MaterialTheme.customColors.taskIconColors[colorIndex]
 }

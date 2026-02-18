@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.bundleOf
@@ -35,6 +36,10 @@ import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 fun LlmChatScreen(
   modelManagerViewModel: ModelManagerViewModel,
   navigateUp: () -> Unit,
+  onNavigateToConversationHistory: () -> Unit,
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
+  loadConversationId: Long? = null,
+  onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
   viewModel: LlmChatViewModel = hiltViewModel(),
 ) {
@@ -43,6 +48,10 @@ fun LlmChatScreen(
     modelManagerViewModel = modelManagerViewModel,
     taskId = BuiltInTaskId.LLM_CHAT,
     navigateUp = navigateUp,
+    onNavigateToConversationHistory = onNavigateToConversationHistory,
+    onNavigateToSettings = onNavigateToSettings,
+    loadConversationId = loadConversationId,
+    onConversationLoaded = onConversationLoaded,
     modifier = modifier,
   )
 }
@@ -51,6 +60,10 @@ fun LlmChatScreen(
 fun LlmAskImageScreen(
   modelManagerViewModel: ModelManagerViewModel,
   navigateUp: () -> Unit,
+  onNavigateToConversationHistory: () -> Unit,
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
+  loadConversationId: Long? = null,
+  onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
   viewModel: LlmAskImageViewModel = hiltViewModel(),
 ) {
@@ -59,6 +72,10 @@ fun LlmAskImageScreen(
     modelManagerViewModel = modelManagerViewModel,
     taskId = BuiltInTaskId.LLM_ASK_IMAGE,
     navigateUp = navigateUp,
+    onNavigateToConversationHistory = onNavigateToConversationHistory,
+    onNavigateToSettings = onNavigateToSettings,
+    loadConversationId = loadConversationId,
+    onConversationLoaded = onConversationLoaded,
     modifier = modifier,
   )
 }
@@ -67,6 +84,10 @@ fun LlmAskImageScreen(
 fun LlmAskAudioScreen(
   modelManagerViewModel: ModelManagerViewModel,
   navigateUp: () -> Unit,
+  onNavigateToConversationHistory: () -> Unit,
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
+  loadConversationId: Long? = null,
+  onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
   viewModel: LlmAskAudioViewModel = hiltViewModel(),
 ) {
@@ -75,6 +96,10 @@ fun LlmAskAudioScreen(
     modelManagerViewModel = modelManagerViewModel,
     taskId = BuiltInTaskId.LLM_ASK_AUDIO,
     navigateUp = navigateUp,
+    onNavigateToConversationHistory = onNavigateToConversationHistory,
+    onNavigateToSettings = onNavigateToSettings,
+    loadConversationId = loadConversationId,
+    onConversationLoaded = onConversationLoaded,
     modifier = modifier,
   )
 }
@@ -85,10 +110,24 @@ fun ChatViewWrapper(
   modelManagerViewModel: ModelManagerViewModel,
   taskId: String,
   navigateUp: () -> Unit,
+  onNavigateToConversationHistory: () -> Unit = {},
+  onNavigateToSettings: () -> Unit = {},  // Epic 5: Settings navigation
+  loadConversationId: Long? = null,
+  onConversationLoaded: () -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
   val context = LocalContext.current
   val task = modelManagerViewModel.getTaskById(id = taskId)!!
+  val modelManagerUiState = modelManagerViewModel.uiState.collectAsState()
+  val selectedModel = modelManagerUiState.value.selectedModel
+
+  // Update #8: Load conversation when returning from history list
+  androidx.compose.runtime.LaunchedEffect(loadConversationId) {
+    if (loadConversationId != null) {
+      viewModel.loadConversation(loadConversationId, selectedModel)
+      onConversationLoaded()
+    }
+  }
 
   ChatView(
     task = task,
@@ -120,13 +159,13 @@ fun ChatViewWrapper(
           input = text,
           images = images,
           audioMessages = audioMessages,
-          onError = { errorMessage ->
+          onError = {
             viewModel.handleError(
               context = context,
               task = task,
               model = model,
-              errorMessage = errorMessage,
               modelManagerViewModel = modelManagerViewModel,
+              triggeredMessage = chatMessageText,
             )
           },
         )
@@ -137,18 +176,19 @@ fun ChatViewWrapper(
         )
       }
     },
-    onRunAgainClicked = { model, message ->
+    onRunAgainClicked = { model, message, style ->
       if (message is ChatMessageText) {
         viewModel.runAgain(
           model = model,
           message = message,
-          onError = { errorMessage ->
+          style = style,
+          onError = {
             viewModel.handleError(
               context = context,
               task = task,
               model = model,
-              errorMessage = errorMessage,
               modelManagerViewModel = modelManagerViewModel,
+              triggeredMessage = message,
             )
           },
         )
@@ -159,6 +199,8 @@ fun ChatViewWrapper(
     showStopButtonInInputWhenInProgress = true,
     onStopButtonClicked = { model -> viewModel.stopResponse(model = model) },
     navigateUp = navigateUp,
+    onNavigateToConversationHistory = onNavigateToConversationHistory,
+    onNavigateToSettings = onNavigateToSettings,  // Epic 5: Settings navigation
     modifier = modifier,
   )
 }

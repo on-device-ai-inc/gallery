@@ -1,0 +1,65 @@
+# GQA Test Case: Learning and Education Discussion
+test_case_id: "lc_004"
+category: "long_conversation"
+description: "40-message conversation about learning Kotlin and Android development"
+token_budget: 4096
+target_compression_ratio: 0.3
+
+messages:
+  - role: "user"
+    content: "I want to learn Android development. Where should I start?"
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: true
+  - role: "assistant"
+    content: "Great choice! Start with Kotlin basics, then move to Android fundamentals. Do you have programming experience?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+  - role: "user"
+    content: "Yes, I know Python and JavaScript."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+  - role: "assistant"
+    content: "Perfect! Kotlin will feel familiar. Start with the official Kotlin Koans exercises, then the Android Basics course."
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+  - role: "user"
+    content: "How long will it take to build my first app?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+  - role: "assistant"
+    content: "With your background, you could build a simple app in 2-3 weeks. Start with a to-do list or note-taking app."
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+  # ... add 34 more messages following this pattern
+  - role: "user"
+    content: "What resources do you recommend?"
+    is_starred: false
+    is_system_generated: false
+    is_first_in_conversation: false
+  - role: "assistant"
+    content: "Android Developer docs, Udacity Android course, and r/androiddev on Reddit. Also Philip Lackner's YouTube channel."
+    is_starred: true
+    is_system_generated: false
+    is_first_in_conversation: false
+
+evaluation_queries:
+  - query: "What should the learner start with?"
+    expected_keywords: ["Kotlin basics", "Koans", "Android Basics"]
+    importance: "high"
+  - query: "How long to build first app?"
+    expected_keywords: ["2-3 weeks", "simple app", "to-do list"]
+    importance: "high"
+  - query: "What resources were recommended?"
+    expected_keywords: ["Android Developer docs", "Udacity", "Philip Lackner"]
+    importance: "medium"
+
+expected_compression_behavior:
+  - "Should preserve learning path recommendations"
+  - "Should retain timeline expectations"
+  - "Should maintain resource recommendations"

@@ -1,0 +1,12 @@
+# GQA Test Case: Room Database Implementation
+test_case_id: "cd_003"
+category: "code_discussion"
+description: "Implementing Room database with DAO and Entity"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "How do I set up Room database?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Create Entity, DAO, and Database:\n```kotlin\n@Entity\ndata class User(val id: Int, val name: String)\n\n@Dao\ninterface UserDao {\n    @Query(\"SELECT * FROM user\")\n    suspend fun getAll(): List<User>\n}\n\n@Database(entities = [User::class], version = 1)\nabstract class AppDatabase : RoomDatabase() {\n    abstract fun userDao(): UserDao\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What annotations for Room?", expected_keywords: ["@Entity", "@Dao", "@Database"], importance: "high"}
+expected_compression_behavior: ["Should preserve database structure"]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
 import androidx.datastore.dataStoreFile
 import ai.ondevice.app.AppLifecycleProvider
-import ai.ondevice.app.CutoutsSerializer
 import ai.ondevice.app.GalleryLifecycleProvider
 import ai.ondevice.app.SettingsSerializer
 import ai.ondevice.app.UserDataSerializer
@@ -30,7 +29,7 @@ import ai.ondevice.app.data.DataStoreRepository
 import ai.ondevice.app.data.DefaultDataStoreRepository
 import ai.ondevice.app.data.DefaultDownloadRepository
 import ai.ondevice.app.data.DownloadRepository
-import ai.ondevice.app.proto.CutoutCollection
+import ai.ondevice.app.data.SecureTokenStorage
 import ai.ondevice.app.proto.Settings
 import ai.ondevice.app.proto.UserData
 import dagger.Module
@@ -39,6 +38,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import androidx.room.Room
+import ai.ondevice.app.data.AppDatabase
+import ai.ondevice.app.data.ConversationDao
+import ai.ondevice.app.data.ALL_MIGRATIONS
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -49,13 +52,6 @@ internal object AppModule {
   @Singleton
   fun provideSettingsSerializer(): Serializer<Settings> {
     return SettingsSerializer
-  }
-
-  // Provides the CutoutSerializer
-  @Provides
-  @Singleton
-  fun provideCutoutSerializer(): Serializer<CutoutCollection> {
-    return CutoutsSerializer
   }
 
   // Provides the UserDataSerializer
@@ -75,19 +71,6 @@ internal object AppModule {
     return DataStoreFactory.create(
       serializer = settingsSerializer,
       produceFile = { context.dataStoreFile("settings.pb") },
-    )
-  }
-
-  // Provides DataStore<CutoutCollection>
-  @Provides
-  @Singleton
-  fun provideCutoutsDataStore(
-    @ApplicationContext context: Context,
-    cutoutsSerializer: Serializer<CutoutCollection>,
-  ): DataStore<CutoutCollection> {
-    return DataStoreFactory.create(
-      serializer = cutoutsSerializer,
-      produceFile = { context.dataStoreFile("cutouts.pb") },
     )
   }
 
@@ -111,15 +94,22 @@ internal object AppModule {
     return GalleryLifecycleProvider()
   }
 
+  // Provides SecureTokenStorage
+  @Provides
+  @Singleton
+  fun provideSecureTokenStorage(@ApplicationContext context: Context): SecureTokenStorage {
+    return SecureTokenStorage(context)
+  }
+
   // Provides DataStoreRepository
   @Provides
   @Singleton
   fun provideDataStoreRepository(
     dataStore: DataStore<Settings>,
     userDataDataStore: DataStore<UserData>,
-    cutoutsDataStore: DataStore<CutoutCollection>,
+    secureTokenStorage: SecureTokenStorage,
   ): DataStoreRepository {
-    return DefaultDataStoreRepository(dataStore, userDataDataStore, cutoutsDataStore)
+    return DefaultDataStoreRepository(dataStore, userDataDataStore, secureTokenStorage)
   }
 
   // Provides DownloadRepository
@@ -130,5 +120,30 @@ internal object AppModule {
     lifecycleProvider: AppLifecycleProvider,
   ): DownloadRepository {
     return DefaultDownloadRepository(context, lifecycleProvider)
+  }
+
+  @Provides
+  @Singleton
+  fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+    return Room.databaseBuilder(
+      context,
+      AppDatabase::class.java,
+      "ondevice_database"
+    )
+      .addMigrations(*ALL_MIGRATIONS)
+      .build()
+  }
+
+  @Provides
+  @Singleton
+  fun provideConversationDao(database: AppDatabase): ConversationDao {
+    return database.conversationDao()
+  }
+
+  // Prompt Engineering - Phase 1: Persona Management
+  @Provides
+  @Singleton
+  fun providePersonaManager(): ai.ondevice.app.persona.PersonaManager {
+    return ai.ondevice.app.persona.PersonaManager()
   }
 }

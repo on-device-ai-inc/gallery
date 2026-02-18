@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import ai.ondevice.app.R
  * home screen. The tab bar is hidden if only one category exists. Each task can have a list of
  * associated models (see [Model]], which are shown when the task is selected.
  *
- * To register a custom task, see [ai.ondevice.app.customtasks.common.CustomTask].
+ * To register a custom task, see [com.google.ai.edge.gallery.customtasks.common.CustomTask].
  */
 data class Task(
   /**
@@ -83,26 +83,6 @@ data class Task(
   /** List of models for the task. */
   val models: MutableList<Model>,
 
-  /**
-   * List of model names for the task.
-   *
-   * If this field is non-empty, the task will try to find the models with the matching names from
-   * the allowlist
-   */
-  val modelNames: List<String> = listOf(),
-
-  /**
-   * Whether to handel model config changes in task's screen itself. The default behavior is to
-   * automatically re-initialize the model.
-   */
-  val handleModelConfigChangesInTask: Boolean = false,
-
-  /** Whether the task is experimental. */
-  val experimental: Boolean = false,
-
-  /** Whether to use theme color instead of the task tint color. */
-  val useThemeColor: Boolean = false,
-
   // The following fields are only used for built-in tasks. Can ignore if you are creating your own
   // custom tasks.
   //
@@ -125,19 +105,18 @@ object BuiltInTaskId {
   const val LLM_PROMPT_LAB = "llm_prompt_lab"
   const val LLM_ASK_IMAGE = "llm_ask_image"
   const val LLM_ASK_AUDIO = "llm_ask_audio"
-  const val LLM_MOBILE_ACTIONS = "llm_mobile_actions"
-  const val LLM_TINY_GARDEN = "llm_tiny_garden"
-  const val MP_SCRAPBOOK = "mp_scrapbook"
+  const val IMAGE_GENERATION = "image_generation"
 }
 
-private val allLegacyTaskIds: Set<String> =
+private val allBuiltInTaskIds: Set<String> =
   setOf(
     BuiltInTaskId.LLM_CHAT,
     BuiltInTaskId.LLM_PROMPT_LAB,
     BuiltInTaskId.LLM_ASK_IMAGE,
     BuiltInTaskId.LLM_ASK_AUDIO,
+    BuiltInTaskId.IMAGE_GENERATION,
   )
 
-fun isLegacyTasks(id: String): Boolean {
-  return allLegacyTaskIds.contains(id)
+fun isBuiltInTask(id: String): Boolean {
+  return allBuiltInTaskIds.contains(id)
 }

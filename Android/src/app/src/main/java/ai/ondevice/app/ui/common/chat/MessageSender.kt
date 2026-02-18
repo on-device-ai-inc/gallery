@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package ai.ondevice.app.ui.common.chat
 
-// import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Preview
 // import ai.ondevice.app.ui.theme.GalleryTheme
 
 import androidx.compose.foundation.layout.Arrangement
@@ -24,9 +24,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ai.ondevice.app.R
+import ai.ondevice.app.ui.common.RotatingLogoIcon
 import ai.ondevice.app.ui.theme.bodySmallNarrow
 
 data class MessageLayoutConfig(
@@ -55,6 +54,15 @@ data class MessageLayoutConfig(
 fun MessageSender(message: ChatMessage, agentName: String = "", imageHistoryCurIndex: Int = 0) {
   // No user label for system messages.
   if (message.side == ChatSide.SYSTEM) {
+    return
+  }
+
+  // Hide label for agent text responses, loading, and long response status (clean like Claude).
+  // Keep labels for benchmarks and image generation which have special layouts.
+  if (message.side == ChatSide.AGENT &&
+      (message is ChatMessageText ||
+       message is ChatMessageLoading ||
+       message is ChatMessageLongResponseStatus)) {
     return
   }
 
@@ -79,10 +87,10 @@ fun MessageSender(message: ChatMessage, agentName: String = "", imageHistoryCurI
         is ChatMessageBenchmarkResult -> {
           if (message.isRunning()) {
             Spacer(modifier = Modifier.width(8.dp))
-            CircularProgressIndicator(
-              modifier = Modifier.size(10.dp),
-              strokeWidth = 1.5.dp,
-              color = MaterialTheme.colorScheme.secondary,
+            // Rotating logo (full color for brand consistency)
+            RotatingLogoIcon(
+              size = 12.dp,
+              contentDescription = "Thinking"
             )
             Spacer(modifier = Modifier.width(4.dp))
           }
@@ -101,10 +109,10 @@ fun MessageSender(message: ChatMessage, agentName: String = "", imageHistoryCurI
         is ChatMessageBenchmarkLlmResult -> {
           if (message.running) {
             Spacer(modifier = Modifier.width(8.dp))
-            CircularProgressIndicator(
-              modifier = Modifier.size(10.dp),
-              strokeWidth = 1.5.dp,
-              color = MaterialTheme.colorScheme.secondary,
+            // Rotating logo (full color for brand consistency)
+            RotatingLogoIcon(
+              size = 12.dp,
+              contentDescription = "Thinking"
             )
           }
         }
@@ -113,10 +121,10 @@ fun MessageSender(message: ChatMessage, agentName: String = "", imageHistoryCurI
         is ChatMessageImageWithHistory -> {
           if (message.isRunning()) {
             Spacer(modifier = Modifier.width(8.dp))
-            CircularProgressIndicator(
-              modifier = Modifier.size(10.dp),
-              strokeWidth = 1.5.dp,
-              color = MaterialTheme.colorScheme.secondary,
+            // Rotating logo (full color for brand consistency)
+            RotatingLogoIcon(
+              size = 12.dp,
+              contentDescription = "Thinking"
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(

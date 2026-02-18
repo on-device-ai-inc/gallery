@@ -1,0 +1,12 @@
+# GQA Test Case: Testing Strategy
+test_case_id: "lc_009"
+category: "long_conversation"
+description: "46-message discussion about testing strategy"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "What testing strategy for Android apps?", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use JUnit for unit tests, Espresso for UI tests, and Mockito for mocking.", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What testing frameworks?", expected_keywords: ["JUnit", "Espresso", "Mockito"], importance: "high"}
+expected_compression_behavior: ["Should preserve testing recommendations"]

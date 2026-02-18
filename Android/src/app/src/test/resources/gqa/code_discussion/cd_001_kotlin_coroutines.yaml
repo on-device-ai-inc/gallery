@@ -1,0 +1,13 @@
+# GQA Test Case: Kotlin Coroutines Discussion
+test_case_id: "cd_001"
+category: "code_discussion"
+description: "Discussion about implementing coroutines for async operations"
+token_budget: 4096
+target_compression_ratio: 0.3
+messages:
+  - {role: "user", content: "How do I use coroutines for network calls?\n```kotlin\nfun fetchData() {\n    // Need async here\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: true}
+  - {role: "assistant", content: "Use viewModelScope and suspend functions:\n```kotlin\nviewModelScope.launch {\n    val result = withContext(Dispatchers.IO) {\n        api.fetchData()\n    }\n    _data.value = result\n}\n```", is_starred: true, is_system_generated: false, is_first_in_conversation: false}
+evaluation_queries:
+  - {query: "What scope for coroutines in ViewModel?", expected_keywords: ["viewModelScope", "launch"], importance: "high"}
+  - {query: "What dispatcher for network calls?", expected_keywords: ["Dispatchers.IO", "withContext"], importance: "high"}
+expected_compression_behavior: ["Should preserve code snippets", "Should retain technical solution"]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 OnDevice Inc.
+ * Copyright 2025 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,10 @@ import android.util.Log
 import androidx.exifinterface.media.ExifInterface
 import ai.ondevice.app.data.SAMPLE_RATE
 import com.google.gson.Gson
-import java.io.File
-import java.io.FileInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.channels.FileChannel
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.max
@@ -69,8 +66,7 @@ inline fun <reified T> getJsonResponse(url: String): JsonObjAndTextContent<T>? {
       Log.e("AGUtils", "HTTP error: $responseCode")
     }
   } catch (e: Exception) {
-    Log.e("AGUtils", "Error when getting json response: ${e.message}")
-    e.printStackTrace()
+    Log.e("AGUtils", "Error when getting json response", e)
   }
 
   return null
@@ -84,12 +80,7 @@ fun convertWavToMonoWithMaxSeconds(
   Log.d(TAG, "Start to convert wav file to mono channel")
 
   try {
-    val inputStream =
-      (if (stereoUri.scheme == null || stereoUri.scheme == "file") {
-        FileInputStream(stereoUri.path ?: "")
-      } else {
-        context.contentResolver.openInputStream(stereoUri)
-      }) ?: return null
+    val inputStream = context.contentResolver.openInputStream(stereoUri) ?: return null
     val originalBytes = inputStream.readBytes()
     inputStream.close()
 
@@ -234,12 +225,9 @@ fun decodeSampledBitmapFromUri(context: Context, uri: Uri, reqWidth: Int, reqHei
   val options =
     BitmapFactory.Options().apply {
       inJustDecodeBounds = true
-      (if (uri.scheme == null || uri.scheme == "file") {
-          FileInputStream(uri.path ?: "")
-        } else {
-          context.contentResolver.openInputStream(uri)
-        })
-        ?.use { BitmapFactory.decodeStream(it, null, this) }
+      context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, this)
+      }
 
       // Calculate inSampleSize
       inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
@@ -248,12 +236,9 @@ fun decodeSampledBitmapFromUri(context: Context, uri: Uri, reqWidth: Int, reqHei
       inJustDecodeBounds = false
     }
 
-  return (if (uri.scheme == null || uri.scheme == "file") {
-      FileInputStream(uri.path ?: "")
-    } else {
-      context.contentResolver.openInputStream(uri)
-    })
-    ?.use { BitmapFactory.decodeStream(it, null, options) }
+  return context.contentResolver.openInputStream(uri)?.use {
+    BitmapFactory.decodeStream(it, null, options)
+  }
 }
 
 fun rotateBitmap(bitmap: Bitmap, orientation: Int): Bitmap {
@@ -299,19 +284,4 @@ private fun calculateInSampleSize(
   }
 
   return inSampleSize
-}
-
-fun readFileToByteBuffer(file: File): ByteBuffer? {
-  return try {
-    val fileInputStream = FileInputStream(file)
-    val fileChannel: FileChannel = fileInputStream.channel
-    val byteBuffer = ByteBuffer.allocateDirect(fileChannel.size().toInt())
-    fileChannel.read(byteBuffer)
-    byteBuffer.rewind()
-    fileInputStream.close()
-    byteBuffer
-  } catch (e: Exception) {
-    e.printStackTrace()
-    null
-  }
 }

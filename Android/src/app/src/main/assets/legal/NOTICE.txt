@@ -1,0 +1,8 @@
+OnDevice AI includes software developed by:
+
+Google AI Edge Gallery
+Copyright 2024 Google LLC
+Licensed under the Apache License, Version 2.0
+https://github.com/google-ai-edge/gallery
+
+This product includes software developed by The Android Open Source Project.
