@@ -82,14 +82,14 @@ fun AboutSection(
                 }
                 
                 TextButton(
-                    onClick = { onOpenWebsite("https://ondevice.ai/legal/terms.html") },
+                    onClick = { onOpenWebsite("https://on-device-ai-inc.github.io/ondevice-legal-pages/terms.html") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Terms of Service")
                 }
                 
                 TextButton(
-                    onClick = { onOpenWebsite("https://ondevice.ai/legal/privacy.html") },
+                    onClick = { onOpenWebsite("https://on-device-ai-inc.github.io/ondevice-legal-pages/privacy.html") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Privacy Policy")

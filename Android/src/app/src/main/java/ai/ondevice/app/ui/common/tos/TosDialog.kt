@@ -63,7 +63,7 @@ fun TosDialog(
                 
                 TextButton(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ondevice.ai/legal/terms.html"))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device-ai-inc.github.io/ondevice-legal-pages/terms.html"))
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -73,7 +73,7 @@ fun TosDialog(
                 
                 TextButton(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ondevice.ai/legal/privacy.html"))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device-ai-inc.github.io/ondevice-legal-pages/privacy.html"))
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
