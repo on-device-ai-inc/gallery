@@ -209,7 +209,7 @@ fun PremiumTosDialog(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device.app/legal/terms.html"))
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device-ai-inc.github.io/ondevice-legal-pages/terms.html"))
                                 context.startActivity(intent)
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -219,7 +219,7 @@ fun PremiumTosDialog(
 
                         OutlinedButton(
                             onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device.app/legal/privacy.html"))
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device-ai-inc.github.io/ondevice-legal-pages/privacy.html"))
                                 context.startActivity(intent)
                             },
                             modifier = Modifier.fillMaxWidth()
