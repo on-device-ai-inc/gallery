@@ -152,9 +152,18 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "hf.client.id=${{ secrets.HF_CLIENT_ID }}" >> local.properties
 
+      - name: Decode keystore
+        if: env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > ondevice-ai-release.keystore
+          ls -la ondevice-ai-release.keystore
+
       - name: Build release APK
         run: ./gradlew assembleRelease
         env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
