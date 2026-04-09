@@ -48,11 +48,11 @@ typealias ResultListener = (partialResult: String, done: Boolean) -> Unit
 
 typealias CleanUpListener = () -> Unit
 
-data class LlmModelInstance(val engine: Engine, var conversation: Conversation)
+data class LlmModelInstance(val engine: Engine, @Volatile var conversation: Conversation)
 
 object LlmChatModelHelper {
   // Indexed by model name.
-  private val cleanUpListeners: MutableMap<String, CleanUpListener> = mutableMapOf()
+  private val cleanUpListeners: MutableMap<String, CleanUpListener> = java.util.concurrent.ConcurrentHashMap()
 
   @OptIn(ExperimentalApi::class) // opt-in experimental flags
   fun initialize(
@@ -105,22 +105,22 @@ object LlmChatModelHelper {
       val engine = Engine(engineConfig)
       engine.initialize()
 
-      ExperimentalFlags.enableConversationConstrainedDecoding =
-        enableConversationConstrainedDecoding
-      val conversation =
-        engine.createConversation(
+      val conversation = synchronized(ExperimentalFlags::class.java) {
+        ExperimentalFlags.enableConversationConstrainedDecoding = enableConversationConstrainedDecoding
+        val conv = engine.createConversation(
           ConversationConfig(
-            samplerConfig =
-              SamplerConfig(
-                topK = topK,
-                topP = topP.toDouble(),
-                temperature = temperature.toDouble(),
-              ),
+            samplerConfig = SamplerConfig(
+              topK = topK,
+              topP = topP.toDouble(),
+              temperature = temperature.toDouble(),
+            ),
             systemMessage = systemMessage,
             tools = tools,
           )
         )
-      ExperimentalFlags.enableConversationConstrainedDecoding = false
+        ExperimentalFlags.enableConversationConstrainedDecoding = false
+        conv
+      }
       ModelRuntimeStateManager.update(model.name) {
         it.copy(instance = LlmModelInstance(engine = engine, conversation = conversation))
       }
@@ -156,22 +156,22 @@ object LlmChatModelHelper {
       val shouldEnableAudio = supportAudio
       Log.d(TAG, "Enable image: $shouldEnableImage, enable audio: $shouldEnableAudio")
 
-      ExperimentalFlags.enableConversationConstrainedDecoding =
-        enableConversationConstrainedDecoding
-      val newConversation =
-        engine.createConversation(
+      val newConversation = synchronized(ExperimentalFlags::class.java) {
+        ExperimentalFlags.enableConversationConstrainedDecoding = enableConversationConstrainedDecoding
+        val conv = engine.createConversation(
           ConversationConfig(
-            samplerConfig =
-              SamplerConfig(
-                topK = topK,
-                topP = topP.toDouble(),
-                temperature = temperature.toDouble(),
-              ),
+            samplerConfig = SamplerConfig(
+              topK = topK,
+              topP = topP.toDouble(),
+              temperature = temperature.toDouble(),
+            ),
             systemMessage = systemMessage,
             tools = tools,
           )
         )
-      ExperimentalFlags.enableConversationConstrainedDecoding = false
+        ExperimentalFlags.enableConversationConstrainedDecoding = false
+        conv
+      }
       instance.conversation = newConversation
 
       Log.d(TAG, "Resetting done")
@@ -182,12 +182,11 @@ object LlmChatModelHelper {
   }
 
   fun cleanUp(model: Model, onDone: () -> Unit) {
-    val runtimeInstance = ModelRuntimeStateManager.getValue(model.name).instance
-    if (runtimeInstance == null) {
+    val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
+    if (instance == null) {
+      onDone()
       return
     }
-
-    val instance = runtimeInstance as LlmModelInstance
 
     try {
       instance.conversation.close()

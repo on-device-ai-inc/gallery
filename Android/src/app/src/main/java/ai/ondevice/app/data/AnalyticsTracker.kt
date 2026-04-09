@@ -45,6 +45,7 @@ class AnalyticsTracker @Inject constructor(
                     payload = payload
                 ))
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e(TAG, "Failed to track message_sent", e)
             }
         }

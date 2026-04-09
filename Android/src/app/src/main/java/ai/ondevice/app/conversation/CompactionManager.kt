@@ -25,7 +25,7 @@ import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * Manages conversation compaction using self-summarization.
@@ -136,9 +136,14 @@ class CompactionManager(
         llmHelper: LlmChatModelHelper,
         model: Model,
         prompt: String
-    ): String = suspendCoroutine { continuation ->
+    ): String = suspendCancellableCoroutine { continuation ->
         var accumulated = ""
         var hasResumed = false
+
+        continuation.invokeOnCancellation {
+            // Mark as resumed so the callbacks don't attempt to resume a cancelled coroutine.
+            hasResumed = true
+        }
 
         llmHelper.runInference(
             model = model,

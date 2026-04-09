@@ -64,21 +64,33 @@ class MainActivity : ComponentActivity() {
 
     modelManagerViewModel.loadModelAllowlist()
 
-    // Show splash screen.
+    // Install splash screen before setContent so the splash-to-app transition works.
     val splashScreen = installSplashScreen()
 
-    // Cross-fade transition from the splash screen to the main content.
-    //
-    // The logic performs the following key actions:
-    // 1. Synchronizes Timing: It calculates the remaining duration of the default icon
-    //    animation. It then delays its own animations to ensure the custom fade-out begins just
-    //    before the original icon animation would have finished.
-    // 2. Initiates a cross-fade:
-    //    - Fade out the splash screen.
-    //    - Fade in the main content.
-    // 3. Cleans up: An `onEnd` listener on the fade-out animator calls
-    //    `splashScreenView.remove()` to properly remove the splash screen from the view hierarchy
-    //    once it's fully transparent.
+    enableEdgeToEdge()
+
+    // setContent must be called unconditionally — placing it inside setOnExitAnimationListener
+    // means it is never called on devices/configs where the splash animation is skipped.
+    setContent {
+      GalleryTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+          GalleryApp(modelManagerViewModel = modelManagerViewModel)
+
+          // Mask that fades out to reveal app content, replacing the splash cross-fade.
+          var startMaskFadeout by remember { mutableStateOf(false) }
+          LaunchedEffect(Unit) { startMaskFadeout = true }
+          AnimatedVisibility(
+            !startMaskFadeout,
+            enter = fadeIn(animationSpec = snap(0)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)),
+          ) {
+            Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+          }
+        }
+      }
+    }
+
+    // Animate splash screen exit after content is set.
     splashScreen.setOnExitAnimationListener { splashScreenView ->
       val now = System.currentTimeMillis()
       val iconAnimationStartMs = splashScreenView.iconAnimationStartMillis
@@ -88,37 +100,11 @@ class MainActivity : ComponentActivity() {
       fadeOut.duration = 300L
       fadeOut.doOnEnd { splashScreenView.remove() }
       lifecycleScope.launch {
-        val setContentDelay = duration - (now - iconAnimationStartMs) - 300
-        if (setContentDelay > 0) {
-          delay(setContentDelay)
-        }
-        setContent {
-          GalleryTheme {
-            Surface(modifier = Modifier.fillMaxSize()) {
-              GalleryApp(modelManagerViewModel = modelManagerViewModel)
-
-              // Fade out a "mask" that has the same color as the background of the splash screen
-              // to reveal the actual app content.
-              var startMaskFadeout by remember { mutableStateOf(false) }
-              LaunchedEffect(Unit) { startMaskFadeout = true }
-              AnimatedVisibility(
-                !startMaskFadeout,
-                enter = fadeIn(animationSpec = snap(0)),
-                exit =
-                  fadeOut(animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)),
-              ) {
-                Box(
-                  modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-                )
-              }
-            }
-          }
-        }
+        val animDelay = duration - (now - iconAnimationStartMs) - 300
+        if (animDelay > 0) delay(animDelay)
         fadeOut.start()
       }
     }
-
-    enableEdgeToEdge()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       // Fix for three-button nav not properly going edge-to-edge.
       // See: https://issuetracker.google.com/issues/298296168

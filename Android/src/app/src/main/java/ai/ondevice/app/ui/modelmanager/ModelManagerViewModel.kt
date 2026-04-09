@@ -774,6 +774,7 @@ constructor(
         if (modelAllowlist == null) {
           _uiState.update {
             it.copy(
+              loadingModelAllowlist = false,
               loadingModelAllowlistError = context.getString(R.string.error_model_allowlist_failed)
             )
           }

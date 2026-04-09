@@ -117,7 +117,7 @@ fun ChatViewWrapper(
   modifier: Modifier = Modifier,
 ) {
   val context = LocalContext.current
-  val task = modelManagerViewModel.getTaskById(id = taskId)!!
+  val task = modelManagerViewModel.getTaskById(id = taskId) ?: return
   val modelManagerUiState = modelManagerViewModel.uiState.collectAsState()
   val selectedModel = modelManagerUiState.value.selectedModel
 

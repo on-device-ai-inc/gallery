@@ -143,7 +143,7 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
         database.execSQL("ALTER TABLE conversation_messages_new RENAME TO conversation_messages")
 
         // Recreate index
-        database.execSQL("CREATE INDEX index_conversation_messages_threadId ON conversation_messages(threadId)")
+        database.execSQL("CREATE INDEX IF NOT EXISTS index_conversation_messages_threadId ON conversation_messages(threadId)")
     }
 }
 

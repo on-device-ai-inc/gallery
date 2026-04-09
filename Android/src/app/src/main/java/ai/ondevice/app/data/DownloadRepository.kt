@@ -34,6 +34,7 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
+import androidx.lifecycle.Observer
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import ai.ondevice.app.AppLifecycleProvider
@@ -167,8 +168,13 @@ class DefaultDownloadRepository(
     model: Model,
     onStatusUpdated: (model: Model, status: ModelDownloadStatus) -> Unit,
   ) {
-    workManager.getWorkInfoByIdLiveData(workerId).observeForever { workInfo ->
-      if (workInfo != null) {
+    val liveData = workManager.getWorkInfoByIdLiveData(workerId)
+    val observer = object : Observer<WorkInfo> {
+      override fun onChanged(workInfo: WorkInfo?) {
+        if (workInfo != null && workInfo.state.isFinished) {
+          liveData.removeObserver(this)
+        }
+        if (workInfo == null) return
         when (workInfo.state) {
           WorkInfo.State.ENQUEUED -> {
             downloadStartTimeSharedPreferences.edit {
@@ -316,6 +322,7 @@ class DefaultDownloadRepository(
         }
       }
     }
+    liveData.observeForever(observer)
   }
 
   private fun sendNotification(title: String, text: String, taskId: String, modelName: String) {
@@ -338,7 +345,10 @@ class DefaultDownloadRepository(
     val intent: Intent
     if (taskId.isEmpty()) {
       // If taskId is empty, it's a failed download. Just open the app's main screen.
-      intent = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
+      intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+        ?: android.content.Intent(context, ai.ondevice.app.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+          }
     } else {
       // Otherwise, create the deep link as before.
       intent =

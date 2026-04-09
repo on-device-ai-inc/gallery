@@ -270,8 +270,8 @@ open class LlmChatViewModelBase(
       var decodeSpeed: Float
       val start = System.currentTimeMillis()
 
-      // Re-check if this is a long response (detection already created status message at line 97-111)
-      val isLongResponse = LongResponseDetector.detectLongRequest(input)
+      // Use the same detection result computed above to keep status box consistent.
+      val isLongResponse = isLongRequest
       var accumulatedResponse = ""
 
       try {
@@ -557,7 +557,19 @@ open class LlmChatViewModelBase(
 
     // Re-generate the response automatically.
     if (triggeredMessage != null) {
-      generateResponse(model = model, input = triggeredMessage.content, onError = {})
+      generateResponse(
+        model = model,
+        input = triggeredMessage.content,
+        onError = {
+          // Surface the failure rather than silently swallowing it.
+          addMessage(
+            model = model,
+            message = ChatMessageWarning(
+              content = context.getString(R.string.error_inference_crashed)
+            )
+          )
+        }
+      )
     }
   }
 }
