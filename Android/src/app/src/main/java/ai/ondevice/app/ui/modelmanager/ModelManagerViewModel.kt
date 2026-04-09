@@ -301,8 +301,14 @@ constructor(
         return@launch
       }
 
-      // Clean up.
-      cleanupModel(context = context, task = task, model = model)
+      // Clean up any existing instance before initializing.
+      // Only call cleanupModel if an instance actually exists. If instance is null and we call
+      // cleanupModel now, it will see initializing=true (set above) and incorrectly schedule a
+      // cleanup of the model we're about to create (cleanUpAfterInit=true), which causes the model
+      // to destroy itself the moment it finishes loading.
+      if (ModelRuntimeStateManager.getValue(model.name).instance != null) {
+        cleanupModel(context = context, task = task, model = model)
+      }
 
       Log.d(TAG, "Initializing model '${model.name}'...")
 
