@@ -222,7 +222,12 @@ object LlmChatModelHelper {
     images: List<Bitmap> = listOf(),
     audioClips: List<ByteArray> = listOf(),
   ) {
-    val instance = ModelRuntimeStateManager.getValue(model.name).instance as LlmModelInstance
+    val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
+    if (instance == null) {
+      Log.e(TAG, "Cannot run inference: model instance is null for ${model.name}")
+      onError("Model is not loaded. Please try again.")
+      return
+    }
 
     // Set listener.
     if (!cleanUpListeners.containsKey(model.name)) {

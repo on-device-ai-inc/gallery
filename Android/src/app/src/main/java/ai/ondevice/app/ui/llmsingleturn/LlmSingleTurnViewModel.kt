@@ -101,7 +101,13 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
       delay(500)
 
       // Run inference.
-      val instance = ModelRuntimeStateManager.getValue(model.name).instance as LlmModelInstance
+      val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
+      if (instance == null) {
+        Log.e(TAG, "Model instance became null before inference for ${model.name}")
+        setInProgress(false)
+        setPreparing(false)
+        return@launch
+      }
       // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
       val prefillTokens = input.split(" ").size
 

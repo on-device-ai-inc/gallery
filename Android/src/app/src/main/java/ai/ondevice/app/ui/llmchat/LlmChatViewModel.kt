@@ -244,7 +244,14 @@ open class LlmChatViewModelBase(
       }
 
       // Run inference.
-      val instance = ModelRuntimeStateManager.getValue(model.name).instance as LlmModelInstance
+      val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
+      if (instance == null) {
+        Log.e(TAG, "Model instance became null before inference for ${model.name}")
+        setInProgress(false)
+        setPreparing(false)
+        onError()
+        return@launch
+      }
       // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
       var prefillTokens = input.split(" ").size
       prefillTokens += images.size * 257
