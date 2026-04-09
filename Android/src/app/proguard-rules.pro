@@ -145,3 +145,13 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+# ===================================
+# Google AutoValue / javax.lang.model
+# ===================================
+# AutoValue's annotation processor references javax.lang.model classes that
+# don't exist at runtime on Android. R8 can safely ignore them since the
+# processor only runs at compile time.
+-dontwarn javax.lang.model.**
+-dontwarn com.google.auto.value.**
+-dontwarn autovalue.shaded.**
