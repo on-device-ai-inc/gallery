@@ -169,13 +169,14 @@ class DefaultDownloadRepository(
     onStatusUpdated: (model: Model, status: ModelDownloadStatus) -> Unit,
   ) {
     val liveData = workManager.getWorkInfoByIdLiveData(workerId)
-    val observer = object : Observer<WorkInfo> {
-      override fun onChanged(workInfo: WorkInfo?) {
-        if (workInfo != null && workInfo.state.isFinished) {
-          liveData.removeObserver(this)
-        }
-        if (workInfo == null) return
-        when (workInfo.state) {
+    // Use a holder so the lambda can remove itself on terminal state.
+    val observerHolder = arrayOfNulls<Observer<WorkInfo?>>(1)
+    val observer = Observer<WorkInfo?> { workInfo ->
+      if (workInfo != null && workInfo.state.isFinished) {
+        observerHolder[0]?.let { liveData.removeObserver(it) }
+      }
+      if (workInfo == null) return@Observer
+      when (workInfo.state) {
           WorkInfo.State.ENQUEUED -> {
             downloadStartTimeSharedPreferences.edit {
               putLong(model.name, System.currentTimeMillis())
@@ -320,8 +321,8 @@ class DefaultDownloadRepository(
 
           else -> {}
         }
-      }
     }
+    observerHolder[0] = observer
     liveData.observeForever(observer)
   }
 

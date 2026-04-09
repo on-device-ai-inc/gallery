@@ -17,6 +17,7 @@
 package ai.ondevice.app.data
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -62,6 +63,7 @@ class AnalyticsTracker @Inject constructor(
                     payload = payload
                 ))
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e(TAG, "Failed to track session_start", e)
             }
         }
