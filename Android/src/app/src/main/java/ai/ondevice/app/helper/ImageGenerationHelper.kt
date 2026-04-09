@@ -169,6 +169,7 @@ object ImageGenerationHelper {
       }
 
     } catch (e: Exception) {
+      if (e is kotlinx.coroutines.CancellationException) throw e
       Log.e(TAG, "Image generation failed", e)
       val errorMessage = when (e) {
         is IllegalArgumentException -> "Invalid input: ${e.message}"
@@ -182,6 +183,7 @@ object ImageGenerationHelper {
         imageGenerator?.close()
         Log.d(TAG, "ImageGenerator resources released")
       } catch (e: Exception) {
+        if (e is kotlinx.coroutines.CancellationException) throw e
         Log.e(TAG, "Error releasing ImageGenerator resources", e)
       }
     }

@@ -16,10 +16,12 @@
 
 package ai.ondevice.app.ui.common.chat
 
+import ai.ondevice.app.data.AnalyticsTracker
 import ai.ondevice.app.data.ConversationDao
 import ai.ondevice.app.data.ConversationThread
 import ai.ondevice.app.data.ConversationMessage
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -55,7 +57,7 @@ data class ChatUiState(
   val isCompacting: Boolean = false,
 
   /** A map of model names to lists of chat messages. */
-  val messagesByModel: Map<String, MutableList<ChatMessage>> = mapOf(),
+  val messagesByModel: Map<String, List<ChatMessage>> = mapOf(),
 
   /** A map of model names to the currently streaming chat message. */
   val streamingMessagesByModel: Map<String, ChatMessage> = mapOf(),
@@ -64,12 +66,13 @@ data class ChatUiState(
    * A map of model names to a map of chat messages to a boolean indicating whether the message is
    * showing the stats below it.
    */
-  val showingStatsByModel: Map<String, MutableSet<ChatMessage>> = mapOf(),
+  val showingStatsByModel: Map<String, Set<ChatMessage>> = mapOf(),
 )
 
 /** ViewModel responsible for managing the chat UI state and handling chat-related operations. */
 abstract class ChatViewModel(
-  protected val conversationDao: ConversationDao
+  protected val conversationDao: ConversationDao,
+  val analyticsTracker: AnalyticsTracker
 ) : ViewModel() {
   companion object {
     private const val TAG = "ChatViewModel"
@@ -91,59 +94,69 @@ abstract class ChatViewModel(
   }
 
   fun addMessage(model: Model, message: ChatMessage) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
-    newMessagesByModel[model.name] = newMessages
-    // Remove prompt template message if it is the current last message.
-    if (newMessages.size > 0 && newMessages.last().type == ChatMessageType.PROMPT_TEMPLATES) {
-      newMessages.removeAt(newMessages.size - 1)
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
+      // Remove prompt template message if it is the current last message.
+      if (newMessages.size > 0 && newMessages.last().type == ChatMessageType.PROMPT_TEMPLATES) {
+        newMessages.removeAt(newMessages.size - 1)
+      }
+      newMessages.add(message)
+      newMessagesByModel[model.name] = newMessages.toList()
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    newMessages.add(message)
-    _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
     
     // Phase 2: Silent save to database (fire-and-forget)
     saveMessageToDatabase(model, message)
   }
 
   fun insertMessageAfter(model: Model, anchorMessage: ChatMessage, messageToAdd: ChatMessage) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
-    newMessagesByModel[model.name] = newMessages
-    // Find the index of the anchor message
-    val anchorIndex = newMessages.indexOf(anchorMessage)
-    if (anchorIndex != -1) {
-      // Insert the new message after the anchor message
-      newMessages.add(anchorIndex + 1, messageToAdd)
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
+      // Find the index of the anchor message
+      val anchorIndex = newMessages.indexOf(anchorMessage)
+      if (anchorIndex != -1) {
+        // Insert the new message after the anchor message
+        newMessages.add(anchorIndex + 1, messageToAdd)
+      }
+      newMessagesByModel[model.name] = newMessages.toList()
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
   }
 
   fun removeMessageAt(model: Model, index: Int) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList()
-    if (newMessages != null) {
-      newMessagesByModel[model.name] = newMessages
-      if (index >= 0 && index < newMessages.size) {
-        newMessages.removeAt(index)
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList()
+      if (newMessages != null) {
+        if (index >= 0 && index < newMessages.size) {
+          newMessages.removeAt(index)
+        }
+        newMessagesByModel[model.name] = newMessages.toList()
       }
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
   }
 
   fun removeLastMessage(model: Model) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
-    if (newMessages.size > 0) {
-      newMessages.removeAt(newMessages.size - 1)
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
+      if (newMessages.size > 0) {
+        newMessages.removeAt(newMessages.size - 1)
+      }
+      newMessagesByModel[model.name] = newMessages.toList()
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    newMessagesByModel[model.name] = newMessages
-    _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
   }
 
   fun clearAllMessages(model: Model) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    newMessagesByModel[model.name] = mutableListOf()
-    _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      newMessagesByModel[model.name] = emptyList()
+      current.copy(messagesByModel = newMessagesByModel)
+    }
     currentThreadId = null // Reset thread ID for new conversation
   }
 
@@ -164,21 +177,24 @@ abstract class ChatViewModel(
 
         // Convert database messages to ChatMessages
         // Use latencyMs = 0f for agent messages to enable action buttons/disclaimer
-        val chatMessages: MutableList<ChatMessage> = messages.map { msg ->
+        val chatMessages: List<ChatMessage> = messages.map { msg ->
           ChatMessageText(
             content = msg.content,
             side = if (msg.isUser) ChatSide.USER else ChatSide.AGENT,
             latencyMs = if (msg.isUser) -1f else 0f // Agent messages need >= 0 for UI actions
           ) as ChatMessage
-        }.toMutableList()
+        }
 
         // Update UI state with loaded messages
-        val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-        newMessagesByModel[model.name] = chatMessages
-        _uiState.update { _uiState.value.copy(messagesByModel = newMessagesByModel) }
+        _uiState.update { current ->
+          val newMessagesByModel = current.messagesByModel.toMutableMap()
+          newMessagesByModel[model.name] = chatMessages
+          current.copy(messagesByModel = newMessagesByModel)
+        }
 
         Log.d(TAG, "Loaded conversation $threadId with ${messages.size} messages")
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         Log.e(TAG, "Failed to load conversation", e)
       }
     }
@@ -193,92 +209,98 @@ abstract class ChatViewModel(
     partialContent: String,
     latencyMs: Float,
   ) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
-    if (newMessages.size > 0) {
-      val lastMessage = newMessages.last()
-      if (lastMessage is ChatMessageText) {
-        val newContent = processLlmResponse(response = "${lastMessage.content}${partialContent}")
-        val newLastMessage =
-          ChatMessageText(
-            content = newContent,
-            side = lastMessage.side,
-            latencyMs = latencyMs,
-            accelerator = lastMessage.accelerator,
-          )
-        newMessages.removeAt(newMessages.size - 1)
-        newMessages.add(newLastMessage)
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
+      if (newMessages.size > 0) {
+        val lastMessage = newMessages.last()
+        if (lastMessage is ChatMessageText) {
+          val newContent = processLlmResponse(response = "${lastMessage.content}${partialContent}")
+          val newLastMessage =
+            ChatMessageText(
+              content = newContent,
+              side = lastMessage.side,
+              latencyMs = latencyMs,
+              accelerator = lastMessage.accelerator,
+            )
+          newMessages.removeAt(newMessages.size - 1)
+          newMessages.add(newLastMessage)
+        }
       }
+      newMessagesByModel[model.name] = newMessages.toList()
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    newMessagesByModel[model.name] = newMessages
-    val newUiState = _uiState.value.copy(messagesByModel = newMessagesByModel)
-    _uiState.update { newUiState }
   }
 
   fun updateLastTextMessageLlmBenchmarkResult(
     model: Model,
     llmBenchmarkResult: ChatMessageBenchmarkLlmResult,
   ) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
-    if (newMessages.size > 0) {
-      val lastMessage = newMessages.last()
-      if (lastMessage is ChatMessageText) {
-        lastMessage.llmBenchmarkResult = llmBenchmarkResult
-        newMessages.removeAt(newMessages.size - 1)
-        newMessages.add(lastMessage)
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
+      if (newMessages.size > 0) {
+        val lastMessage = newMessages.last()
+        if (lastMessage is ChatMessageText) {
+          lastMessage.llmBenchmarkResult = llmBenchmarkResult
+          newMessages.removeAt(newMessages.size - 1)
+          newMessages.add(lastMessage)
+        }
       }
+      newMessagesByModel[model.name] = newMessages.toList()
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    newMessagesByModel[model.name] = newMessages
-    val newUiState = _uiState.value.copy(messagesByModel = newMessagesByModel)
-    _uiState.update { newUiState }
   }
 
   fun replaceLastMessage(model: Model, message: ChatMessage, type: ChatMessageType) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
-    if (newMessages.size > 0) {
-      val index = newMessages.indexOfLast { it.type == type }
-      if (index >= 0) {
-        newMessages[index] = message
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
+      if (newMessages.size > 0) {
+        val index = newMessages.indexOfLast { it.type == type }
+        if (index >= 0) {
+          newMessages[index] = message
+        }
       }
+      newMessagesByModel[model.name] = newMessages.toList()
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    newMessagesByModel[model.name] = newMessages
-    val newUiState = _uiState.value.copy(messagesByModel = newMessagesByModel)
-    _uiState.update { newUiState }
   }
 
   fun replaceMessage(model: Model, index: Int, message: ChatMessage) {
-    val newMessagesByModel = _uiState.value.messagesByModel.toMutableMap()
-    val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
-    if (index >= 0 && index < newMessages.size) {
-      newMessages[index] = message
+    _uiState.update { current ->
+      val newMessagesByModel = current.messagesByModel.toMutableMap()
+      val newMessages = newMessagesByModel[model.name]?.toMutableList() ?: mutableListOf()
+      if (index >= 0 && index < newMessages.size) {
+        newMessages[index] = message
+      }
+      newMessagesByModel[model.name] = newMessages.toList()
+      current.copy(messagesByModel = newMessagesByModel)
     }
-    newMessagesByModel[model.name] = newMessages
-    val newUiState = _uiState.value.copy(messagesByModel = newMessagesByModel)
-    _uiState.update { newUiState }
   }
 
   fun updateStreamingMessage(model: Model, message: ChatMessage) {
-    val newStreamingMessagesByModel = _uiState.value.streamingMessagesByModel.toMutableMap()
-    newStreamingMessagesByModel[model.name] = message
-    _uiState.update { _uiState.value.copy(streamingMessagesByModel = newStreamingMessagesByModel) }
+    _uiState.update { current ->
+      val newStreamingMessagesByModel = current.streamingMessagesByModel.toMutableMap()
+      newStreamingMessagesByModel[model.name] = message
+      current.copy(streamingMessagesByModel = newStreamingMessagesByModel)
+    }
   }
 
   fun setInProgress(inProgress: Boolean) {
-    _uiState.update { _uiState.value.copy(inProgress = inProgress) }
+    _uiState.update { it.copy(inProgress = inProgress) }
   }
 
   fun setIsResettingSession(isResettingSession: Boolean) {
-    _uiState.update { _uiState.value.copy(isResettingSession = isResettingSession) }
+    _uiState.update { it.copy(isResettingSession = isResettingSession) }
   }
 
   fun setPreparing(preparing: Boolean) {
-    _uiState.update { _uiState.value.copy(preparing = preparing) }
+    _uiState.update { it.copy(preparing = preparing) }
   }
 
   fun setIsCompacting(isCompacting: Boolean) {
-    _uiState.update { _uiState.value.copy(isCompacting = isCompacting) }
+    _uiState.update { it.copy(isCompacting = isCompacting) }
   }
 
   fun addConfigChangedMessage(
@@ -305,15 +327,17 @@ abstract class ChatViewModel(
   }
 
   fun toggleShowingStats(model: Model, message: ChatMessage) {
-    val newShowingStatsByModel = _uiState.value.showingStatsByModel.toMutableMap()
-    val newShowingStats = newShowingStatsByModel[model.name]?.toMutableSet() ?: mutableSetOf()
-    if (newShowingStats.contains(message)) {
-      newShowingStats.remove(message)
-    } else {
-      newShowingStats.add(message)
+    _uiState.update { current ->
+      val newShowingStatsByModel = current.showingStatsByModel.toMutableMap()
+      val newShowingStats = newShowingStatsByModel[model.name]?.toMutableSet() ?: mutableSetOf()
+      if (newShowingStats.contains(message)) {
+        newShowingStats.remove(message)
+      } else {
+        newShowingStats.add(message)
+      }
+      newShowingStatsByModel[model.name] = newShowingStats.toSet()
+      current.copy(showingStatsByModel = newShowingStatsByModel)
     }
-    newShowingStatsByModel[model.name] = newShowingStats
-    _uiState.update { _uiState.value.copy(showingStatsByModel = newShowingStatsByModel) }
   }
 
   private fun createUiState(): ChatUiState {
@@ -349,17 +373,19 @@ abstract class ChatViewModel(
         }
         
         // Save the message
+        val threadId = currentThreadId ?: return@launch
         conversationDao.insertMessage(
           ConversationMessage(
-            threadId = currentThreadId!!,
+            threadId = threadId,
             content = message.content,
             isUser = message.side == ChatSide.USER,
             timestamp = System.currentTimeMillis()
           )
         )
-        
-        Log.d(TAG, "Saved message to thread $currentThreadId")
+
+        Log.d(TAG, "Saved message to thread $threadId")
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         Log.e(TAG, "Failed to save message to database", e)
       }
     }

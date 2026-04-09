@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ai.ondevice.app.data.ConfigKey
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import ai.ondevice.app.data.NumberSliderConfig
 import ai.ondevice.app.data.ValueType
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
@@ -124,7 +125,7 @@ fun ExampleCustomTaskScreen(
   LaunchedEffect(Unit) { viewModel.updateTextColor(color = colors[0]) }
 
   if (modelManagerUiState.isModelInitialized(model = model)) {
-    val instance = model.instance as ExampleCustomTaskModelInstance
+    val instance = ModelRuntimeStateManager.getValue(model.name).instance as ExampleCustomTaskModelInstance
     Column {
       // A list of colors user can click to set the text color.
       Row(

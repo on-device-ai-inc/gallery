@@ -55,6 +55,20 @@ fun PrivacyCenterScreen(
     var showClearDataDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
 
+    // Observe one-shot events from ViewModel (export share intent, errors)
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is SettingsViewModel.SettingsEvent.ShareConversations -> {
+                    context.startActivity(event.intent)
+                }
+                is SettingsViewModel.SettingsEvent.ExportError -> {
+                    // Error state is already reflected in uiState.lastExportSuccess
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -154,7 +168,7 @@ fun PrivacyCenterScreen(
             text = { Text("Your conversation data will be exported as JSON. No data is uploaded anywhere - the file stays on your device.") },
             confirmButton = {
                 Button(onClick = {
-                    viewModel.exportConversations(context, ExportFormat.JSON)
+                    viewModel.exportConversations(ExportFormat.JSON)
                     showExportDialog = false
                 }) {
                     Text("Export")
@@ -443,7 +457,7 @@ private fun PrivacyGuaranteesSection() {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 PrivacyGuaranteeItem("✓ No account required")
-                PrivacyGuaranteeItem("✓ No analytics or tracking")
+                PrivacyGuaranteeItem("✓ Local-only usage insights — no data sent to servers")
                 PrivacyGuaranteeItem("✓ No advertising IDs collected")
                 PrivacyGuaranteeItem("✓ No usage telemetry sent to servers")
                 PrivacyGuaranteeItem("✓ Open-source AI models (Apache 2.0)")

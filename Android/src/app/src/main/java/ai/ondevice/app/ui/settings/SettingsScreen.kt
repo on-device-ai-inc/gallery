@@ -73,6 +73,20 @@ fun SettingsScreen(
         viewModel.runAutoCleanup()
     }
 
+    // Observe one-shot events from ViewModel (export share intent, errors)
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is SettingsViewModel.SettingsEvent.ShareConversations -> {
+                    context.startActivity(event.intent)
+                }
+                is SettingsViewModel.SettingsEvent.ExportError -> {
+                    // Error state is already reflected in uiState.lastExportSuccess
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -176,7 +190,7 @@ fun SettingsScreen(
         ExportDialog(
             onDismiss = { showExportDialog = false },
             onExport = { format ->
-                viewModel.exportConversations(context, format)
+                viewModel.exportConversations(format)
                 showExportDialog = false
             }
         )
@@ -234,7 +248,8 @@ private fun AppearanceSection(
     modelManagerViewModel: ModelManagerViewModel
 ) {
     val context = LocalContext.current
-    var selectedTheme by remember { mutableStateOf(ThemeSettings.themeOverride.value) }
+    val currentTheme by ThemeSettings.themeOverride.collectAsState()
+    var selectedTheme by remember { mutableStateOf(currentTheme) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
@@ -257,7 +272,7 @@ private fun AppearanceSection(
                         selected = selectedTheme == theme,
                         onClick = {
                             selectedTheme = theme
-                            ThemeSettings.themeOverride.value = theme
+                            ThemeSettings.setTheme(theme)
                             modelManagerViewModel.saveThemeOverride(theme)
 
                             // Update UI mode for other activities

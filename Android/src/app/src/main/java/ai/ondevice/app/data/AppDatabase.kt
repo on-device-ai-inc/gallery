@@ -18,16 +18,19 @@ import androidx.room.RoomDatabase
  * Version 7: Cleanup - removed non-working token counting fields from ConversationThread
  *            (personaVariant, estimatedTokens, lastTokenUpdate).
  * Version 8: Added ConversationState entity for context compression via self-summarization.
+ * Version 9: Added AnalyticsEvent entity for local-only usage instrumentation.
  */
 @Database(
     entities = [
         ConversationThread::class,
         ConversationMessage::class,
-        ConversationState::class
+        ConversationState::class,
+        AnalyticsEvent::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun conversationDao(): ConversationDao
+    abstract fun analyticsDao(): AnalyticsDao
 }

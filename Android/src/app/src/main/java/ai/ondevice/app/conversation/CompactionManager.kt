@@ -22,6 +22,7 @@ import ai.ondevice.app.data.ConversationState
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.ui.llmchat.LlmChatModelHelper
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -100,6 +101,7 @@ class CompactionManager(
         val newSummary = try {
             summarizeAsync(llmHelper, model, prompt)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Summarization failed", e)
             return CompactionResult.Failed(e.message ?: "Unknown error")
         }

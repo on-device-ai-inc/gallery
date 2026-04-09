@@ -2,6 +2,8 @@ name: Build Android APK/AAB
 on:
   push:
     branches: [ main, development ]
+  pull_request:
+    branches: [ main, development ]
   workflow_dispatch:
 jobs:
   build:
@@ -25,7 +27,13 @@ jobs:
       run: chmod +x gradlew
 
     - name: Create google-services.json
-      run: printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+      run: |
+        if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+          printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+        else
+          echo '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"ai.ondevice.app"}},"api_key":[{"current_key":"placeholder"}]}],"configuration_version":"1"}' > app/google-services.json
+          echo "WARNING: GOOGLE_SERVICES_JSON secret not set, using placeholder"
+        fi
       env:
         GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
@@ -36,6 +44,7 @@ jobs:
         echo "hf.redirect.uri=ai.ondevice.app:/oauth2redirect" >> local.properties
 
     - name: Decode keystore
+      if: env.KEYSTORE_BASE64 != ''
       env:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       run: |
@@ -46,7 +55,9 @@ jobs:
       run: ./gradlew assembleDebug --stacktrace
 
     - name: Build Release AAB
+      if: env.KEYSTORE_BASE64 != '' && github.ref == 'refs/heads/main'
       env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
         SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
@@ -62,6 +73,7 @@ jobs:
         retention-days: 30
 
     - name: Upload Release AAB
+      if: github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v4
       with:
         name: app-release-aab

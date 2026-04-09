@@ -16,6 +16,7 @@
 
 package ai.ondevice.app.ui.common.chat
 
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -84,13 +85,14 @@ fun ModelDownloadingAnimation(
       Spacer(modifier = Modifier.height(32.dp))
 
       // Download stats
-      var sizeLabel = model.totalBytes.humanReadableSize()
+      val runtimeTotalBytes = ModelRuntimeStateManager.getValue(model.name).totalBytes
+      var sizeLabel = runtimeTotalBytes.humanReadableSize()
       if (curDownloadStatus != null) {
         // For in-progress model, show {receivedSize} / {totalSize} - {rate} - {remainingTime}
         if (inProgress || isPartiallyDownloaded) {
           var totalSize = curDownloadStatus.totalBytes
           if (totalSize == 0L) {
-            totalSize = model.totalBytes
+            totalSize = runtimeTotalBytes
           }
           sizeLabel =
             "${curDownloadStatus.receivedBytes.humanReadableSize(extraDecimalForGbAndAbove = true)} of ${totalSize.humanReadableSize()}"

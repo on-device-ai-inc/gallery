@@ -26,6 +26,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
@@ -256,10 +258,10 @@ fun StatusBarColorController(useDarkTheme: Boolean) {
 
 @Composable
 fun GalleryTheme(content: @Composable () -> Unit) {
-  val themeOverride = ThemeSettings.themeOverride
+  val themeOverride by ThemeSettings.themeOverride.collectAsState()
   val darkTheme: Boolean =
-    (isSystemInDarkTheme() || themeOverride.value == Theme.THEME_DARK) &&
-      themeOverride.value != Theme.THEME_LIGHT
+    (isSystemInDarkTheme() || themeOverride == Theme.THEME_DARK) &&
+      themeOverride != Theme.THEME_LIGHT
 
   StatusBarColorController(useDarkTheme = darkTheme)
 

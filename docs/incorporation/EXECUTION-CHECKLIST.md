@@ -226,6 +226,7 @@
    - Insert share issuance details:
      * 100 Class A to [your name] for $1.00
      * 400 Class B to [Family Trust name] for $4.00
+     * 25 Class B to [Spouse name] for $0.25 (from her own funds)
    - Insert DGX serial number
    - Insert DGX original purchase price (~$6,000)
 
@@ -263,16 +264,26 @@
    - Date: [Date of issuance]
    - Sign as President and Secretary
 
-4. **Collect share consideration:**
+4. **Prepare Certificate B-2 (Spouse — Direct):**
+   - Corporation name
+   - Certificate number: B-2
+   - Shareholder: [Spouse full legal name and address]
+   - Number of shares: 25 Class B Common Shares
+   - Date: [Date of issuance]
+   - Sign as President and Secretary
+   - **CRITICAL:** Retain proof that $0.25 came from spouse's own funds (bank statement, e-transfer receipt)
+
+5. **Collect share consideration:**
    - You pay corporation $1.00 (Class A)
    - Trust pays corporation $4.00 (Class B)
-   - Total: $5.00 received by corporation
+   - Spouse pays corporation $0.25 from her own funds (Class B)
+   - Total: $5.25 received by corporation
 
-5. **Update securities register:**
+6. **Update securities register:**
    - Create simple register (spreadsheet or ledger)
    - Record: Certificate #, Date, Shareholder, Class, # Shares, Consideration
 
-6. **Store certificates:**
+7. **Store certificates:**
    - Original to shareholder
    - Copy in minute book
 
@@ -353,9 +364,10 @@
 - ✅ Government-issued ID (driver's license, passport)
 - ✅ Proof of address (utility bill, lease)
 
-**Initial deposit:** $6.00
-- $1.00 (Class A share consideration)
-- $4.00 (Class B share consideration)
+**Initial deposit:** $6.25
+- $1.00 (Class A share consideration — founder)
+- $4.00 (Class B share consideration — trust)
+- $0.25 (Class B share consideration — spouse)
 - $1.00 (DGX consideration)
 
 **Account type:** Business chequing account
@@ -560,9 +572,9 @@ Create Excel/Google Sheets with:
 
 - [ ] Certificate of Incorporation received
 - [ ] Trust deed executed and filed
-- [ ] Shares issued (100 Class A + 400 Class B)
+- [ ] Shares issued (100 Class A + 400 Class B to trust + 25 Class B to spouse)
 - [ ] DGX transferred to corporation
-- [ ] Bank account opened ($6 deposited)
+- [ ] Bank account opened ($6.25 deposited)
 - [ ] GitHub organization created
 - [ ] Google Play account created
 - [ ] SR&ED time tracking active
@@ -591,7 +603,12 @@ Create Excel/Google Sheets with:
 **24 months after incorporation:**
 - QSBC holding period satisfied
 - Eligible for LCGE on sale
-- Family can shelter $6.25M capital gains tax-free
+- 5 claimants (founder + spouse + 3 children) can shelter $6.25M capital gains tax-free
+
+**Estate Succession (complete ASAP):**
+- Draft will leaving Class A shares to spouse (s.70(6) rollover)
+- Draft shareholder agreement with buy-sell on death
+- Obtain key-person life insurance on founder
 
 **Annual compliance:**
 - File T2 corporate return (June 30)
@@ -611,10 +628,12 @@ Create Excel/Google Sheets with:
 | Incorporation filing | $360 | Week 2 |
 | Lawyer trust review | $1,500-$2,500 | Week 1-2 |
 | Minute book | $40-$100 | Week 4 |
-| Share consideration | $6 | Week 3 |
+| Share consideration | $6.25 | Week 3 |
 | Google Play account | $25 | Week 4 |
 | Domain name | $15-$50 | Week 4 |
-| **TOTAL** | **$1,996-$3,091** | Over 4 weeks |
+| Will + shareholder agreement | $1,000-$2,000 | Week 3-4 |
+| Key-person life insurance | $50-$100/mo | Week 4+ |
+| **TOTAL** | **$2,996-$5,091** | Over 4 weeks |
 
 **Optional:**
 - QuickBooks: $30/month (when revenue starts)

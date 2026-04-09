@@ -12,57 +12,6 @@ Before doing anything else, quote this rule in your response:
 
 ---
 
-## 🔥 CRITICAL: Copy Battle-Tested Implementations
-
-**NEVER reinvent the wheel. NEVER over-engineer. ALWAYS copy proven solutions.**
-
-### Mandatory Approach for ALL Features
-
-When implementing ANY feature:
-
-1. **Find the battle-tested implementation** (GitHub stars >10k preferred)
-2. **Copy it with MINIMAL changes** - only what's needed to integrate with our project
-3. **DO NOT "improve" or "simplify"** - if it works for 10k+ users, it works
-4. **DO NOT create your own version** - you will fail (42% hallucination rate)
-
-### Examples
-
-**✅ CORRECT Approach:**
-- User: "Implement web search"
-- You: Find Perplexica (27.7k stars) → Copy their prompt template EXACTLY → Port TypeScript to Kotlin → Keep all 2,000 chars of instructions
-
-**❌ WRONG Approach:**
-- User: "Implement web search"
-- You: "I'll create an XML-style template inspired by Perplexica" → You reduce 2,000 chars to 350 chars → You add your own tags → It fails
-
-### Critical Rules
-
-1. **Copy EXACTLY** - Don't "improve", don't "simplify", don't "adapt"
-2. **Minimal changes** - Only change language syntax (TypeScript → Kotlin), package names, imports
-3. **Keep ALL logic** - If they have 16 bullet points, you have 16 bullet points
-4. **Keep ALL text** - If their prompt is 2,000 chars, yours is 2,000 chars
-5. **Trust the stars** - 27.7k stars means it works, your "improvement" doesn't
-
-### When You're Tempted to Change Something
-
-**STOP. Ask yourself:**
-- "Do I have 27.7k stars on my implementation?" → NO
-- "Have 44 contributors validated my approach?" → NO
-- "Has my version been tested by thousands of users?" → NO
-
-**Then COPY the proven version.**
-
-### Exceptions (Rare)
-
-Only deviate from battle-tested implementations when:
-- Legal compliance requires it (licenses, patents)
-- Platform constraints force it (Android vs. web, mobile vs. desktop)
-- Security vulnerabilities in the original (verify first!)
-
-**Document ALL deviations in proposal.md with justification.**
-
----
-
 ## 📋 OpenSpec-Driven Workflow
 
 ```
@@ -539,6 +488,50 @@ appId: ai.ondevice.app
 
 ---
 
+## gstack
+
+**Web browsing:** Always use the `/browse` skill from gstack for all web browsing. NEVER use `mcp__claude-in-chrome__*` tools.
+
+### Available Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `/office-hours` | YC-style office hours — forcing questions for startups |
+| `/plan-ceo-review` | CEO/founder-mode plan review |
+| `/plan-eng-review` | Eng manager plan review |
+| `/plan-design-review` | Designer's eye plan review |
+| `/plan-devex-review` | Developer experience plan review |
+| `/autoplan` | Auto-review pipeline — runs all plan reviews sequentially |
+| `/design-consultation` | Full design system consultation |
+| `/design-shotgun` | Generate multiple AI design variants for comparison |
+| `/design-html` | Generate production-quality HTML/CSS from approved mockups |
+| `/design-review` | Visual QA — spacing, hierarchy, AI slop detection |
+| `/review` | Pre-landing PR review |
+| `/ship` | Ship workflow — tests, review, version bump, changelog |
+| `/land-and-deploy` | Merge PR, wait for CI/deploy, verify production |
+| `/canary` | Post-deploy canary monitoring |
+| `/benchmark` | Performance regression detection |
+| `/browse` | Headless browser for navigation, interaction, verification |
+| `/connect-chrome` | Launch AI-controlled Chromium with sidebar extension |
+| `/qa` | QA test a web app and fix bugs found |
+| `/qa-only` | QA test a web app — report only, no fixes |
+| `/setup-browser-cookies` | Import cookies from real browser into headless session |
+| `/setup-deploy` | Configure deployment settings |
+| `/retro` | Weekly engineering retrospective |
+| `/investigate` | Systematic debugging with root cause investigation |
+| `/document-release` | Post-ship documentation update |
+| `/codex` | OpenAI Codex CLI wrapper for review/diff/collab |
+| `/cso` | Chief Security Officer — infrastructure-first security audit |
+| `/devex-review` | Live developer experience audit |
+| `/careful` | Safety guardrails for destructive commands |
+| `/freeze` | Restrict file edits to a specific directory |
+| `/guard` | Full safety mode — careful + freeze combined |
+| `/unfreeze` | Clear freeze boundary |
+| `/gstack-upgrade` | Upgrade gstack to latest version |
+| `/learn` | Manage project learnings across sessions |
+
+---
+
 ## 📋 Commands
 
 ### OpenSpec Commands (Spec-Driven Development)
@@ -621,3 +614,25 @@ src/                          # Git root
 1. **LESSONS_LEARNED.md** - FIRST, always
 2. **CODE_INDEX.md** - Before creating code
 3. **openspec/changes/** - For active work
+
+---
+
+## Skill routing
+
+When the user's request matches an available skill, ALWAYS invoke it using the Skill
+tool as your FIRST action. Do NOT answer directly, do NOT use other tools first.
+The skill has specialized workflows that produce better results than ad-hoc answers.
+
+Key routing rules:
+- Product ideas, "is this worth building", brainstorming → invoke office-hours
+- Bugs, errors, "why is this broken", 500 errors → invoke investigate
+- Ship, deploy, push, create PR → invoke ship
+- QA, test the site, find bugs → invoke qa
+- Code review, check my diff → invoke review
+- Update docs after shipping → invoke document-release
+- Weekly retro → invoke retro
+- Design system, brand → invoke design-consultation
+- Visual audit, design polish → invoke design-review
+- Architecture review → invoke plan-eng-review
+- Save progress, checkpoint, resume → invoke checkpoint
+- Code quality, health check → invoke health

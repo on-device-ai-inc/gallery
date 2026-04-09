@@ -40,6 +40,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import androidx.room.Room
 import ai.ondevice.app.data.AppDatabase
+import ai.ondevice.app.data.AnalyticsDao
 import ai.ondevice.app.data.ConversationDao
 import ai.ondevice.app.data.ALL_MIGRATIONS
 
@@ -138,6 +139,12 @@ internal object AppModule {
   @Singleton
   fun provideConversationDao(database: AppDatabase): ConversationDao {
     return database.conversationDao()
+  }
+
+  @Provides
+  @Singleton
+  fun provideAnalyticsDao(database: AppDatabase): AnalyticsDao {
+    return database.analyticsDao()
   }
 
   // Prompt Engineering - Phase 1: Persona Management

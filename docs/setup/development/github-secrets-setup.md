@@ -15,7 +15,7 @@ Add BRAVE_API_KEY as a GitHub repository secret so CI builds can access it.
 ### Step 1: Get Your API Key
 Your local API key is in `local.properties`:
 ```
-brave.api.key=BSAD80kXDlN7yQpuMV7F860QXo--MJp
+brave.api.key=YOUR_BRAVE_API_KEY_HERE
 ```
 
 ### Step 2: Add to GitHub Secrets
@@ -26,7 +26,7 @@ brave.api.key=BSAD80kXDlN7yQpuMV7F860QXo--MJp
 4. Click **New repository secret** button
 5. Fill in:
    - **Name**: `BRAVE_API_KEY`
-   - **Secret**: `BSAD80kXDlN7yQpuMV7F860QXo--MJp` (your actual API key)
+   - **Secret**: *(paste your actual API key)*
 6. Click **Add secret**
 
 ### Step 3: Verify Setup
@@ -87,7 +87,7 @@ adb logcat | grep "Using API key"
 
 You should see:
 ```
-D/SearchRepository: [DEBUG] Using API key: BSAD80kXDl... (not "EMPTY!")
+D/SearchRepository: [DEBUG] Using API key: (present) (not "EMPTY!")
 ```
 
 If you see `EMPTY!`, the secret was not configured correctly.

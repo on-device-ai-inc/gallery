@@ -92,10 +92,11 @@ Please verify the trust enables effective LCGE multiplication and confirm:
 - Advise on purification timing and strategies
 
 **c) Maximum LCGE Benefit**
-- Family composition: 2 parents + 3 children = 5 potential claimants
+- Family composition: Founder (Class A) + Spouse (direct Class B) + 3 children (trust Class B) = 5 claimants
 - Current LCGE: $1,254,639 per person (2025 indexed)
 - Total shelter: 5 × $1.254M = $6.27M
 - Confirm each beneficiary can claim independently
+- Confirm spouse's direct Class B shares qualify independently from trust-held shares
 - Identify any limitations or restrictions
 
 ### 4. **GAAR and Anti-Avoidance Risk Assessment**
@@ -162,7 +163,11 @@ Please complete the following verification checklist and provide written confirm
 - [ ] Subsection 75(2) will NOT apply if trust executed as drafted (with your corrections)
 - [ ] Beneficiary class language properly includes unborn child and future children
 - [ ] Section 107(2) rollover treatment is preserved
-- [ ] LCGE multiplication strategy is effective and defensible
+- [ ] LCGE multiplication strategy is effective and defensible (5 claimants: founder + spouse + 3 children)
+- [ ] Spousal direct Class B shares do NOT trigger s.74.1/74.2 attribution (subscription from own funds)
+- [ ] Spouse holding Class B directly while also serving as Trustee #2 creates no conflict
+- [ ] Estate succession: s.70(6) spousal rollover applies if Class A shares left to spouse via will
+- [ ] Buy-sell provisions on death are appropriate and enforceable
 - [ ] GAAR risk is LOW with enhanced recitals
 - [ ] TOSI guidance is accurate and sufficient
 - [ ] Trust duration and 21-year planning is compliant
@@ -191,10 +196,12 @@ Please complete the following verification checklist and provide written confirm
 - Developed software (OnDevice AI codebase): $5,000 estimated value
 - Intellectual property (AI algorithms, training methods)
 
-**Corporate Structure (Planned):**
-- Class A Common (Voting): Founder/Spouse - 100 shares
-- Class B Common (Non-Voting): Family Trust - 400 shares
+**Corporate Structure (Planned - Revised Feb 19, 2026):**
+- Class A Common (Voting): Founder - 100 shares ($1.00)
+- Class B Common (Non-Voting): Spouse - 25 shares directly ($0.25, from her own funds)
+- Class B Common (Non-Voting): Family Trust - 400 shares ($4.00)
 - Class C Preferred: Reserved for future financing
+- Total: 525 shares, $5.25 consideration
 
 ### Family Situation
 
@@ -209,7 +216,7 @@ Please complete the following verification checklist and provide written confirm
 
 **Future Children:** Open to additional children in coming years
 
-**Total Beneficiaries:** 5 potential LCGE claimants (2 parents + 3 children + future children)
+**Total LCGE Claimants:** 5 potential (founder via Class A + spouse via direct Class B + 3 children via trust Class B + future children)
 
 ### Tax Planning Objectives
 
@@ -289,7 +296,23 @@ Please provide step-by-step execution instructions including:
 - Share transfer mechanics (corporation → trust)
 - Any registrations or filings required
 
-### 5. **Ongoing Compliance Checklist**
+### 5. **Estate Succession Package (NEW)**
+
+Please advise on and/or prepare:
+- Simple will template leaving Class A shares to spouse (s.70(6) rollover)
+- Unanimous shareholder agreement template with buy-sell on death
+- Recommendation on key-person life insurance amount and structure
+- Successor trustee provisions for the family trust
+
+### 6. **Spousal Share Subscription Documentation (NEW)**
+
+Please prepare or review:
+- Board resolution authorizing issuance of 25 Class B shares to spouse
+- Spousal subscription form (documenting payment from her own funds)
+- Share certificate template B-2 for spouse's 25 Class B shares
+- Brief memo confirming no s.74.1/74.2 attribution applies
+
+### 7. **Ongoing Compliance Checklist**
 
 Please provide checklist of ongoing obligations:
 - Annual T3 trust return filing requirements
@@ -299,7 +322,7 @@ Please provide checklist of ongoing obligations:
 - Section 107(2) distribution planning (years 19-20)
 - Amendment restrictions and permitted changes
 
-### 6. **Implementation Timeline**
+### 8. **Implementation Timeline**
 
 Please advise on optimal timing and sequencing:
 - Can trust be executed before incorporation? Or must corporation exist first?
@@ -322,9 +345,9 @@ Please advise on optimal timing and sequencing:
 
 ## FEE BUDGET AND ENGAGEMENT TERMS
 
-**Estimated Budget:** $1,500-$3,500 for trust deed review and opinion
+**Estimated Budget:** $2,500-$5,000 for trust deed review, opinion, estate succession package, and spousal share documentation
 
-I understand this is an estimate and actual fees may vary based on complexity and time required. Please advise if you anticipate fees exceeding $3,500 before incurring additional charges.
+I understand this is an estimate and actual fees may vary based on complexity and time required. Please advise if you anticipate fees exceeding $5,000 before incurring additional charges.
 
 **Billing Preference:**
 - Flat fee for trust deed review and opinion (if available)
@@ -356,21 +379,57 @@ Should I incorporate BEFORE or AFTER trust deed execution?
 - Do I need formal valuation report?
 - Any subsection 15(1) shareholder benefit concerns?
 
-### 3. **Founder Share Structure**
-Should founder/spouse hold:
-- Option A: 100% Class A (voting) + 0% Class B (economic through trust)
+### 3. **Spousal Direct Share Ownership (NEW - CRITICAL)**
+We propose issuing 25 Class B shares directly to spouse (separate from the trust):
+- Spouse subscribes from her own funds ($0.25 at $0.01/share)
+- This gives her an independent LCGE claim (~$1.25M shelter at exit)
+- **Please confirm:**
+  - Does ITA s.74.1/74.2 spousal attribution apply if she subscribes with her own funds at authorized capital value?
+  - Is there any issue with spouse holding Class B directly while also being Trustee #2 of the family trust (which also holds Class B)?
+  - Should the subscription be documented differently than the trust's subscription?
+  - What documentation proves "her own funds" for CRA audit defense?
+  - Does this create any TOSI exposure on capital gains at exit (she is 18+)?
+
+### 4. **Estate Succession for Founder's Class A Shares (NEW - CRITICAL)**
+Currently there is NO provision for what happens to founder's 100 Class A shares on death. We need advice on:
+
+**a) Will provisions:**
+- Should the will leave Class A shares to spouse? (to trigger ITA s.70(6) spousal rollover — deferring deemed disposition)
+- Estimated tax savings of spousal rollover vs. deemed disposition at death
+- Any interaction between will provisions and the trust structure?
+
+**b) Shareholder agreement / buy-sell provisions:**
+- Should we draft a unanimous shareholder agreement (USA) with death trigger?
+- Right of first refusal for surviving shareholders?
+- Valuation formula for share purchase on death?
+- Insurance-funded buy-sell mechanism?
+
+**c) Key-person life insurance:**
+- Should the corporation hold a key-person life insurance policy on founder?
+- Recommended coverage amount relative to anticipated share value?
+- Tax treatment of insurance proceeds received by corporation?
+- How does this interact with the Capital Dividend Account (CDA)?
+
+**d) Interaction with trust structure:**
+- If founder dies, does wife (as sole remaining trustee) have full authority over the 400 Class B trust shares?
+- Should a successor trustee provision be added?
+- Any risk of deemed disposition of trust shares on founder's death?
+
+### 5. **Founder Share Structure (Original Question)**
+Should founder hold:
+- Option A: 100% Class A (voting) + 0% Class B (economic through trust) — CURRENT PLAN
 - Option B: 100% Class A (voting) + some Class B directly (economic split)
 - Tax implications of each approach?
 - LCGE implications if founder holds some Class B directly?
 
-### 4. **DGX Workstation Transfer**
+### 6. **DGX Workstation Transfer**
 I plan to transfer DGX Spark workstation ($6,000 FMV) to corporation at nominal value ($1).
 - Any subsection 85 rollover considerations?
 - Or simple asset sale at $1 acceptable?
 - Capital gains implications on personal side?
 - Proper documentation required?
 
-### 5. **Future Financing**
+### 7. **Future Financing**
 If we raise venture capital in 2-5 years:
 - How to preserve CCPC status with US/foreign investors?
 - Share structure considerations (voting vs. non-voting)?
@@ -425,6 +484,7 @@ Respectfully,
 ---
 
 **Document Prepared:** January 2, 2026
+**Last Updated:** February 19, 2026 — Added spousal direct share issuance (25 Class B), estate succession provisions (will, buy-sell, life insurance), revised share structure to 525 total shares
 **Prepared By:** Victoria (Canadian Tech Legal Counsel - AI Agent)
 **For:** Nashie (OnDevice AI Incorporation)
 

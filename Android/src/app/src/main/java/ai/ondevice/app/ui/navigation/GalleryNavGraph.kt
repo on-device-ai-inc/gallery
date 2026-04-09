@@ -43,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -423,20 +424,31 @@ fun GalleryNavHost(
   }
 
   // Handle incoming intents for deep links
+  // Track consumed deep links with rememberSaveable to survive process death + restore
+  var deepLinkConsumed by rememberSaveable { mutableStateOf(false) }
   val intent = androidx.activity.compose.LocalActivity.current?.intent
-  val data = intent?.data
-  if (data != null) {
-    intent.data = null
-    Log.d(TAG, "navigation link clicked: $data")
-    if (data.toString().startsWith("ai.ondevice.app://model/")) {
-      if (data.pathSegments.size >= 2) {
-        val taskId = data.pathSegments.get(data.pathSegments.size - 2)
-        val modelName = data.pathSegments.last()
-        modelManagerViewModel.getModelByName(name = modelName)?.let { model ->
-          navController.navigate("$ROUTE_MODEL/${taskId}/${model.name}")
+  LaunchedEffect(intent?.data) {
+    if (!deepLinkConsumed) {
+      intent?.data?.let { data ->
+        deepLinkConsumed = true
+        intent.data = null  // consume the deep link
+        Log.d(TAG, "navigation link clicked: $data")
+        if (data.toString().startsWith("ai.ondevice.app://model/")) {
+          if (data.pathSegments.size >= 2) {
+            val taskId = data.pathSegments.get(data.pathSegments.size - 2)
+            val modelName = data.pathSegments.last()
+            // Security: Validate taskId against known built-in task IDs
+            if (!isBuiltInTask(taskId)) {
+              Log.e(TAG, "Unknown taskId in deep link, ignoring")
+            } else {
+              modelManagerViewModel.getModelByName(name = modelName)?.let { model ->
+                navController.navigate("$ROUTE_MODEL/${android.net.Uri.encode(taskId)}/${android.net.Uri.encode(model.name)}")
+              }
+            }
+          } else {
+            Log.e(TAG, "Malformed deep link URI received: $data")
+          }
         }
-      } else {
-        Log.e(TAG, "Malformed deep link URI received: $data")
       }
     }
   }

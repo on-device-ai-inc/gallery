@@ -48,7 +48,7 @@ Canada
 
 ## Share Structure
 
-**Authorized Share Capital:** Unlimited shares in 3 classes
+**Authorized Share Capital:** Unlimited shares in 3 classes (4 classes in Articles including Class D Growth)
 
 ### Class A Common Shares (Voting)
 - **Voting Rights:** One vote per share at all shareholder meetings
@@ -62,7 +62,9 @@ Canada
 - **Dividends:** As declared by directors, pari passu with Class A
 - **Liquidation:** Share ratably with Class A (subject to Class C preference)
 - **Maximum Authorized:** Unlimited
-- **Issued:** NONE YET (to be issued to family trust: 400 shares @ $0.01 = $4.00)
+- **Issued:** NONE YET — planned issuance:
+  - To family trust: 400 shares @ $0.01 = $4.00
+  - To spouse (directly, from her own funds): 25 shares @ $0.01 = $0.25
 
 ### Class C Preferred Shares
 - **Rights:** To be determined by directors at time of issuance
@@ -171,11 +173,12 @@ Research, development, and commercialization of artificial intelligence and mach
 - ✅ Issue shares:
   - 100 Class A to NASHIE CHIVHUNGA ($1.00)
   - 400 Class B to [TRUST NAME] ($4.00)
+  - 25 Class B to [SPOUSE NAME] ($0.25 — from her own funds)
 - ✅ Update securities register
 
 **Week 3-4: Banking & Operations**
 - ✅ Open corporate bank account
-- ✅ Deposit share consideration ($5.00 total)
+- ✅ Deposit share consideration ($5.25 total)
 - ✅ Transfer DGX Spark asset to corporation ($1.00)
 - ✅ Update NVIDIA entity registration
 - ✅ Create corporate GitHub organization
@@ -219,12 +222,18 @@ Research, development, and commercialization of artificial intelligence and mach
 
 **At Exit:**
 - Section 107(2) rollover: Trust distributes shares to beneficiaries
-- Each beneficiary claims LCGE:
-  - Founder (Class A): $1.25M LCGE
+- Each claimant claims LCGE:
+  - Founder (100 Class A, 19%): $1.25M LCGE
+  - Spouse (25 Class B direct, 5%): $1.25M LCGE
   - Child 1 (Class B via trust): $1.25M LCGE
   - Child 2 (Class B via trust): $1.25M LCGE
   - Child 3 (Class B via trust): $1.25M LCGE
-  - Total sheltered: $5M+ / Total tax saved: $2.5M+
+  - Total sheltered: $6.25M / Total tax saved: ~$1.67M+
+
+**Estate Succession (TO BE COMPLETED — see lawyer instruction letter):**
+- Will leaving Class A shares to spouse (s.70(6) rollover)
+- Shareholder agreement with buy-sell on death
+- Key-person life insurance on founder
 
 ---
 
@@ -249,4 +258,4 @@ Research, development, and commercialization of artificial intelligence and mach
 ---
 
 *Document created: February 9, 2026*
-*Last updated: February 9, 2026 @ 10:20 PM*
+*Last updated: February 19, 2026 — Revised share structure: added 25 Class B to spouse (5 LCGE claimants), added estate succession items*

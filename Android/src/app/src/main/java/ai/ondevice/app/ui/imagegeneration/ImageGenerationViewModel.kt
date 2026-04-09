@@ -38,6 +38,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -136,25 +137,14 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
           }
         }
       } catch (e: Exception) {
-        // Handle unexpected errors (e.g., cancellation)
-        if (e is kotlinx.coroutines.CancellationException) {
-          _uiState.update { state ->
-            state.copy(
-              isGenerating = false,
-              cancelled = true,
-              errorMessage = "Generation cancelled"
-            )
-          }
-          Log.d(TAG, "Generation cancelled by user")
-        } else {
-          _uiState.update { state ->
-            state.copy(
-              isGenerating = false,
-              errorMessage = "Unexpected error: ${e.message}"
-            )
-          }
-          Log.e(TAG, "Unexpected error during generation", e)
+        if (e is CancellationException) throw e
+        _uiState.update { state ->
+          state.copy(
+            isGenerating = false,
+            errorMessage = "Unexpected error: ${e.message}"
+          )
         }
+        Log.e(TAG, "Unexpected error during generation", e)
       }
     }
   }
@@ -235,6 +225,7 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
         }
         Log.d(TAG, "Image saved to gallery successfully")
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         withContext(Dispatchers.Main) {
           _uiState.update { it.copy(isSaving = false) }
           onError(e.message ?: "Failed to save image")
@@ -363,6 +354,7 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
 
         Log.d(TAG, "Image shared successfully: $filename")
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         withContext(Dispatchers.Main) {
           onError(e.message ?: "Failed to share image")
         }

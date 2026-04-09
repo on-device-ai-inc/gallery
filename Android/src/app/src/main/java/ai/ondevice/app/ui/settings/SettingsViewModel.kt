@@ -16,7 +16,6 @@
 
 package ai.ondevice.app.ui.settings
 
-import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -27,12 +26,16 @@ import ai.ondevice.app.data.DefaultDataStoreRepository
 import ai.ondevice.app.proto.AutoCleanup
 import ai.ondevice.app.proto.TextSize
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -52,8 +55,16 @@ class SettingsViewModel @Inject constructor(
     private val conversationDao: ConversationDao
 ) : ViewModel() {
 
+    sealed interface SettingsEvent {
+        data class ShareConversations(val intent: Intent) : SettingsEvent
+        data class ExportError(val message: String) : SettingsEvent
+    }
+
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    private val _events = MutableSharedFlow<SettingsEvent>(replay = 1)
+    val events: SharedFlow<SettingsEvent> = _events.asSharedFlow()
 
     init {
         loadSettings()
@@ -68,13 +79,15 @@ class SettingsViewModel @Inject constructor(
             val fullName = dataStoreRepository.readUserFullName()
             val nickname = dataStoreRepository.readUserNickname()
 
-            _uiState.value = _uiState.value.copy(
-                textSize = textSize,
-                autoCleanup = autoCleanup,
-                storageBudgetBytes = storageBudget,
-                userFullName = fullName,
-                userNickname = nickname
-            )
+            _uiState.update {
+                it.copy(
+                    textSize = textSize,
+                    autoCleanup = autoCleanup,
+                    storageBudgetBytes = storageBudget,
+                    userFullName = fullName,
+                    userNickname = nickname
+                )
+            }
         }
     }
 
@@ -82,22 +95,18 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val threads = conversationDao.getAllThreads()
-                var totalMessages = 0
-                var estimatedSize = 0L
+                val totalMessages = conversationDao.getTotalMessageCount()
+                val estimatedSize = conversationDao.getTotalEstimatedStorageBytes()
 
-                for (thread in threads) {
-                    val messages = conversationDao.getMessagesForThread(thread.id)
-                    totalMessages += messages.size
-                    // Estimate ~500 bytes per message on average
-                    estimatedSize += messages.sumOf { it.content.length * 2L + 100 }
+                _uiState.update {
+                    it.copy(
+                        conversationCount = threads.size,
+                        totalMessageCount = totalMessages,
+                        estimatedStorageBytes = estimatedSize
+                    )
                 }
-
-                _uiState.value = _uiState.value.copy(
-                    conversationCount = threads.size,
-                    totalMessageCount = totalMessages,
-                    estimatedStorageBytes = estimatedSize
-                )
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e(TAG, "Error loading storage info", e)
             }
         }
@@ -107,7 +116,7 @@ class SettingsViewModel @Inject constructor(
     fun setTextSize(textSize: TextSize) {
         viewModelScope.launch(Dispatchers.IO) {
             dataStoreRepository.saveTextSize(textSize)
-            _uiState.value = _uiState.value.copy(textSize = textSize)
+            _uiState.update { it.copy(textSize = textSize) }
         }
     }
 
@@ -115,7 +124,7 @@ class SettingsViewModel @Inject constructor(
     fun setAutoCleanup(autoCleanup: AutoCleanup) {
         viewModelScope.launch(Dispatchers.IO) {
             dataStoreRepository.saveAutoCleanup(autoCleanup)
-            _uiState.value = _uiState.value.copy(autoCleanup = autoCleanup)
+            _uiState.update { it.copy(autoCleanup = autoCleanup) }
         }
     }
 
@@ -123,7 +132,7 @@ class SettingsViewModel @Inject constructor(
     fun setStorageBudget(budgetBytes: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             dataStoreRepository.saveStorageBudget(budgetBytes)
-            _uiState.value = _uiState.value.copy(storageBudgetBytes = budgetBytes)
+            _uiState.update { it.copy(storageBudgetBytes = budgetBytes) }
         }
     }
 
@@ -166,43 +175,43 @@ class SettingsViewModel @Inject constructor(
     fun updateUserFullName(fullName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             dataStoreRepository.saveUserFullName(fullName)
-            _uiState.value = _uiState.value.copy(userFullName = fullName)
+            _uiState.update { it.copy(userFullName = fullName) }
         }
     }
 
     fun updateUserNickname(nickname: String) {
         viewModelScope.launch(Dispatchers.IO) {
             dataStoreRepository.saveUserNickname(nickname)
-            _uiState.value = _uiState.value.copy(userNickname = nickname)
+            _uiState.update { it.copy(userNickname = nickname) }
         }
     }
 
     // Story 5.1: Export Conversations
-    fun exportConversations(context: Context, format: ExportFormat) {
+    fun exportConversations(format: ExportFormat) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                _uiState.value = _uiState.value.copy(isExporting = true)
+                _uiState.update { it.copy(isExporting = true) }
 
                 val threads = conversationDao.getAllThreads()
-                val exportData = mutableListOf<ExportThread>()
+                val threadIds = threads.map { it.id }
+                val allMessages = conversationDao.getMessagesForThreads(threadIds)
+                val messagesByThread = allMessages.groupBy { it.threadId }
 
-                for (thread in threads) {
-                    val messages = conversationDao.getMessagesForThread(thread.id)
-                    exportData.add(
-                        ExportThread(
-                            id = thread.id,
-                            title = thread.title,
-                            createdAt = thread.createdAt,
-                            updatedAt = thread.updatedAt,
-                            isStarred = thread.isStarred,
-                            messages = messages.map { msg ->
-                                ExportMessage(
-                                    role = if (msg.isUser) "user" else "assistant",
-                                    content = msg.content,
-                                    timestamp = msg.timestamp
-                                )
-                            }
-                        )
+                val exportData = threads.map { thread ->
+                    val messages = messagesByThread[thread.id].orEmpty()
+                    ExportThread(
+                        id = thread.id,
+                        title = thread.title,
+                        createdAt = thread.createdAt,
+                        updatedAt = thread.updatedAt,
+                        isStarred = thread.isStarred,
+                        messages = messages.map { msg ->
+                            ExportMessage(
+                                role = if (msg.isUser) "user" else "assistant",
+                                content = msg.content,
+                                timestamp = msg.timestamp
+                            )
+                        }
                     )
                 }
 
@@ -221,26 +230,34 @@ class SettingsViewModel @Inject constructor(
                     ExportFormat.MARKDOWN -> "ondevice_conversations.md"
                 }
 
-                // Use share intent
-                withContext(Dispatchers.Main) {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = mimeType
-                        putExtra(Intent.EXTRA_TEXT, content)
-                        putExtra(Intent.EXTRA_SUBJECT, fileName)
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, "Export Conversations"))
+                // Build share intent and emit as event (no Context needed)
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = mimeType
+                    putExtra(Intent.EXTRA_TEXT, content)
+                    putExtra(Intent.EXTRA_SUBJECT, fileName)
                 }
+                _events.emit(
+                    SettingsEvent.ShareConversations(
+                        Intent.createChooser(shareIntent, "Export Conversations")
+                    )
+                )
 
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    lastExportSuccess = true
-                )
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        lastExportSuccess = true
+                    )
+                }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e(TAG, "Export failed", e)
-                _uiState.value = _uiState.value.copy(
-                    isExporting = false,
-                    lastExportSuccess = false
-                )
+                _events.emit(SettingsEvent.ExportError(e.message ?: "Export failed"))
+                _uiState.update {
+                    it.copy(
+                        isExporting = false,
+                        lastExportSuccess = false
+                    )
+                }
             }
         }
     }
@@ -300,7 +317,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearExportStatus() {
-        _uiState.value = _uiState.value.copy(lastExportSuccess = null)
+        _uiState.update { it.copy(lastExportSuccess = null) }
     }
 
     // Story 5.1: Clear All Data (for Privacy Center)
@@ -314,6 +331,7 @@ class SettingsViewModel @Inject constructor(
                 Log.d(TAG, "Cleared all conversation data")
                 loadStorageInfo()
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e(TAG, "Error clearing data", e)
             }
         }

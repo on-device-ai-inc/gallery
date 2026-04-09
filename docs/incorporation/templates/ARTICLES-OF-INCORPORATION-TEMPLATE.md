@@ -235,15 +235,22 @@ None (standard OBCA corporation)
 
 1. **100 Class A Common Shares** to [YOUR NAME]
    - Consideration: $1.00 ($0.01 per share)
-   - Purpose: Founder voting control
+   - Purpose: Founder voting control + personal LCGE
 
 2. **400 Class B Common Shares** to [FAMILY TRUST NAME]
    - Consideration: $4.00 ($0.01 per share)
-   - Purpose: LCGE multiplication for family beneficiaries
+   - Purpose: LCGE multiplication for children beneficiaries
 
-**Total consideration: $5.00**
+3. **25 Class B Common Shares** to [SPOUSE NAME] (direct, not via trust)
+   - Consideration: $0.25 ($0.01 per share — from spouse's own funds)
+   - Purpose: Independent LCGE claim for spouse
+   - **CRITICAL:** Payment must come from spouse's own bank account to avoid ITA s.74.1/74.2 attribution
 
-**Corporate value at inception: $5.00**
+**Total shares: 525**
+
+**Total consideration: $5.25**
+
+**Corporate value at inception: $5.25**
 
 **Why nominal value:**
 - Starts 24-month QSBC holding period immediately

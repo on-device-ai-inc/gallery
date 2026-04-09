@@ -19,6 +19,7 @@ package ai.ondevice.app.ui.modelmanager
 import android.content.Context
 import android.util.Log
 import androidx.activity.result.ActivityResult
+import androidx.compose.runtime.Stable
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,6 +40,7 @@ import ai.ondevice.app.data.Model
 import ai.ondevice.app.data.ModelAllowlist
 import ai.ondevice.app.data.ModelDownloadStatus
 import ai.ondevice.app.data.ModelDownloadStatusType
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import ai.ondevice.app.data.TMP_FILE_EXT
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.data.createLlmChatConfigs
@@ -52,6 +54,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -138,6 +141,7 @@ data class ModelManagerUiState(
  * cleaning up models. It also manages the UI state for model management, including the list of
  * tasks, models, download statuses, and initialization statuses.
  */
+@Stable
 @HiltViewModel
 open class ModelManagerViewModel
 @Inject
@@ -153,7 +157,7 @@ constructor(
   val uiState = _uiState.asStateFlow()
 
   val authService = AuthorizationService(context)
-  var curAccessToken: String = ""
+  @Volatile var curAccessToken: String = ""
 
   override fun onCleared() {
     super.onCleared()
@@ -199,11 +203,11 @@ constructor(
   }
 
   fun updateConfigValuesUpdateTrigger() {
-    _uiState.update { _uiState.value.copy(configValuesUpdateTrigger = System.currentTimeMillis()) }
+    _uiState.update { it.copy(configValuesUpdateTrigger = System.currentTimeMillis()) }
   }
 
   fun selectModel(model: Model) {
-    _uiState.update { _uiState.value.copy(selectedModel = model) }
+    _uiState.update { it.copy(selectedModel = model) }
   }
 
   fun downloadModel(task: Task, model: Model) {
@@ -236,11 +240,6 @@ constructor(
       deleteDirFromExternalFilesDir(model.normalizedName)
     }
 
-    // Update model download status to NotDownloaded.
-    val curModelDownloadStatus = uiState.value.modelDownloadStatus.toMutableMap()
-    curModelDownloadStatus[model.name] =
-      ModelDownloadStatus(status = ModelDownloadStatusType.NOT_DOWNLOADED)
-
     // Delete model from the list if model is imported as a local model.
     if (model.imported) {
       for (curTask in uiState.value.tasks) {
@@ -250,7 +249,6 @@ constructor(
         }
         curTask.updateTrigger.value = System.currentTimeMillis()
       }
-      curModelDownloadStatus.remove(model.name)
 
       // Update data store.
       val importedModels = dataStoreRepository.readImportedModels().toMutableList()
@@ -260,12 +258,20 @@ constructor(
       }
       dataStoreRepository.saveImportedModels(importedModels = importedModels)
     }
-    val newUiState =
-      uiState.value.copy(
+
+    // Update model download status to NotDownloaded.
+    _uiState.update { current ->
+      val curModelDownloadStatus = current.modelDownloadStatus.toMutableMap()
+      curModelDownloadStatus[model.name] =
+        ModelDownloadStatus(status = ModelDownloadStatusType.NOT_DOWNLOADED)
+      if (model.imported) {
+        curModelDownloadStatus.remove(model.name)
+      }
+      current.copy(
         modelDownloadStatus = curModelDownloadStatus,
-        tasks = uiState.value.tasks.toList(),
+        tasks = current.tasks.toList(),
       )
-    _uiState.update { newUiState }
+    }
   }
 
   fun initializeModel(context: Context, task: Task, model: Model, force: Boolean = false) {
@@ -280,9 +286,17 @@ constructor(
         return@launch
       }
 
-      // Skip if initialization is in progress.
-      if (model.initializing) {
-        model.cleanUpAfterInit = false
+      // Atomic check-and-set to prevent TOCTOU race between coroutines.
+      var shouldSkip = false
+      ModelRuntimeStateManager.update(model.name) { state ->
+        if (state.initializing) {
+          shouldSkip = true
+          state.copy(cleanUpAfterInit = false)
+        } else {
+          state.copy(initializing = true)
+        }
+      }
+      if (shouldSkip) {
         Log.d(TAG, "Model '${model.name}' is being initialized. Skipping.")
         return@launch
       }
@@ -290,15 +304,14 @@ constructor(
       // Clean up.
       cleanupModel(context = context, task = task, model = model)
 
-      // Start initialization.
       Log.d(TAG, "Initializing model '${model.name}'...")
-      model.initializing = true
 
       // Show initializing status after a delay. When the delay expires, check if the model has
       // been initialized or not. If so, skip.
       launch {
         delay(500)
-        if (model.instance == null && model.initializing) {
+        val state = ModelRuntimeStateManager.getValue(model.name)
+        if (state.instance == null && state.initializing) {
           updateModelInitializationStatus(
             model = model,
             status = ModelInitializationStatusType.INITIALIZING,
@@ -307,14 +320,15 @@ constructor(
       }
 
       val onDone: (error: String) -> Unit = { error ->
-        model.initializing = false
-        if (model.instance != null) {
+        ModelRuntimeStateManager.update(model.name) { it.copy(initializing = false) }
+        val stateAfterInit = ModelRuntimeStateManager.getValue(model.name)
+        if (stateAfterInit.instance != null) {
           Log.d(TAG, "Model '${model.name}' initialized successfully")
           updateModelInitializationStatus(
             model = model,
             status = ModelInitializationStatusType.INITIALIZED,
           )
-          if (model.cleanUpAfterInit) {
+          if (stateAfterInit.cleanUpAfterInit) {
             Log.d(TAG, "Model '${model.name}' needs cleaning up after init.")
             cleanupModel(context = context, task = task, model = model)
           }
@@ -340,12 +354,14 @@ constructor(
   }
 
   fun cleanupModel(context: Context, task: Task, model: Model) {
-    if (model.instance != null) {
-      model.cleanUpAfterInit = false
+    val runtimeState = ModelRuntimeStateManager.getValue(model.name)
+    if (runtimeState.instance != null) {
+      ModelRuntimeStateManager.update(model.name) { it.copy(cleanUpAfterInit = false) }
       Log.d(TAG, "Cleaning up model '${model.name}'...")
       val onDone: () -> Unit = {
-        model.instance = null
-        model.initializing = false
+        ModelRuntimeStateManager.update(model.name) {
+          it.copy(instance = null, initializing = false)
+        }
         updateModelInitializationStatus(
           model = model,
           status = ModelInitializationStatusType.NOT_INITIALIZED,
@@ -362,22 +378,17 @@ constructor(
     } else {
       // When model is being initialized and we are trying to clean it up at same time, we mark it
       // to clean up and it will be cleaned up after initialization is done.
-      if (model.initializing) {
+      if (runtimeState.initializing) {
         Log.d(
           TAG,
           "Model '${model.name}' is still initializing.. Will clean up after it is done initializing",
         )
-        model.cleanUpAfterInit = true
+        ModelRuntimeStateManager.update(model.name) { it.copy(cleanUpAfterInit = true) }
       }
     }
   }
 
   fun setDownloadStatus(curModel: Model, status: ModelDownloadStatus) {
-    // Update model download progress.
-    val curModelDownloadStatus = uiState.value.modelDownloadStatus.toMutableMap()
-    curModelDownloadStatus[curModel.name] = status
-    val newUiState = uiState.value.copy(modelDownloadStatus = curModelDownloadStatus)
-
     // Delete downloaded file if status is failed or not_downloaded.
     if (
       status.status == ModelDownloadStatusType.FAILED ||
@@ -386,46 +397,66 @@ constructor(
       deleteFileFromExternalFilesDir(curModel.downloadFileName)
     }
 
-    _uiState.update { newUiState }
+    // Update model download progress.
+    _uiState.update { current ->
+      val curModelDownloadStatus = current.modelDownloadStatus.toMutableMap()
+      curModelDownloadStatus[curModel.name] = status
+      current.copy(modelDownloadStatus = curModelDownloadStatus)
+    }
   }
 
   fun addTextInputHistory(text: String) {
-    if (uiState.value.textInputHistory.indexOf(text) < 0) {
-      val newHistory = uiState.value.textInputHistory.toMutableList()
-      newHistory.add(0, text)
-      if (newHistory.size > TEXT_INPUT_HISTORY_MAX_SIZE) {
-        newHistory.removeAt(newHistory.size - 1)
+    _uiState.update { current ->
+      if (current.textInputHistory.indexOf(text) < 0) {
+        val newHistory = current.textInputHistory.toMutableList()
+        newHistory.add(0, text)
+        if (newHistory.size > TEXT_INPUT_HISTORY_MAX_SIZE) {
+          newHistory.removeAt(newHistory.size - 1)
+        }
+        current.copy(textInputHistory = newHistory)
+      } else {
+        // Promote: move existing item to front
+        val index = current.textInputHistory.indexOf(text)
+        val newHistory = current.textInputHistory.toMutableList()
+        newHistory.removeAt(index)
+        newHistory.add(0, text)
+        current.copy(textInputHistory = newHistory)
       }
-      _uiState.update { _uiState.value.copy(textInputHistory = newHistory) }
-      dataStoreRepository.saveTextInputHistory(_uiState.value.textInputHistory)
-    } else {
-      promoteTextInputHistoryItem(text)
     }
+    dataStoreRepository.saveTextInputHistory(_uiState.value.textInputHistory)
   }
 
   fun promoteTextInputHistoryItem(text: String) {
-    val index = uiState.value.textInputHistory.indexOf(text)
-    if (index >= 0) {
-      val newHistory = uiState.value.textInputHistory.toMutableList()
-      newHistory.removeAt(index)
-      newHistory.add(0, text)
-      _uiState.update { _uiState.value.copy(textInputHistory = newHistory) }
-      dataStoreRepository.saveTextInputHistory(_uiState.value.textInputHistory)
+    _uiState.update { current ->
+      val index = current.textInputHistory.indexOf(text)
+      if (index >= 0) {
+        val newHistory = current.textInputHistory.toMutableList()
+        newHistory.removeAt(index)
+        newHistory.add(0, text)
+        current.copy(textInputHistory = newHistory)
+      } else {
+        current
+      }
     }
+    dataStoreRepository.saveTextInputHistory(_uiState.value.textInputHistory)
   }
 
   fun deleteTextInputHistory(text: String) {
-    val index = uiState.value.textInputHistory.indexOf(text)
-    if (index >= 0) {
-      val newHistory = uiState.value.textInputHistory.toMutableList()
-      newHistory.removeAt(index)
-      _uiState.update { _uiState.value.copy(textInputHistory = newHistory) }
-      dataStoreRepository.saveTextInputHistory(_uiState.value.textInputHistory)
+    _uiState.update { current ->
+      val index = current.textInputHistory.indexOf(text)
+      if (index >= 0) {
+        val newHistory = current.textInputHistory.toMutableList()
+        newHistory.removeAt(index)
+        current.copy(textInputHistory = newHistory)
+      } else {
+        current
+      }
     }
+    dataStoreRepository.saveTextInputHistory(_uiState.value.textInputHistory)
   }
 
   fun clearTextInputHistory() {
-    _uiState.update { _uiState.value.copy(textInputHistory = mutableListOf()) }
+    _uiState.update { it.copy(textInputHistory = mutableListOf()) }
     dataStoreRepository.saveTextInputHistory(_uiState.value.textInputHistory)
   }
 
@@ -438,9 +469,20 @@ constructor(
   }
 
   fun getModelUrlResponse(model: Model, accessToken: String? = null): Int {
+    var connection: HttpURLConnection? = null
     try {
       val url = URL(model.url)
-      val connection = url.openConnection() as HttpURLConnection
+      // Security: Validate URL scheme and host before connecting
+      if (url.protocol != "https") {
+        Log.e(TAG, "Insecure protocol rejected: ${url.protocol}")
+        return -1
+      }
+      val trustedHosts = setOf("huggingface.co", "cdn-lfs.huggingface.co", "cdn-lfs-us-1.huggingface.co")
+      if (trustedHosts.none { url.host == it || url.host.endsWith(".$it") }) {
+        Log.e(TAG, "Untrusted host rejected")
+        return -1
+      }
+      connection = url.openConnection() as HttpURLConnection
       if (accessToken != null) {
         connection.setRequestProperty("Authorization", "Bearer $accessToken")
       }
@@ -449,8 +491,11 @@ constructor(
       // Report the result.
       return connection.responseCode
     } catch (e: Exception) {
-      Log.e(TAG, "$e")
+      if (e is CancellationException) throw e
+      Log.e(TAG, "Error checking model URL: $e")
       return -1
+    } finally {
+      connection?.disconnect()
     }
   }
 
@@ -486,22 +531,20 @@ constructor(
       task.updateTrigger.value = System.currentTimeMillis()
     }
 
-    // Add initial status and states.
-    val modelDownloadStatus = uiState.value.modelDownloadStatus.toMutableMap()
-    val modelInstances = uiState.value.modelInitializationStatus.toMutableMap()
-    modelDownloadStatus[model.name] =
-      ModelDownloadStatus(
-        status = ModelDownloadStatusType.SUCCEEDED,
-        receivedBytes = info.fileSize,
-        totalBytes = info.fileSize,
-      )
-    modelInstances[model.name] =
-      ModelInitializationStatus(status = ModelInitializationStatusType.NOT_INITIALIZED)
-
-    // Update ui state.
-    _uiState.update {
-      uiState.value.copy(
-        tasks = uiState.value.tasks.toList(),
+    // Update ui state with initial status and states.
+    _uiState.update { current ->
+      val modelDownloadStatus = current.modelDownloadStatus.toMutableMap()
+      val modelInstances = current.modelInitializationStatus.toMutableMap()
+      modelDownloadStatus[model.name] =
+        ModelDownloadStatus(
+          status = ModelDownloadStatusType.SUCCEEDED,
+          receivedBytes = info.fileSize,
+          totalBytes = info.fileSize,
+        )
+      modelInstances[model.name] =
+        ModelInitializationStatus(status = ModelInitializationStatusType.NOT_INITIALIZED)
+      current.copy(
+        tasks = current.tasks.toList(),
         modelDownloadStatus = modelDownloadStatus,
         modelInitializationStatus = modelInstances,
       )
@@ -530,7 +573,7 @@ constructor(
 
       // Check expiration (with 5-minute buffer).
       val curTs = System.currentTimeMillis()
-      val expirationTs = tokenData.expiresAtMs - 5 * 60
+      val expirationTs = tokenData.expiresAtMs - 5 * 60 * 1000L
       Log.d(
         TAG,
         "Checking whether token has expired or not. Current ts: $curTs, expires at: $expirationTs",
@@ -558,6 +601,7 @@ constructor(
         ProjectConfig.redirectUri.toUri(),
       )
       .setScope("read-repos")
+      .setCodeVerifier(null) // Security: AppAuth generates PKCE code_verifier automatically when null
       .build()
   }
 
@@ -669,7 +713,9 @@ constructor(
                 tokenStatusAndData.status == TokenStatus.NOT_EXPIRED &&
                   tokenStatusAndData.data != null
               ) {
-                model.accessToken = tokenStatusAndData.data.accessToken
+                ModelRuntimeStateManager.update(model.name) {
+                  it.copy(accessToken = tokenStatusAndData.data.accessToken)
+                }
               }
               Log.d(TAG, "Sending a new download request for '${model.name}'")
               downloadRepository.downloadModel(
@@ -688,7 +734,7 @@ constructor(
 
   fun loadModelAllowlist() {
     _uiState.update {
-      uiState.value.copy(loadingModelAllowlist = true, loadingModelAllowlistError = "")
+      it.copy(loadingModelAllowlist = true, loadingModelAllowlistError = "")
     }
 
     viewModelScope.launch(Dispatchers.IO) {
@@ -696,9 +742,11 @@ constructor(
         // Load model allowlist json.
         var modelAllowlist: ModelAllowlist? = null
 
-        // Try to read the test allowlist first.
-        Log.d(TAG, "Loading test model allowlist.")
-        modelAllowlist = readModelAllowlistFromDisk(fileName = MODEL_ALLOWLIST_TEST_FILENAME)
+        // Try to read the test allowlist first (debug builds only).
+        if (BuildConfig.DEBUG) {
+          Log.d(TAG, "Loading test model allowlist.")
+          modelAllowlist = readModelAllowlistFromDisk(fileName = MODEL_ALLOWLIST_TEST_FILENAME)
+        }
         if (modelAllowlist == null) {
           // Load from bundled raw resource (model_allowlist.json with DeepSeek/Qwen/Phi models).
           Log.d(TAG, "Loading model allowlist from bundled resource.")
@@ -713,6 +761,7 @@ constructor(
               saveModelAllowlistToDisk(modelAllowlistContent = content)
             }
           } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Failed to load model allowlist from bundled resource", e)
           }
 
@@ -724,14 +773,14 @@ constructor(
 
         if (modelAllowlist == null) {
           _uiState.update {
-            uiState.value.copy(
+            it.copy(
               loadingModelAllowlistError = context.getString(R.string.error_model_allowlist_failed)
             )
           }
           return@launch
         }
 
-        Log.d(TAG, "Allowlist: $modelAllowlist")
+        Log.d(TAG, "Allowlist loaded with ${modelAllowlist.models.size} models")
 
         // Convert models in the allowlist.
         val curTasks = customTasks.map { it.task }
@@ -756,6 +805,7 @@ constructor(
         // Process pending downloads.
         processPendingDownloads()
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         e.printStackTrace()
       }
     }
@@ -781,6 +831,7 @@ constructor(
       file.writeText(modelAllowlistContent)
       Log.d(TAG, "Done: saving model allowlist to disk.")
     } catch (e: Exception) {
+      if (e is CancellationException) throw e
       Log.e(TAG, "failed to write model allowlist to disk", e)
     }
   }
@@ -793,12 +844,13 @@ constructor(
       val file = File(externalFilesDir, fileName)
       if (file.exists()) {
         val content = file.readText()
-        Log.d(TAG, "Model allowlist content from local file: $content")
+        Log.d(TAG, "Model allowlist loaded from local file (${content.length} bytes)")
 
         val gson = Gson()
         return gson.fromJson(content, ModelAllowlist::class.java)
       }
     } catch (e: Exception) {
+      if (e is CancellationException) throw e
       Log.e(TAG, "failed to read model allowlist from disk", e)
       return null
     }
@@ -949,7 +1001,7 @@ constructor(
         model.getPath(context = context, fileName = "${model.downloadFileName}.$TMP_FILE_EXT")
       val tmpFile = File(tmpFilePath)
       receivedBytes = tmpFile.length()
-      totalBytes = model.totalBytes
+      totalBytes = ModelRuntimeStateManager.getValue(model.name).totalBytes
       Log.d(TAG, "${model.name} is partially downloaded. $receivedBytes/$totalBytes")
     }
     // Fully downloaded.
@@ -972,7 +1024,9 @@ constructor(
   private fun isFileInExternalFilesDir(fileName: String): Boolean {
     if (externalFilesDir != null) {
       val file = File(externalFilesDir, fileName)
-      return file.exists()
+      // Security: Verify resolved path is inside externalFilesDir (prevent path traversal)
+      return file.canonicalPath.startsWith(externalFilesDir!!.canonicalPath + File.separator) &&
+             file.exists()
     } else {
       return false
     }
@@ -1002,10 +1056,11 @@ constructor(
     status: ModelInitializationStatusType,
     error: String = "",
   ) {
-    val curModelInstance = uiState.value.modelInitializationStatus.toMutableMap()
-    curModelInstance[model.name] = ModelInitializationStatus(status = status, error = error)
-    val newUiState = uiState.value.copy(modelInitializationStatus = curModelInstance)
-    _uiState.update { newUiState }
+    _uiState.update { current ->
+      val curModelInstance = current.modelInitializationStatus.toMutableMap()
+      curModelInstance[model.name] = ModelInitializationStatus(status = status, error = error)
+      current.copy(modelInitializationStatus = curModelInstance)
+    }
   }
 
   private fun isModelDownloaded(model: Model): Boolean {

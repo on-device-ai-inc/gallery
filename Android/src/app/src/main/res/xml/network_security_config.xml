@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright 2025 OnDevice Inc.
+
+ Security: Explicit network security configuration.
+ - Blocks cleartext HTTP traffic
+ - Trusts only system CAs
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

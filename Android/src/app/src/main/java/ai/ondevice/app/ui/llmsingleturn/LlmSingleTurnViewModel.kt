@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.ondevice.app.common.processLlmResponse
 import ai.ondevice.app.data.Model
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.common.chat.ChatMessageBenchmarkLlmResult
 import ai.ondevice.app.ui.common.chat.Stat
@@ -74,8 +75,15 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
       setInProgress(true)
       setPreparing(true)
 
-      // Wait for instance to be initialized.
-      while (model.instance == null) {
+      // Wait for instance to be initialized (with 30s timeout).
+      val initDeadline = System.currentTimeMillis() + 30_000L
+      while (ModelRuntimeStateManager.getValue(model.name).instance == null) {
+        if (System.currentTimeMillis() > initDeadline) {
+          Log.e(TAG, "Model initialization timed out after 30s")
+          setInProgress(false)
+          setPreparing(false)
+          return@launch
+        }
         delay(100)
       }
 
@@ -93,7 +101,7 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
       delay(500)
 
       // Run inference.
-      val instance = model.instance as LlmModelInstance
+      val instance = ModelRuntimeStateManager.getValue(model.name).instance as LlmModelInstance
       // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
       val prefillTokens = input.split(" ").size
 
@@ -178,16 +186,16 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
     updateResponse(model = model, promptTemplateType = promptTemplateType, response = "")
 
     this._uiState.update {
-      this.uiState.value.copy(selectedPromptTemplateType = promptTemplateType)
+      it.copy(selectedPromptTemplateType = promptTemplateType)
     }
   }
 
   fun setInProgress(inProgress: Boolean) {
-    _uiState.update { _uiState.value.copy(inProgress = inProgress) }
+    _uiState.update { it.copy(inProgress = inProgress) }
   }
 
   fun setPreparing(preparing: Boolean) {
-    _uiState.update { _uiState.value.copy(preparing = preparing) }
+    _uiState.update { it.copy(preparing = preparing) }
   }
 
   fun updateResponse(model: Model, promptTemplateType: PromptTemplateType, response: String) {
@@ -221,7 +229,7 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
     viewModelScope.launch(Dispatchers.Default) {
       setInProgress(false)
       // Null-safe cast to prevent crash if model instance is not initialized
-      val instance = model.instance as? LlmModelInstance
+      val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
       if (instance != null) {
         instance.conversation.cancelProcess()
       } else {

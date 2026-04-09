@@ -27,6 +27,7 @@ import ai.ondevice.app.data.DEFAULT_TEMPERATURE
 import ai.ondevice.app.data.DEFAULT_TOPK
 import ai.ondevice.app.data.DEFAULT_TOPP
 import ai.ondevice.app.data.Model
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Conversation
@@ -39,7 +40,7 @@ import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
 import java.io.ByteArrayOutputStream
-import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CancellationException
 
 private const val TAG = "AGLlmChatModelHelper"
 
@@ -120,8 +121,11 @@ object LlmChatModelHelper {
           )
         )
       ExperimentalFlags.enableConversationConstrainedDecoding = false
-      model.instance = LlmModelInstance(engine = engine, conversation = conversation)
+      ModelRuntimeStateManager.update(model.name) {
+        it.copy(instance = LlmModelInstance(engine = engine, conversation = conversation))
+      }
     } catch (e: Exception) {
+      if (e is CancellationException) throw e
       onDone(cleanUpMediapipeTaskErrorMessage(e.message ?: "Unknown error"))
       return
     }
@@ -140,7 +144,7 @@ object LlmChatModelHelper {
     try {
       Log.d(TAG, "Resetting conversation for model '${model.name}'")
 
-      val instance = model.instance as LlmModelInstance? ?: return
+      val instance = ModelRuntimeStateManager.getValue(model.name).instance as LlmModelInstance? ?: return
       instance.conversation.close()
 
       val engine = instance.engine
@@ -172,26 +176,30 @@ object LlmChatModelHelper {
 
       Log.d(TAG, "Resetting done")
     } catch (e: Exception) {
+      if (e is CancellationException) throw e
       Log.d(TAG, "Failed to reset conversation", e)
     }
   }
 
   fun cleanUp(model: Model, onDone: () -> Unit) {
-    if (model.instance == null) {
+    val runtimeInstance = ModelRuntimeStateManager.getValue(model.name).instance
+    if (runtimeInstance == null) {
       return
     }
 
-    val instance = model.instance as LlmModelInstance
+    val instance = runtimeInstance as LlmModelInstance
 
     try {
       instance.conversation.close()
     } catch (e: Exception) {
+      if (e is CancellationException) throw e
       Log.e(TAG, "Failed to close the conversation: ${e.message}")
     }
 
     try {
       instance.engine.close()
     } catch (e: Exception) {
+      if (e is CancellationException) throw e
       Log.e(TAG, "Failed to close the engine: ${e.message}")
     }
 
@@ -199,7 +207,7 @@ object LlmChatModelHelper {
     if (onCleanUp != null) {
       onCleanUp()
     }
-    model.instance = null
+    ModelRuntimeStateManager.update(model.name) { it.copy(instance = null) }
 
     onDone()
     Log.d(TAG, "Clean up done.")
@@ -214,7 +222,7 @@ object LlmChatModelHelper {
     images: List<Bitmap> = listOf(),
     audioClips: List<ByteArray> = listOf(),
   ) {
-    val instance = model.instance as LlmModelInstance
+    val instance = ModelRuntimeStateManager.getValue(model.name).instance as LlmModelInstance
 
     // Set listener.
     if (!cleanUpListeners.containsKey(model.name)) {

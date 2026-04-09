@@ -57,13 +57,32 @@ Tell your settlor:
 
 ---
 
+## Share Issuance — Immediately After Trust Signing
+
+### Issue All Shares (Same Day or Next Day)
+
+- [ ] **Certificate A-1:** 100 Class A to NASHIE CHIVHUNGA — $1.00
+- [ ] **Certificate B-1:** 400 Class B to [TRUST NAME] — $4.00
+- [ ] **Certificate B-2:** 25 Class B to [SPOUSE NAME] directly — $0.25
+  - **CRITICAL:** Spouse pays $0.25 from HER OWN bank account (not joint, not reimbursed)
+  - Retain bank statement or e-transfer receipt as source-of-funds proof
+- [ ] Update securities register with all 3 certificates
+
+## Estate Succession — Complete Within 30 Days
+
+- [ ] **Draft will** leaving Class A shares to spouse (enables s.70(6) rollover — saves ~$535K)
+- [ ] **Draft shareholder agreement** with buy-sell on death trigger
+- [ ] **Research key-person life insurance** ($500K-$1M coverage on founder)
+- [ ] **Confirm successor trustee** provisions in trust deed
+
 ## What Unlocks After Trust Deed Execution
 
 ```
-Trust Deed Signed ──→ Issue Shares ──→ DGX Transfer ──→ NVIDIA Update
+Trust Deed Signed ──→ Issue Shares (A-1, B-1, B-2) ──→ DGX Transfer ──→ NVIDIA Update
                           │
-                          ├──→ Bank Account
-                          └──→ QSBC Clock Starts (24 months)
+                          ├──→ Bank Account ($6.25 deposit)
+                          ├──→ QSBC Clock Starts (24 months)
+                          └──→ Estate Succession (will + buy-sell + insurance)
 ```
 
 *Every day of delay = one more day before LCGE eligibility.*

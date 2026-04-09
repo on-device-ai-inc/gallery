@@ -67,15 +67,8 @@ android {
         "\"${localProperties.getProperty("hf.redirect.uri", "ai.ondevice.app:/oauth2redirect")}\""
     )
 
-    // Brave Search API key for web search feature
-    // Priority: Environment variable > local.properties > empty string
-    val braveApiKey = System.getenv("BRAVE_API_KEY")
-        ?: localProperties.getProperty("brave.api.key", "")
-    buildConfigField(
-        "String",
-        "BRAVE_API_KEY",
-        "\"$braveApiKey\""
-    )
+    // Web search disabled — pushed to later release
+    // BRAVE_API_KEY BuildConfig field removed to ensure zero API keys in APK
   }
 
   signingConfigs {
@@ -89,10 +82,8 @@ android {
 
   buildTypes {
     release {
-      // TODO: Enable ProGuard after adding proper rules for auto-value library
-      // See: https://github.com/google/auto/issues/982
-      isMinifyEnabled = false
-      isShrinkResources = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       // Only use release signing if credentials are available
       val hasSigningCredentials = System.getenv("SIGNING_STORE_PASSWORD")?.isNotEmpty() == true

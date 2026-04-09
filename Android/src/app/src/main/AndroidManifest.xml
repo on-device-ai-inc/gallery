@@ -43,6 +43,7 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:icon="@mipmap/ic_launcher"
         android:label="OnDevice"
         android:roundIcon="@mipmap/ic_launcher"
@@ -75,8 +76,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- This is for deep linking (e.g. ai.ondevice.app://model/taskId/modelName) -->
-            <!-- Note: AppAuth's RedirectUriReceiverActivity handles ai.ondevice.app:/oauth2redirect -->
+            <!--
+              Deep linking (e.g. ai.ondevice.app://model/taskId/modelName).
+              SECURITY NOTE: This uses a custom scheme, NOT https. android:autoVerify="true"
+              only works with https App Links. Any app could register the same custom scheme
+              and intercept these intents. Mitigations:
+                1. The scheme+host+pathPrefix combination is unique to this app.
+                2. All data received via deep link intent extras MUST be validated before use.
+                3. OAuth redirect is handled by AppAuth's RedirectUriReceiverActivity
+                   (ai.ondevice.app:/oauth2redirect), NOT by MainActivity.
+              TODO: Migrate to https App Links (https://on-device.app/.well-known/assetlinks.json)
+                    once DNS is configured, then add android:autoVerify="true".
+            -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -85,18 +96,19 @@
 
                 <data
                     android:scheme="ai.ondevice.app"
-                    android:host="model" />
+                    android:host="model"
+                    android:pathPrefix="/" />
             </intent-filter>
         </activity>
 
         <!-- Set themes for activities that are used for viewing open source licenses -->
         <activity
             android:name="com.google.android.gms.oss.licenses.OssLicensesMenuActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@style/Theme.Gallery.OssLicenses" />
         <activity
             android:name="com.google.android.gms.oss.licenses.OssLicensesActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@style/Theme.Gallery.OssLicenses" />
 
         <provider

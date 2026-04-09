@@ -24,11 +24,13 @@ import ai.ondevice.app.customtasks.common.CustomTask
 import ai.ondevice.app.customtasks.common.CustomTaskData
 import ai.ondevice.app.data.CategoryInfo
 import ai.ondevice.app.data.Model
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import java.io.File
 import javax.inject.Inject
 import kotlin.math.min
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -103,7 +105,7 @@ class ExampleCustomTask @Inject constructor() : CustomTask {
     onDone: (String) -> Unit,
   ) {
     coroutineScope.launch(Dispatchers.IO) {
-      model.instance = null
+      ModelRuntimeStateManager.update(model.name) { it.copy(instance = null) }
       try {
         // Read model file content.
         val file =
@@ -126,7 +128,9 @@ class ExampleCustomTask @Inject constructor() : CustomTask {
         // In a real application, this instance would be an object that provides
         // inference capabilities, such as a TFLite interpreter or a pointer to a model
         // loaded in memory.
-        model.instance = ExampleCustomTaskModelInstance(content = content)
+        ModelRuntimeStateManager.update(model.name) {
+          it.copy(instance = ExampleCustomTaskModelInstance(content = content))
+        }
 
         // Simulate long initialization time.
         delay(1500)
@@ -134,6 +138,7 @@ class ExampleCustomTask @Inject constructor() : CustomTask {
         // Notify the initialization is done.
         onDone("")
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         // Handle errors.
         onDone(e.message ?: "Failed to read model file")
       }
@@ -150,7 +155,7 @@ class ExampleCustomTask @Inject constructor() : CustomTask {
     // associated with the model, such as closing a TFLite interpreter
     // or freeing up model memory. For this example, we simply set the
     // instance to null.
-    model.instance = null
+    ModelRuntimeStateManager.update(model.name) { it.copy(instance = null) }
 
     // Notify the cleanup is done.
     onDone()

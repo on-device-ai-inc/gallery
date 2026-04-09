@@ -16,6 +16,7 @@
 
 package ai.ondevice.app.ui.common.modelitem
 
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -150,7 +151,8 @@ fun ModelNameAndStatus(
 
         // Status label
         else {
-          var sizeLabel = model.totalBytes.humanReadableSize()
+          val runtimeTotalBytes = ModelRuntimeStateManager.getValue(model.name).totalBytes
+          var sizeLabel = runtimeTotalBytes.humanReadableSize()
           if (model.localFileRelativeDirPathOverride.isNotEmpty()) {
             sizeLabel = "{ext_files_dir}/${model.localFileRelativeDirPathOverride}"
           }
@@ -161,7 +163,7 @@ fun ModelNameAndStatus(
             if (inProgress || isPartiallyDownloaded) {
               var totalSize = downloadStatus.totalBytes
               if (totalSize == 0L) {
-                totalSize = model.totalBytes
+                totalSize = runtimeTotalBytes
               }
               sizeLabel =
                 "${downloadStatus.receivedBytes.humanReadableSize(extraDecimalForGbAndAbove = true)} of ${totalSize.humanReadableSize()}"

@@ -18,6 +18,56 @@ package ai.ondevice.app.data
 
 import android.content.Context
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+
+/**
+ * Thread-safe runtime state for a model instance.
+ *
+ * This state is managed externally (by [ModelRuntimeStateManager]) rather than stored on the
+ * [Model] data class, preventing unsynchronized cross-thread mutation.
+ */
+data class ModelRuntimeState(
+  /** The initialized model instance (e.g., LlmModelInstance, Engine, etc.). */
+  val instance: Any? = null,
+  /** Whether the model is currently being initialized. */
+  val initializing: Boolean = false,
+  /** Whether the model should be cleaned up immediately after initialization completes. */
+  val cleanUpAfterInit: Boolean = false,
+  /** Total bytes for download (model + extra data files), computed once by [Model.preProcess]. */
+  val totalBytes: Long = 0L,
+  /** HuggingFace access token for gated model downloads. */
+  val accessToken: String? = null,
+)
+
+/**
+ * Centralized, thread-safe manager for per-model runtime state.
+ *
+ * All reads and writes to [ModelRuntimeState] go through this singleton so that every observer
+ * sees a consistent snapshot via [StateFlow].
+ */
+object ModelRuntimeStateManager {
+  private val states = ConcurrentHashMap<String, MutableStateFlow<ModelRuntimeState>>()
+
+  /** Returns a [StateFlow] for the given model, creating one with defaults if absent. */
+  fun getState(modelName: String): StateFlow<ModelRuntimeState> =
+    getOrCreateMutable(modelName).asStateFlow()
+
+  /** Atomically updates the runtime state for [modelName]. */
+  fun update(modelName: String, transform: (ModelRuntimeState) -> ModelRuntimeState) {
+    getOrCreateMutable(modelName).update(transform)
+  }
+
+  /** Convenience: read the current snapshot without collecting. */
+  fun getValue(modelName: String): ModelRuntimeState =
+    getOrCreateMutable(modelName).value
+
+  private fun getOrCreateMutable(modelName: String): MutableStateFlow<ModelRuntimeState> =
+    states.computeIfAbsent(modelName) { MutableStateFlow(ModelRuntimeState()) }
+}
 
 data class ModelDataFile(
   val name: String,
@@ -236,18 +286,12 @@ data class Model(
 
   // The following fields are managed by the app. Don't need to set manually.
   //
-  var normalizedName: String = "",
-  var instance: Any? = null,
-  var initializing: Boolean = false,
-  // TODO(jingjin): use a "queue" system to manage model init and cleanup.
-  var cleanUpAfterInit: Boolean = false,
-  var configValues: Map<String, Any> = mapOf(),
-  var totalBytes: Long = 0L,
-  var accessToken: String? = null,
+  // NOTE: `instance`, `initializing`, `cleanUpAfterInit`, `totalBytes`, and `accessToken`
+  // have been moved to ModelRuntimeState / ModelRuntimeStateManager for thread-safe access.
+  @Volatile var configValues: Map<String, Any> = mapOf(),
 ) {
-  init {
-    normalizedName = NORMALIZE_NAME_REGEX.replace(name, "_")
-  }
+  /** Normalized form of [name] — computed once, never mutated. */
+  val normalizedName: String = NORMALIZE_NAME_REGEX.replace(name, "_")
 
   fun preProcess() {
     val configValues: MutableMap<String, Any> = mutableMapOf()
@@ -255,7 +299,8 @@ data class Model(
       configValues[config.key.label] = config.defaultValue
     }
     this.configValues = configValues
-    this.totalBytes = this.sizeInBytes + this.extraDataFiles.sumOf { it.sizeInBytes }
+    val computedTotalBytes = this.sizeInBytes + this.extraDataFiles.sumOf { it.sizeInBytes }
+    ModelRuntimeStateManager.update(name) { it.copy(totalBytes = computedTotalBytes) }
   }
 
   fun getPath(context: Context, fileName: String = downloadFileName): String {

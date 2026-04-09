@@ -109,6 +109,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -140,6 +142,7 @@ import ai.ondevice.app.ui.theme.bodyLargeNarrow
 import java.util.concurrent.Executors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "AGMessageInputText"
 
@@ -172,6 +175,7 @@ fun MessageInputText(
   showImagePickerInMenu: Boolean = false,
   showAudioItemsInMenu: Boolean = false,
   showStopButtonWhenInProgress: Boolean = false,
+  focusRequester: FocusRequester = remember { FocusRequester() },
 ) {
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
@@ -242,11 +246,15 @@ fun MessageInputText(
       // Callback is invoked after the user selects media items or closes the
       // photo picker.
       if (uris.isNotEmpty()) {
-        handleImagesSelected(
-          context = context,
-          uris = uris,
-          onImagesSelected = { bitmaps -> updatePickedImages(bitmaps) },
-        )
+        scope.launch(Dispatchers.IO) {
+          handleImagesSelected(
+            context = context,
+            uris = uris,
+            onImagesSelected = { bitmaps ->
+              scope.launch(Dispatchers.Main) { updatePickedImages(bitmaps) }
+            },
+          )
+        }
       }
     }
 
@@ -357,9 +365,11 @@ fun MessageInputText(
                     ),
                   textStyle = bodyLargeNarrow,
                   modifier =
-                    Modifier.fillMaxWidth().semantics {
-                      contentDescription = "Prompt input text field"
-                    },
+                    Modifier.fillMaxWidth()
+                      .focusRequester(focusRequester)
+                      .semantics {
+                        contentDescription = "Prompt input text field"
+                      },
                   placeholder = { Text(stringResource(textFieldPlaceHolderRes)) },
                 )
               }

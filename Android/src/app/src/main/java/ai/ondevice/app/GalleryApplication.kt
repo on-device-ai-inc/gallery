@@ -34,7 +34,7 @@ class GalleryApplication : Application() {
     super.onCreate()
 
     // Load saved theme.
-    ThemeSettings.themeOverride.value = dataStoreRepository.readTheme()
+    ThemeSettings.setTheme(dataStoreRepository.readTheme())
 
     // Initialize Firebase
     FirebaseApp.initializeApp(this)

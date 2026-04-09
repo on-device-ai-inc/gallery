@@ -62,7 +62,10 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Pause
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -88,6 +91,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -180,10 +184,52 @@ fun ChatPanel(
 
   var curMessage by remember { mutableStateOf("") } // Correct state
   val focusManager = LocalFocusManager.current
+  val inputFocusRequester = remember { FocusRequester() }
 
   // Remember the LazyListState to control scrolling
   val listState = rememberLazyListState()
   val density = LocalDensity.current
+
+  // Shared TTS instance — created once at ChatPanel scope, not per-message.
+  // TTS initialization is heavyweight (JNI + binder), so we share a single instance.
+  val ttsContext = LocalContext.current
+  var sharedTts by remember { mutableStateOf<TextToSpeech?>(null) }
+  var currentlyPlayingMessageId by remember { mutableStateOf<String?>(null) }
+  DisposableEffect(Unit) {
+    val ttsInstance = TextToSpeech(ttsContext) { status ->
+      if (status == TextToSpeech.SUCCESS) {
+        Handler(Looper.getMainLooper()).post {
+          sharedTts?.language = Locale.getDefault()
+        }
+      }
+    }
+    sharedTts = ttsInstance
+    ttsInstance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+      override fun onStart(utteranceId: String?) {}
+      override fun onDone(utteranceId: String?) {
+        currentlyPlayingMessageId = null
+      }
+      @Deprecated("Deprecated in Java")
+      override fun onError(utteranceId: String?) {
+        currentlyPlayingMessageId = null
+      }
+    })
+    onDispose {
+      ttsInstance.stop()
+      ttsInstance.shutdown()
+      sharedTts = null
+    }
+  }
+  val onSpeakRequested: (String, String) -> Unit = { messageId, content ->
+    if (currentlyPlayingMessageId == messageId) {
+      sharedTts?.stop()
+      currentlyPlayingMessageId = null
+    } else {
+      sharedTts?.stop()
+      sharedTts?.speak(content, TextToSpeech.QUEUE_FLUSH, null, messageId)
+      currentlyPlayingMessageId = messageId
+    }
+  }
 
   // Track if user has manually scrolled away from bottom
   var userHasScrolledUp by remember { mutableStateOf(false) }
@@ -223,7 +269,7 @@ fun ChatPanel(
       lastMessageContent.value = tmpLastMessage.content
     }
   }
-  val lastShowingStatsByModel: MutableState<Map<String, MutableSet<ChatMessage>>> = remember {
+  val lastShowingStatsByModel: MutableState<Map<String, Set<ChatMessage>>> = remember {
     mutableStateOf(mapOf())
   }
 
@@ -363,7 +409,7 @@ fun ChatPanel(
           state = listState,
           verticalArrangement = Arrangement.Top,
         ) {
-          itemsIndexed(messages) { index, message ->
+          itemsIndexed(messages, key = { index, _ -> index }) { index, message ->
             val imageHistoryCurIndex = remember { mutableIntStateOf(0) }
             var hAlign: Alignment.Horizontal = Alignment.End
             var backgroundColor: Color = MaterialTheme.customColors.userBubbleBgColor
@@ -528,21 +574,8 @@ fun ChatPanel(
                     if (message is ChatMessageText && message.latencyMs >= 0) {
                       val context = LocalContext.current
                       var showShareSheet by remember { mutableStateOf(false) }
-                      var isPlaying by remember { mutableStateOf(false) }
-                      var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-
-                      // Initialize TTS
-                      DisposableEffect(Unit) {
-                        tts = TextToSpeech(context) { status ->
-                          if (status == TextToSpeech.SUCCESS) {
-                            tts?.language = Locale.getDefault()
-                          }
-                        }
-                        onDispose {
-                          tts?.stop()
-                          tts?.shutdown()
-                        }
-                      }
+                      val messageId = "tts_msg_$index"
+                      val isPlaying = currentlyPlayingMessageId == messageId
 
                       Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -609,17 +642,9 @@ fun ChatPanel(
                           )
                         }
 
-                        // Play button (TTS - icon-only)
+                        // Play button (TTS - icon-only, uses shared TTS instance)
                         IconButton(
-                          onClick = {
-                            if (isPlaying) {
-                              tts?.stop()
-                              isPlaying = false
-                            } else {
-                              tts?.speak(message.content, TextToSpeech.QUEUE_FLUSH, null, "response_tts")
-                              isPlaying = true
-                            }
-                          },
+                          onClick = { onSpeakRequested(messageId, message.content) },
                           modifier = Modifier.size(36.dp)
                         ) {
                           Icon(
@@ -800,6 +825,16 @@ fun ChatPanel(
         modifier = Modifier.fillMaxWidth()
       ) {
       Column {
+      TaskChips(
+        currentInput = curMessage,
+        onChipSelected = { template ->
+          curMessage = template
+          inputFocusRequester.requestFocus()
+        },
+        onChipTapped = { chipLabel ->
+          viewModel.analyticsTracker.trackChipTapped(chipLabel)
+        },
+      )
       MessageInputText(
         task = task,
         modelManagerViewModel = modelManagerViewModel,
@@ -844,6 +879,7 @@ fun ChatPanel(
         showAudioItemsInMenu =
           selectedModel.llmSupportAudio,  // Show for any model with audio support
         showStopButtonWhenInProgress = showStopButtonInInputWhenInProgress,
+        focusRequester = inputFocusRequester,
       )
       } // end Column
       } // end Surface

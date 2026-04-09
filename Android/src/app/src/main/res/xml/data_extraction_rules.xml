@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?><!--
- Copyright 2025 Google LLC
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright 2025 OnDevice Inc.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -12,22 +13,41 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
-
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Exclude encrypted OAuth tokens (device-bound key cannot be restored elsewhere) -->
+        <exclude domain="sharedpref" path="secure_oauth_tokens.xml"/>
+        <!-- Exclude WorkManager database (may contain plaintext access tokens in input data) -->
+        <exclude domain="database" path="androidx.work.workdb"/>
+        <exclude domain="database" path="androidx.work.workdb-journal"/>
+        <exclude domain="database" path="androidx.work.workdb-shm"/>
+        <exclude domain="database" path="androidx.work.workdb-wal"/>
+        <!-- Exclude Room conversation database (contains user messages and AI responses) -->
+        <exclude domain="database" path="ondevice_database"/>
+        <exclude domain="database" path="ondevice_database-journal"/>
+        <exclude domain="database" path="ondevice_database-shm"/>
+        <exclude domain="database" path="ondevice_database-wal"/>
+        <!-- Exclude Proto DataStore files (contain user settings, custom instructions, name) -->
+        <exclude domain="file" path="datastore/"/>
+        <!-- Exclude user conversation media -->
+        <exclude domain="file" path="chat_images/"/>
+        <exclude domain="file" path="chat_audio/"/>
+
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="sharedpref" path="secure_oauth_tokens.xml"/>
+        <exclude domain="database" path="androidx.work.workdb"/>
+        <exclude domain="database" path="androidx.work.workdb-journal"/>
+        <exclude domain="database" path="androidx.work.workdb-shm"/>
+        <exclude domain="database" path="androidx.work.workdb-wal"/>
+        <exclude domain="database" path="ondevice_database"/>
+        <exclude domain="database" path="ondevice_database-journal"/>
+        <exclude domain="database" path="ondevice_database-shm"/>
+        <exclude domain="database" path="ondevice_database-wal"/>
+        <exclude domain="file" path="datastore/"/>
+        <exclude domain="file" path="chat_images/"/>
+        <exclude domain="file" path="chat_audio/"/>
+
     </device-transfer>
-    -->
 </data-extraction-rules>

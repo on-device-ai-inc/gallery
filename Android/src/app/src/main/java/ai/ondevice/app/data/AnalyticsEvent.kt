@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Google LLC
+ * Copyright 2025 On Device AI Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package ai.ondevice.app.ui.theme
+package ai.ondevice.app.data
 
-import ai.ondevice.app.proto.Theme
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-object ThemeSettings {
-  private val _themeOverride = MutableStateFlow(Theme.THEME_AUTO)
-  val themeOverride: StateFlow<Theme> = _themeOverride.asStateFlow()
-
-  fun setTheme(theme: Theme) {
-    _themeOverride.value = theme
-  }
-}
+@Entity(tableName = "analytics_events")
+data class AnalyticsEvent(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val event: String,        // "chip_tapped", "message_sent", "session_start"
+    val payload: String = "", // JSON string with event-specific data
+    val timestamp: Long = System.currentTimeMillis()
+)

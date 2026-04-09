@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.ondevice.app.data.ConversationDao
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -41,46 +42,45 @@ class ConversationListViewModel @Inject constructor(
 
     private fun searchConversations(query: String) = viewModelScope.launch {
         try {
-            val threads = conversationDao.searchThreads(query)
-            if (threads.isEmpty()) {
+            val results = conversationDao.searchThreadsWithLastMessage(query)
+            if (results.isEmpty()) {
                 _uiState.value = ConversationListUiState.Empty
             } else {
-                val items = threads.map { thread ->
-                    val messages = conversationDao.getMessagesForThread(thread.id)
+                val items = results.map { result ->
                     ConversationItem(
-                        thread = thread,
-                        lastMessage = messages.lastOrNull()?.content?.take(50),
-                        messageCount = messages.size,
-                        formattedTimestamp = formatTimestamp(thread.updatedAt),
-                        dateGroup = getDateGroup(thread.updatedAt)
+                        thread = result.toConversationThread(),
+                        lastMessage = result.lastMessageContent?.take(50),
+                        messageCount = result.messageCount,
+                        formattedTimestamp = formatTimestamp(result.updatedAt),
+                        dateGroup = getDateGroup(result.updatedAt)
                     )
                 }
                 _uiState.value = ConversationListUiState.Success(items)
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Search error", e)
             _uiState.value = ConversationListUiState.Error(e.message ?: "Search failed")
         }
     }
 
     private fun loadConversations() = viewModelScope.launch {
-        conversationDao.getAllThreadsFlow()
-            .map { threads ->
+        conversationDao.getAllThreadsWithLastMessageFlow()
+            .map { results ->
                 when {
-                    threads.isEmpty() -> ConversationListUiState.Empty
+                    results.isEmpty() -> ConversationListUiState.Empty
                     else -> {
                         // Update #7: Sort starred first, then by updatedAt
-                        val items = threads
-                            .sortedWith(compareByDescending<ai.ondevice.app.data.ConversationThread> { it.isStarred }
+                        val items = results
+                            .sortedWith(compareByDescending<ai.ondevice.app.data.ThreadWithLastMessage> { it.isStarred }
                                 .thenByDescending { it.updatedAt })
-                            .map { thread ->
-                            val messages = conversationDao.getMessagesForThread(thread.id)
+                            .map { result ->
                             ConversationItem(
-                                thread = thread,
-                                lastMessage = messages.lastOrNull()?.content?.take(50),
-                                messageCount = messages.size,
-                                formattedTimestamp = formatTimestamp(thread.updatedAt),
-                                dateGroup = getDateGroup(thread.updatedAt)
+                                thread = result.toConversationThread(),
+                                lastMessage = result.lastMessageContent?.take(50),
+                                messageCount = result.messageCount,
+                                formattedTimestamp = formatTimestamp(result.updatedAt),
+                                dateGroup = getDateGroup(result.updatedAt)
                             )
                         }
                         ConversationListUiState.Success(items)
@@ -99,6 +99,7 @@ class ConversationListViewModel @Inject constructor(
             conversationDao.deleteThread(threadId)
             Log.d(TAG, "Deleted thread $threadId")
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Delete error", e)
             _uiState.value = ConversationListUiState.Error("Failed to delete conversation")
         }
@@ -117,6 +118,7 @@ class ConversationListViewModel @Inject constructor(
                 Log.d(TAG, "Toggled star for thread $threadId to ${!thread.isStarred}")
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Toggle star error", e)
         }
     }
@@ -127,6 +129,7 @@ class ConversationListViewModel @Inject constructor(
             conversationDao.updateTitle(threadId, newTitle)
             Log.d(TAG, "Renamed thread $threadId to $newTitle")
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Rename error", e)
         }
     }

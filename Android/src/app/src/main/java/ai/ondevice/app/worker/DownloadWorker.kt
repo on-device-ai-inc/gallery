@@ -29,8 +29,8 @@ import androidx.work.Data
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import ai.ondevice.app.data.KEY_MODEL_COMMIT_HASH
-import ai.ondevice.app.data.KEY_MODEL_DOWNLOAD_ACCESS_TOKEN
 import ai.ondevice.app.data.KEY_MODEL_DOWNLOAD_ERROR_MESSAGE
+import ai.ondevice.app.data.SecureTokenStorage
 import ai.ondevice.app.data.KEY_MODEL_DOWNLOAD_FILE_NAME
 import ai.ondevice.app.data.KEY_MODEL_DOWNLOAD_MODEL_DIR
 import ai.ondevice.app.data.KEY_MODEL_DOWNLOAD_RATE
@@ -62,7 +62,7 @@ private const val TAG = "AGDownloadWorker"
 data class UrlAndFileName(val url: String, val fileName: String)
 
 private const val FOREGROUND_NOTIFICATION_CHANNEL_ID = "model_download_channel_foreground"
-private var channelCreated = false
+@Volatile private var channelCreated = false
 
 class DownloadWorker(context: Context, params: WorkerParameters) :
   CoroutineWorker(context, params) {
@@ -102,7 +102,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
     val extraDataFileNames =
       inputData.getString(KEY_MODEL_EXTRA_DATA_DOWNLOAD_FILE_NAMES)?.split(",") ?: listOf()
     val totalBytes = inputData.getLong(KEY_MODEL_TOTAL_BYTES, 0L)
-    val accessToken = inputData.getString(KEY_MODEL_DOWNLOAD_ACCESS_TOKEN)
+    // Security: Read access token from SecureTokenStorage (encrypted) instead of
+    // WorkManager input data (persisted to unencrypted SQLite).
+    val accessToken = SecureTokenStorage(applicationContext).readTokens()?.accessToken
 
     return withContext(Dispatchers.IO) {
       if (fileUrl == null || fileName == null) {
@@ -130,10 +132,13 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
           for (file in allFiles) {
             val url = URL(file.url)
 
-            val connection = url.openConnection() as HttpURLConnection
-            if (accessToken != null) {
-              Log.d(TAG, "Using access token: ${accessToken.subSequence(0, 10)}...")
-              connection.setRequestProperty("Authorization", "Bearer $accessToken")
+            // Security: Validate URL scheme and host before connecting
+            if (url.protocol != "https") {
+              throw IOException("Insecure protocol rejected: ${url.protocol}. Only HTTPS is allowed.")
+            }
+            val trustedHosts = setOf("huggingface.co", "cdn-lfs.huggingface.co", "cdn-lfs-us-1.huggingface.co")
+            if (trustedHosts.none { url.host == it || url.host.endsWith(".$it") }) {
+              throw IOException("Untrusted download host: ${url.host}")
             }
 
             // Prepare output file's dir.
@@ -153,8 +158,15 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 listOf(modelDir, version, "${file.fileName}.$TMP_FILE_EXT")
                   .joinToString(separator = File.separator),
               )
+
+            val connection = url.openConnection() as HttpURLConnection
+            try {
+            if (accessToken != null) {
+              Log.d(TAG, "Using access token (present)")
+              connection.setRequestProperty("Authorization", "Bearer $accessToken")
+            }
             val outputFileBytes = outputTmpFile.length()
-            if (outputFileBytes > 0) {
+            if (outputFileBytes > 0L) {
               Log.d(
                 TAG,
                 "File '${outputTmpFile.name}' partial size: ${outputFileBytes}. Trying to resume download",
@@ -246,6 +258,9 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
 
             outputStream.close()
             inputStream.close()
+            } finally {
+              connection.disconnect()
+            }
 
             // Rename the tmp file to the original file name by removing the tmp file ext.
             val originalFilePath = outputTmpFile.absolutePath.replace(".$TMP_FILE_EXT", "")
@@ -278,13 +293,17 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
               var zipEntry: ZipEntry? = zipIn.nextEntry
 
               while (zipEntry != null) {
-                val filePath = destDir.absolutePath + File.separator + zipEntry.name
+                // Security: Prevent Zip Slip path traversal
+                val outFile = File(destDir, zipEntry.name)
+                if (!outFile.canonicalPath.startsWith(destDir.canonicalPath + File.separator)) {
+                  throw SecurityException("Zip Slip detected: ${zipEntry.name}")
+                }
+                val filePath = outFile.absolutePath
 
                 // Extract files.
                 if (!zipEntry.isDirectory) {
                   // extract file
-                  val bos = FileOutputStream(filePath)
-                  bos.use { curBos ->
+                  FileOutputStream(outFile).use { curBos ->
                     var len: Int
                     while (zipIn.read(unzipBuffer).also { len = it } > 0) {
                       curBos.write(unzipBuffer, 0, len)
@@ -293,8 +312,7 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 }
                 // Create dir.
                 else {
-                  val dir = File(filePath)
-                  dir.mkdirs()
+                  outFile.mkdirs()
                 }
 
                 zipIn.closeEntry()

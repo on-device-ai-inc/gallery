@@ -213,6 +213,25 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
 }
 
 /**
+ * Migration from version 8 to version 9.
+ * Adds analytics_events table for local-only usage instrumentation.
+ */
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS analytics_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                event TEXT NOT NULL,
+                payload TEXT NOT NULL DEFAULT '',
+                timestamp INTEGER NOT NULL
+            )
+            """
+        )
+    }
+}
+
+/**
  * All migrations in order.
  * Add new migrations to this array when database schema changes.
  */
@@ -223,5 +242,6 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_4_5,
     MIGRATION_5_6,
     MIGRATION_6_7,
-    MIGRATION_7_8
+    MIGRATION_7_8,
+    MIGRATION_8_9
 )

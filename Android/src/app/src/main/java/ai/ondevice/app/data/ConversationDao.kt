@@ -60,6 +60,50 @@ interface ConversationDao {
     @Query("UPDATE conversation_threads SET title = :title WHERE id = :threadId")
     suspend fun updateTitle(threadId: Long, title: String)
 
+    /**
+     * Fetch all threads with their last message content and message count in a single query.
+     * Eliminates N+1 queries when building the conversation list.
+     */
+    @Query("""
+        SELECT t.id, t.title, t.modelId, t.taskId, t.createdAt, t.updatedAt, t.isStarred,
+               (SELECT m.content FROM conversation_messages m
+                WHERE m.threadId = t.id ORDER BY m.timestamp DESC LIMIT 1) AS lastMessageContent,
+               (SELECT COUNT(*) FROM conversation_messages m
+                WHERE m.threadId = t.id) AS messageCount
+        FROM conversation_threads t
+        ORDER BY t.updatedAt DESC
+    """)
+    fun getAllThreadsWithLastMessageFlow(): Flow<List<ThreadWithLastMessage>>
+
+    /**
+     * Search threads with last message content and count in a single query.
+     */
+    @Query("""
+        SELECT DISTINCT t.id, t.title, t.modelId, t.taskId, t.createdAt, t.updatedAt, t.isStarred,
+               (SELECT m.content FROM conversation_messages m
+                WHERE m.threadId = t.id ORDER BY m.timestamp DESC LIMIT 1) AS lastMessageContent,
+               (SELECT COUNT(*) FROM conversation_messages m
+                WHERE m.threadId = t.id) AS messageCount
+        FROM conversation_threads t
+        LEFT JOIN conversation_messages m2 ON t.id = m2.threadId
+        WHERE t.title LIKE '%' || :query || '%'
+           OR m2.content LIKE '%' || :query || '%'
+        ORDER BY t.updatedAt DESC
+    """)
+    suspend fun searchThreadsWithLastMessage(query: String): List<ThreadWithLastMessage>
+
+    /** Get total message count across all threads in a single query */
+    @Query("SELECT COUNT(*) FROM conversation_messages")
+    suspend fun getTotalMessageCount(): Int
+
+    /** Get total estimated storage size across all messages in a single query */
+    @Query("SELECT SUM(LENGTH(content) * 2 + 100) FROM conversation_messages")
+    suspend fun getTotalEstimatedStorageBytes(): Long
+
+    /** Batch-fetch messages for multiple threads in a single query */
+    @Query("SELECT * FROM conversation_messages WHERE threadId IN (:threadIds) ORDER BY timestamp ASC")
+    suspend fun getMessagesForThreads(threadIds: List<Long>): List<ConversationMessage>
+
     /** Delete all messages for a thread */
     @Query("DELETE FROM conversation_messages WHERE threadId = :threadId")
     suspend fun deleteMessagesForThread(threadId: Long)

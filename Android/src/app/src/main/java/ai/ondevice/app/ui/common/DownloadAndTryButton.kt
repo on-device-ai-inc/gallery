@@ -17,6 +17,7 @@
 package ai.ondevice.app.ui.common
 
 import ai.ondevice.app.BuildConfig
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import android.content.Intent
 import android.util.Log
 import android.webkit.WebView
@@ -169,7 +170,7 @@ fun DownloadAndTryButton(
 
   // Function to kick off download.
   val startDownload: (accessToken: String?) -> Unit = { accessToken ->
-    model.accessToken = accessToken
+    ModelRuntimeStateManager.update(model.name) { it.copy(accessToken = accessToken) }
     checkNotificationPermissionAndStartDownload(
       context = context,
       launcher = permissionLauncher,
@@ -337,19 +338,26 @@ fun DownloadAndTryButton(
 
             // If token is still valid...
             TokenStatus.NOT_EXPIRED -> {
+              val tokenData = tokenStatusAndData.data
+              if (tokenData == null) {
+                Log.e(TAG, "Token status is NOT_EXPIRED but token data is null. Requesting new token.")
+                withContext(Dispatchers.Main) {
+                  showPreOAuthDialog = true
+                }
+              } else {
               // Use the current token to check the download url.
               Log.d(TAG, "Checking the download url '${model.url}' with the current token...")
               val responseCode =
                 modelManagerViewModel.getModelUrlResponse(
                   model = model,
-                  accessToken = tokenStatusAndData.data!!.accessToken,
+                  accessToken = tokenData.accessToken,
                 )
               if (responseCode == HttpURLConnection.HTTP_OK) {
                 // Download url is accessible. Download the model.
                 Log.d(TAG, "Download url is accessible with the current token.")
 
                 withContext(Dispatchers.Main) {
-                  startDownload(tokenStatusAndData.data!!.accessToken)
+                  startDownload(tokenData.accessToken)
                 }
               }
               // Download url is NOT accessible. Request a new token.
@@ -362,6 +370,7 @@ fun DownloadAndTryButton(
                 withContext(Dispatchers.Main) {
                   showPreOAuthDialog = true
                 }
+              }
               }
             }
           }
@@ -447,8 +456,11 @@ fun DownloadAndTryButton(
   }
   // Download progress.
   else {
-    curDownloadProgress =
-      downloadStatus!!.receivedBytes.toFloat() / downloadStatus.totalBytes.toFloat()
+    curDownloadProgress = if (downloadStatus != null) {
+      downloadStatus.receivedBytes.toFloat() / downloadStatus.totalBytes.toFloat()
+    } else {
+      0f
+    }
     if (curDownloadProgress.isNaN()) {
       curDownloadProgress = 0f
     }
@@ -535,7 +547,14 @@ fun DownloadAndTryButton(
           val index = model.url.indexOf("/resolve/")
           val agreementUrl = if (index >= 0) model.url.substring(0, index) else ""
 
-          if (agreementUrl.isNotEmpty()) {
+          // Security: Validate the agreement URL is a trusted HuggingFace origin
+          val isValidAgreementUrl = agreementUrl.isNotEmpty() &&
+            try {
+              val parsed = java.net.URL(agreementUrl)
+              parsed.protocol == "https" && (parsed.host == "huggingface.co" || parsed.host.endsWith(".huggingface.co"))
+            } catch (e: Exception) { false }
+
+          if (isValidAgreementUrl) {
             AndroidView(
               factory = { context ->
                 WebView(context).apply {
@@ -548,17 +567,31 @@ fun DownloadAndTryButton(
                   }
 
                   webViewClient = object : WebViewClient() {
+                    // Security: Block navigation away from HuggingFace
+                    override fun shouldOverrideUrlLoading(
+                      view: WebView?,
+                      request: android.webkit.WebResourceRequest
+                    ): Boolean {
+                      val host = request.url.host ?: return true
+                      if (host == "huggingface.co" || host.endsWith(".huggingface.co")) {
+                        return false // Allow HuggingFace navigation
+                      }
+                      return true // Block all other hosts
+                    }
+
                     override fun shouldInterceptRequest(
                       view: WebView?,
                       request: android.webkit.WebResourceRequest
                     ): android.webkit.WebResourceResponse? {
-                      // Inject Authorization header for HuggingFace requests
-                      if (request.url.host?.endsWith("huggingface.co") == true) {
+                      // Security: Only inject Authorization header for HuggingFace requests
+                      val host = request.url.host
+                      if (host != null && (host == "huggingface.co" || host.endsWith(".huggingface.co"))) {
+                        var connection: java.net.HttpURLConnection? = null
                         return try {
                           val accessToken = modelManagerViewModel.curAccessToken
-                          val connection = java.net.URL(request.url.toString()).openConnection() as java.net.HttpURLConnection
+                          connection = java.net.URL(request.url.toString()).openConnection() as java.net.HttpURLConnection
                           connection.setRequestProperty("Authorization", "Bearer $accessToken")
-                          connection.setRequestProperty("User-Agent", "OnDeviceAI-Android/1.1.7")
+                          connection.setRequestProperty("User-Agent", "OnDeviceAI-Android/1.1.9")
 
                           android.webkit.WebResourceResponse(
                             connection.contentType ?: "text/html",
@@ -567,6 +600,7 @@ fun DownloadAndTryButton(
                           )
                         } catch (e: Exception) {
                           Log.e(TAG, "Failed to load with auth header", e)
+                          connection?.disconnect()
                           null
                         }
                       }

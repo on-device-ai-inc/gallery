@@ -38,7 +38,6 @@ class ExampleCustomTaskViewModel @Inject constructor() : ViewModel() {
   val uiState = _uiState.asStateFlow()
 
   fun updateTextColor(color: Color) {
-    val newUiState = uiState.value.copy(textColor = color)
-    _uiState.update { newUiState }
+    _uiState.update { it.copy(textColor = color) }
   }
 }

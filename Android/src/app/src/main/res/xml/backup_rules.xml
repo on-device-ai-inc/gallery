@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?><!--
- Copyright 2025 Google LLC
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright 2025 OnDevice Inc.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -13,15 +14,20 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older that API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+ Note: This file applies to devices on API 31.
+ See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="sharedpref" path="secure_oauth_tokens.xml"/>
+    <exclude domain="database" path="androidx.work.workdb"/>
+    <exclude domain="database" path="androidx.work.workdb-journal"/>
+    <exclude domain="database" path="androidx.work.workdb-shm"/>
+    <exclude domain="database" path="androidx.work.workdb-wal"/>
+    <exclude domain="database" path="ondevice_database"/>
+    <exclude domain="database" path="ondevice_database-journal"/>
+    <exclude domain="database" path="ondevice_database-shm"/>
+    <exclude domain="database" path="ondevice_database-wal"/>
+    <exclude domain="file" path="datastore/"/>
+    <exclude domain="file" path="chat_images/"/>
+    <exclude domain="file" path="chat_audio/"/>
 </full-backup-content>

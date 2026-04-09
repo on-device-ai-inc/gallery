@@ -470,17 +470,21 @@ President                          Secretary
 
 | Shareholder | Share Class | Shares | Voting | % Equity | Purpose |
 |-------------|-------------|--------|--------|---------|---------|
-| **Founder** | Class A | 100 | YES | 20% | Control + personal LCGE |
-| **Trust** | Class B | 400 | NO | 80% | Family LCGE multiplication |
+| **Founder** | Class A | 100 | YES | 19% | Control + personal LCGE |
+| **Spouse (direct)** | Class B | 25 | NO | 5% | Independent LCGE claim |
+| **Trust** | Class B | 400 | NO | 76% | Family LCGE multiplication (children) |
 | **VCs (future)** | Class C Preferred | TBD | NO | TBD | Funding without diluting family |
 
 **Why This Works:**
 - Founder retains voting control (100% of Class A voting shares)
-- Trust participates in 80% of equity growth
+- Spouse holds independent equity position (5% via direct Class B)
+- Trust participates in 76% of equity growth (for children)
 - At $10M exit:
-  - Founder LCGE: $1.25M (shelters 10% of exit)
-  - Trust beneficiaries (4 kids): $5M+ LCGE total (shelters 50%+ of exit)
-  - Total tax saved: $2M-$3M
+  - Founder LCGE: $1.25M (shelters ~19% of exit)
+  - Spouse LCGE: $1.25M (shelters ~5% of exit)
+  - Trust beneficiaries (3 children): $3.75M LCGE total (shelters ~76% of exit)
+  - **Total LCGE: $6.25M / Total tax saved: ~$1.67M**
+- **CRITICAL:** Spouse's $0.25 consideration must come from her own funds (not joint account, not gifted by founder) to avoid ITA s.74.1/74.2 attribution
 
 ---
 

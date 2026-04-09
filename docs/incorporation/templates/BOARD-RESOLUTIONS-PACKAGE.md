@@ -12,6 +12,7 @@
 2. First Board Meeting Minutes
 3. Resolution: Issue Class A Shares to Founder
 4. Resolution: Issue Class B Shares to Family Trust
+4B. Resolution: Issue Class B Shares to Spouse (Direct)
 5. Resolution: Accept DGX Spark Transfer
 6. Resolution: Open Corporate Bank Account
 7. Resolution: Appoint Officers
@@ -107,10 +108,16 @@ The following individuals be appointed as officers of the Corporation to hold of
 - Number of Shares: 100
 - Consideration: $1.00 ($0.01 per share)
 
-**CLASS B COMMON SHARES:**
+**CLASS B COMMON SHARES (Family Trust):**
 - To: [TRUST NAME — from executed trust deed]
 - Number of Shares: 400
 - Consideration: $4.00 ($0.01 per share)
+
+**CLASS B COMMON SHARES (Spouse — Direct):**
+- To: [SPOUSE FULL LEGAL NAME]
+- Number of Shares: 25
+- Consideration: $0.25 ($0.01 per share)
+- **Note:** Consideration MUST be paid from spouse's own funds (not joint account, not gifted by founder) to avoid ITA s.74.1/74.2 spousal attribution
 
 2. The President and Secretary be authorized to issue share certificates for the above shares upon receipt of the consideration.
 
@@ -254,6 +261,29 @@ The Board confirmed and ratified all resolutions passed at the Organizational Me
 
 ---
 
+### 2.4B ISSUANCE OF CLASS B COMMON SHARES TO SPOUSE (DIRECT)
+
+**RESOLVED THAT:**
+
+1. The Corporation issue 25 Class B Common Shares to **[SPOUSE FULL LEGAL NAME]** for aggregate consideration of $0.25 ($0.01 per share).
+
+2. Upon receipt of payment, the Secretary shall:
+   a) Prepare and issue Share Certificate No. B-2 for 25 Class B Common Shares;
+   b) Record the issuance in the Corporation's securities register;
+   c) Allocate the $0.25 consideration to the stated capital account for Class B Common Shares.
+
+3. [SPOUSE FULL LEGAL NAME] hereby acknowledges receipt of Share Certificate No. B-2 and confirms payment of $0.25 to the Corporation.
+
+4. The Board confirms that:
+   a) The consideration of $0.25 was paid by [SPOUSE FULL LEGAL NAME] from her own personal funds;
+   b) The consideration was NOT provided, reimbursed, or funded directly or indirectly by NASHIE CHIVHUNGA or any other person;
+   c) This issuance is intended to enable [SPOUSE FULL LEGAL NAME] to hold an independent equity position and LCGE claim in the Corporation;
+   d) [SPOUSE FULL LEGAL NAME] is subscribing on the same terms available to any other subscriber of Class B shares.
+
+**Source of Funds Documentation:** Retain copy of bank statement or e-transfer confirmation showing payment originated from spouse's personal account.
+
+---
+
 ### 2.5 ACCEPTANCE OF DGX SPARK WORKSTATION
 
 **WHEREAS:**
@@ -299,10 +329,11 @@ The Board confirmed and ratified all resolutions passed at the Organizational Me
    a) Execute all banking agreements and documents required by the Bank;
    b) Provide the Bank with a certified copy of this resolution;
    c) Make initial deposits of:
-      - $1.00 (Class A share consideration)
-      - $4.00 (Class B share consideration)
+      - $1.00 (Class A share consideration — founder)
+      - $4.00 (Class B share consideration — trust)
+      - $0.25 (Class B share consideration — spouse)
       - $1.00 (DGX transfer consideration)
-      Total: $6.00
+      Total: $6.25
 
 ---
 
@@ -610,6 +641,38 @@ NASHIE CHIVHUNGA
 
 ---
 
+### CLASS B COMMON SHARE CERTIFICATE (SPOUSE — DIRECT)
+
+**Certificate No:** B-2
+**Number of Shares:** 25
+
+**OnDevice AI Inc.**
+
+**THIS CERTIFIES THAT**
+
+**[SPOUSE FULL LEGAL NAME]**
+**613 Taliesin Crescent, Stittsville, ON K2S 2W5**
+
+is the registered holder of
+
+**TWENTY-FIVE (25) CLASS B COMMON SHARES**
+
+in the capital of OnDevice AI Inc., transferable only on the books of the Corporation by the holder hereof in person or by attorney upon surrender of this certificate properly endorsed.
+
+**IN WITNESS WHEREOF** the Corporation has caused this certificate to be signed by its duly authorized officers.
+
+**Dated:** [DATE]
+
+**President:** ___________________________
+NASHIE CHIVHUNGA
+
+**Secretary:** ___________________________
+NASHIE CHIVHUNGA
+
+**Consideration:** $0.25 CASH (PAID IN FULL — FROM SPOUSE'S OWN FUNDS)
+
+---
+
 ## DOCUMENT CHECKLIST
 
 **Organizational Stage:**
@@ -620,11 +683,13 @@ NASHIE CHIVHUNGA
 - [ ] Officers appointed
 
 **Share Issuance:**
-- [ ] Family Trust Deed executed (BEFORE issuing Class B shares)
+- [ ] Family Trust Deed executed (BEFORE issuing Class B shares to trust)
 - [ ] First Board Meeting Minutes prepared and signed
-- [ ] Class A share certificate prepared (100 shares to founder)
-- [ ] Class B share certificate prepared (400 shares to trust)
-- [ ] Share consideration paid ($5.00 total)
+- [ ] Class A share certificate A-1 prepared (100 shares to founder)
+- [ ] Class B share certificate B-1 prepared (400 shares to trust)
+- [ ] Class B share certificate B-2 prepared (25 shares to spouse — direct)
+- [ ] Spouse's source-of-funds documentation retained (bank statement/e-transfer)
+- [ ] Share consideration paid ($5.25 total)
 - [ ] Securities register updated
 
 **DGX Transfer:**
@@ -635,7 +700,7 @@ NASHIE CHIVHUNGA
 
 **Banking:**
 - [ ] Bank account opened
-- [ ] Initial deposits made ($6.00)
+- [ ] Initial deposits made ($6.25)
 - [ ] Banking resolution provided to bank
 
 **Compliance:**

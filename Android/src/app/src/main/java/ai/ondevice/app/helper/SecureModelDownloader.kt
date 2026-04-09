@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Environment
 import android.os.StatFs
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import java.io.File
 import java.io.FileInputStream
 import java.security.MessageDigest
@@ -171,6 +172,7 @@ class SecureModelDownloader(private val context: Context) {
             }
 
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Download error", e)
 
             // Try next URL
@@ -230,6 +232,7 @@ class SecureModelDownloader(private val context: Context) {
             return match
 
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.e(TAG, "Checksum verification error", e)
             return false
         }

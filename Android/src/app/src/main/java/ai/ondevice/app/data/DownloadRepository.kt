@@ -40,6 +40,7 @@ import ai.ondevice.app.AppLifecycleProvider
 import ai.ondevice.app.R
 import ai.ondevice.app.firebaseAnalytics
 import ai.ondevice.app.worker.DownloadWorker
+import kotlinx.coroutines.CancellationException
 import java.util.UUID
 import java.util.concurrent.Executors
 
@@ -97,7 +98,9 @@ class DefaultDownloadRepository(
   ) {
     // Create input data.
     val builder = Data.Builder()
-    val totalBytes = model.totalBytes + model.extraDataFiles.sumOf { it.sizeInBytes }
+    val totalBytes =
+      ModelRuntimeStateManager.getValue(model.name).totalBytes +
+        model.extraDataFiles.sumOf { it.sizeInBytes }
     // Use downloadUrl if available, otherwise fall back to url
     val actualDownloadUrl = if (model.downloadUrl.isNotEmpty()) model.downloadUrl else model.url
     val inputDataBuilder =
@@ -119,9 +122,9 @@ class DefaultDownloadRepository(
           model.extraDataFiles.joinToString(",") { it.downloadFileName },
         )
     }
-    if (model.accessToken != null) {
-      inputDataBuilder.putString(KEY_MODEL_DOWNLOAD_ACCESS_TOKEN, model.accessToken)
-    }
+    // Security: Access token is no longer passed through WorkManager input data
+    // (which persists to unencrypted SQLite). Instead, DownloadWorker reads the
+    // token from SecureTokenStorage at execution time.
     val inputData = inputDataBuilder.build()
 
     // Create worker request.
@@ -189,7 +192,7 @@ class DefaultDownloadRepository(
                   model,
                   ModelDownloadStatus(
                     status = ModelDownloadStatusType.IN_PROGRESS,
-                    totalBytes = model.totalBytes,
+                    totalBytes = ModelRuntimeStateManager.getValue(model.name).totalBytes,
                     receivedBytes = receivedBytes,
                     bytesPerSecond = downloadRate,
                     remainingMs = remainingSeconds,
@@ -236,6 +239,7 @@ class DefaultDownloadRepository(
                 ),
               )
             } catch (e: Exception) {
+              if (e is CancellationException) throw e
               // Analytics failure should never block downloads
               Log.w(TAG, "Analytics logging failed for success event", e)
             }
@@ -300,6 +304,7 @@ class DefaultDownloadRepository(
                 ),
               )
             } catch (e: Exception) {
+              if (e is CancellationException) throw e
               // Analytics failure should never block downloads
               Log.w(TAG, "Analytics logging failed for failure event", e)
             }

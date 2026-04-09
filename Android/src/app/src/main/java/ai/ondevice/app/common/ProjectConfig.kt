@@ -16,13 +16,15 @@
 
 package ai.ondevice.app.common
 
+import ai.ondevice.app.BuildConfig
 import androidx.core.net.toUri
 import net.openid.appauth.AuthorizationServiceConfiguration
 
 object ProjectConfig {
-  // Hugging Face Client ID.
-  //
-  const val clientId = "3b5215cc-2633-4663-a681-b162675d5164"
+  // Hugging Face Client ID — injected via BuildConfig from local.properties or CI secret.
+  // Empty string disables OAuth flow gracefully (non-gated models still work).
+  val clientId: String
+    get() = BuildConfig.HF_CLIENT_ID
 
   // Registered redirect URI.
   //

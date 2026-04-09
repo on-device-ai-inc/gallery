@@ -17,6 +17,7 @@
 package ai.ondevice.app.ui.llmchat
 
 import ai.ondevice.app.R
+import ai.ondevice.app.data.AnalyticsTracker
 import ai.ondevice.app.data.ConversationDao
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
@@ -28,6 +29,7 @@ import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Message
 import ai.ondevice.app.data.ConfigKeys
 import ai.ondevice.app.data.Model
+import ai.ondevice.app.data.ModelRuntimeStateManager
 import ai.ondevice.app.data.Task
 import ai.ondevice.app.ui.common.chat.ChatMessageAudioClip
 import ai.ondevice.app.ui.common.chat.ChatMessageBenchmarkLlmResult
@@ -45,6 +47,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -61,8 +64,9 @@ private val STATS =
 
 open class LlmChatViewModelBase(
   conversationDao: ConversationDao,
+  analyticsTracker: AnalyticsTracker,
   private val personaManager: ai.ondevice.app.persona.PersonaManager? = null
-) : ChatViewModel(conversationDao) {
+) : ChatViewModel(conversationDao, analyticsTracker) {
 
   // Context compression (lazy initialization)
   private val compactionManager by lazy {
@@ -124,8 +128,16 @@ open class LlmChatViewModelBase(
         addMessage(model = model, message = ChatMessageLoading(accelerator = accelerator))
       }
 
-      // Wait for instance to be initialized.
-      while (model.instance == null) {
+      // Wait for instance to be initialized (with 30s timeout).
+      val initDeadline = System.currentTimeMillis() + 30_000L
+      while (ModelRuntimeStateManager.getValue(model.name).instance == null) {
+        if (System.currentTimeMillis() > initDeadline) {
+          Log.e(TAG, "Model initialization timed out after 30s for ${model.name}")
+          setInProgress(false)
+          setPreparing(false)
+          onError()
+          return@launch
+        }
         delay(100)
       }
       delay(500)
@@ -146,6 +158,7 @@ open class LlmChatViewModelBase(
             )
           }
         } catch (e: Exception) {
+          if (e is CancellationException) throw e
           Log.w(TAG, "Failed to inject persona, using input as-is", e)
         }
       }
@@ -225,12 +238,13 @@ open class LlmChatViewModelBase(
           }
         }
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         Log.w(TAG, "Compaction check failed, continuing without compression", e)
         setIsCompacting(false)  // Ensure indicator is hidden on error
       }
 
       // Run inference.
-      val instance = model.instance as LlmModelInstance
+      val instance = ModelRuntimeStateManager.getValue(model.name).instance as LlmModelInstance
       // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
       var prefillTokens = input.split(" ").size
       prefillTokens += images.size * 257
@@ -367,6 +381,7 @@ open class LlmChatViewModelBase(
                       }
                     }
                   } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     Log.e(TAG, "Failed to update agent message in database", e)
                   }
                 }
@@ -379,6 +394,7 @@ open class LlmChatViewModelBase(
           },
         )
       } catch (e: Exception) {
+        if (e is CancellationException) throw e
         Log.e(TAG, "Error occurred while running inference", e)
         setInProgress(false)
         setPreparing(false)
@@ -398,7 +414,7 @@ open class LlmChatViewModelBase(
       setInProgress(false)
       setPreparing(false)
       // Null-safe cast to prevent crash if model instance is not initialized
-      val instance = model.instance as? LlmModelInstance
+      val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
       if (instance != null) {
         try {
           instance.conversation.cancelProcess()
@@ -418,7 +434,9 @@ open class LlmChatViewModelBase(
       clearAllMessages(model = model)
       stopResponse(model = model)
 
-      while (true) {
+      val resetDeadline = System.currentTimeMillis() + 30_000L
+      var resetSucceeded = false
+      while (!resetSucceeded) {
         try {
           // Enable features based on model capabilities, not task ID
           val supportImage = model.llmSupportImage
@@ -428,8 +446,13 @@ open class LlmChatViewModelBase(
             supportImage = supportImage,
             supportAudio = supportAudio,
           )
-          break
+          resetSucceeded = true
         } catch (e: Exception) {
+          if (e is CancellationException) throw e
+          if (System.currentTimeMillis() > resetDeadline) {
+            Log.e(TAG, "Reset conversation timed out after 30s for ${model.name}", e)
+            break
+          }
           Log.d(TAG, "Failed to reset conversation. Trying again")
         }
         delay(200)
@@ -445,8 +468,14 @@ open class LlmChatViewModelBase(
     onError: () -> Unit
   ) {
     viewModelScope.launch(Dispatchers.Default) {
-      // Wait for model to be initialized.
-      while (model.instance == null) {
+      // Wait for model to be initialized (with 30s timeout).
+      val initDeadline = System.currentTimeMillis() + 30_000L
+      while (ModelRuntimeStateManager.getValue(model.name).instance == null) {
+        if (System.currentTimeMillis() > initDeadline) {
+          Log.e(TAG, "Model initialization timed out after 30s for ${model.name} during runAgain")
+          onError()
+          return@launch
+        }
         delay(100)
       }
 
@@ -524,15 +553,18 @@ open class LlmChatViewModelBase(
 
 @HiltViewModel class LlmChatViewModel @Inject constructor(
   conversationDao: ConversationDao,
+  analyticsTracker: AnalyticsTracker,
   personaManager: ai.ondevice.app.persona.PersonaManager
-) : LlmChatViewModelBase(conversationDao, personaManager)
+) : LlmChatViewModelBase(conversationDao, analyticsTracker, personaManager)
 
 @HiltViewModel class LlmAskImageViewModel @Inject constructor(
   conversationDao: ConversationDao,
+  analyticsTracker: AnalyticsTracker,
   personaManager: ai.ondevice.app.persona.PersonaManager
-) : LlmChatViewModelBase(conversationDao, personaManager)
+) : LlmChatViewModelBase(conversationDao, analyticsTracker, personaManager)
 
 @HiltViewModel class LlmAskAudioViewModel @Inject constructor(
   conversationDao: ConversationDao,
+  analyticsTracker: AnalyticsTracker,
   personaManager: ai.ondevice.app.persona.PersonaManager
-) : LlmChatViewModelBase(conversationDao, personaManager)
+) : LlmChatViewModelBase(conversationDao, analyticsTracker, personaManager)
