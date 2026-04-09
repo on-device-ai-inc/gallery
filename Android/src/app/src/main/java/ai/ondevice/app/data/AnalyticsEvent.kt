@@ -22,7 +22,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "analytics_events")
 data class AnalyticsEvent(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val event: String,        // "chip_tapped", "message_sent", "session_start"
+    val event: String,        // "message_sent", "session_start"
     val payload: String = "", // JSON string with event-specific data
     val timestamp: Long = System.currentTimeMillis()
 )

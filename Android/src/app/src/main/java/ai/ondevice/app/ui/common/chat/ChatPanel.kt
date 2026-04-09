@@ -825,16 +825,6 @@ fun ChatPanel(
         modifier = Modifier.fillMaxWidth()
       ) {
       Column {
-      TaskChips(
-        currentInput = curMessage,
-        onChipSelected = { template ->
-          curMessage = template
-          inputFocusRequester.requestFocus()
-        },
-        onChipTapped = { chipLabel ->
-          viewModel.analyticsTracker.trackChipTapped(chipLabel)
-        },
-      )
       MessageInputText(
         task = task,
         modelManagerViewModel = modelManagerViewModel,

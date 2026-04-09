@@ -33,22 +33,6 @@ class AnalyticsTracker @Inject constructor(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    fun trackChipTapped(chipName: String) {
-        scope.launch {
-            try {
-                val payload = JSONObject().apply {
-                    put("chip_name", chipName)
-                }.toString()
-                analyticsDao.insert(AnalyticsEvent(
-                    event = "chip_tapped",
-                    payload = payload
-                ))
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to track chip_tapped", e)
-            }
-        }
-    }
-
     fun trackMessageSent(source: String, responseLatencyMs: Long = 0) {
         scope.launch {
             try {
