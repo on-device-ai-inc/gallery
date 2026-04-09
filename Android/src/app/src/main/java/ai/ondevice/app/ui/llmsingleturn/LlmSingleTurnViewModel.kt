@@ -76,8 +76,12 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
       setPreparing(true)
 
       // Wait for instance to be initialized (with 30s timeout).
+      // Capture locally so concurrent cleanup can't null it after the loop exits.
       val initDeadline = System.currentTimeMillis() + 30_000L
-      while (ModelRuntimeStateManager.getValue(model.name).instance == null) {
+      var capturedSingleTurn: LlmModelInstance? = null
+      while (capturedSingleTurn == null) {
+        capturedSingleTurn = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
+        if (capturedSingleTurn != null) break
         if (System.currentTimeMillis() > initDeadline) {
           Log.e(TAG, "Model initialization timed out after 30s")
           setInProgress(false)
@@ -100,14 +104,8 @@ class LlmSingleTurnViewModel @Inject constructor() : ViewModel() {
       )
       delay(500)
 
-      // Run inference.
-      val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
-      if (instance == null) {
-        Log.e(TAG, "Model instance became null before inference for ${model.name}")
-        setInProgress(false)
-        setPreparing(false)
-        return@launch
-      }
+      // Run inference using the instance captured right after the polling loop.
+      val instance = capturedSingleTurn
       // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
       val prefillTokens = input.split(" ").size
 

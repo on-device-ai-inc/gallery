@@ -129,8 +129,13 @@ open class LlmChatViewModelBase(
       }
 
       // Wait for instance to be initialized (with 30s timeout).
+      // Capture it locally right after the polling loop so a concurrent
+      // cleanup/reset can't null it out from under us.
       val initDeadline = System.currentTimeMillis() + 30_000L
-      while (ModelRuntimeStateManager.getValue(model.name).instance == null) {
+      var capturedInstance: LlmModelInstance? = null
+      while (capturedInstance == null) {
+        capturedInstance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
+        if (capturedInstance != null) break
         if (System.currentTimeMillis() > initDeadline) {
           Log.e(TAG, "Model initialization timed out after 30s for ${model.name}")
           setInProgress(false)
@@ -243,15 +248,9 @@ open class LlmChatViewModelBase(
         setIsCompacting(false)  // Ensure indicator is hidden on error
       }
 
-      // Run inference.
-      val instance = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
-      if (instance == null) {
-        Log.e(TAG, "Model instance became null before inference for ${model.name}")
-        setInProgress(false)
-        setPreparing(false)
-        onError()
-        return@launch
-      }
+      // Run inference using the instance captured right after the polling loop.
+      // This survives concurrent cleanup/reset races.
+      val instance = capturedInstance
       // Note: sizeInTokens() not available in LiteRT-LM API, using estimation
       var prefillTokens = input.split(" ").size
       prefillTokens += images.size * 257
@@ -476,8 +475,13 @@ open class LlmChatViewModelBase(
   ) {
     viewModelScope.launch(Dispatchers.Default) {
       // Wait for model to be initialized (with 30s timeout).
+      // Capture instance locally so a concurrent cleanup can't null it between
+      // the polling loop exit and the generateResponse call below.
       val initDeadline = System.currentTimeMillis() + 30_000L
-      while (ModelRuntimeStateManager.getValue(model.name).instance == null) {
+      var capturedForRunAgain: LlmModelInstance? = null
+      while (capturedForRunAgain == null) {
+        capturedForRunAgain = ModelRuntimeStateManager.getValue(model.name).instance as? LlmModelInstance
+        if (capturedForRunAgain != null) break
         if (System.currentTimeMillis() > initDeadline) {
           Log.e(TAG, "Model initialization timed out after 30s for ${model.name} during runAgain")
           onError()
