@@ -35,6 +35,8 @@ object IntegrityChecker {
         checkDebuggable(context)
         checkDebuggerAttached()
         checkEmulator()
+        checkRoot()
+        checkFridaXposed()
     }
 
     /**
@@ -139,6 +141,75 @@ object IntegrityChecker {
         )
         if (suspiciousProps.any { it }) {
             Log.w(TAG, "INTEGRITY: Emulator detected (fingerprint=${Build.FINGERPRINT})")
+        }
+    }
+
+    /**
+     * Detect rooted devices by checking for su binary and root management apps.
+     */
+    private fun checkRoot() {
+        val suPaths = arrayOf(
+            "/system/bin/su", "/system/xbin/su", "/sbin/su",
+            "/data/local/xbin/su", "/data/local/bin/su", "/data/local/su",
+            "/system/sd/xbin/su", "/system/bin/failsafe/su",
+            "/su/bin/su", "/su/bin",
+        )
+        val rootPackages = arrayOf(
+            "com.topjohnwu.magisk",
+            "eu.chainfire.supersu",
+            "com.koushikdutta.superuser",
+            "com.noshufou.android.su",
+            "com.thirdparty.superuser",
+        )
+
+        val hasSu = suPaths.any { java.io.File(it).exists() }
+        val hasTestKeys = Build.TAGS?.contains("test-keys") == true
+        val hasRootApps = rootPackages.any { pkg ->
+            try {
+                Runtime.getRuntime().exec(arrayOf("pm", "path", pkg)).inputStream.bufferedReader().readLine() != null
+            } catch (_: Exception) { false }
+        }
+
+        if (hasSu || hasTestKeys || hasRootApps) {
+            Log.w(TAG, "INTEGRITY: Root detected (su=$hasSu, testKeys=$hasTestKeys, rootApps=$hasRootApps)")
+        }
+    }
+
+    /**
+     * Detect Frida and Xposed hooking frameworks.
+     * Checks: Frida default port, /proc/self/maps for frida gadget,
+     * Xposed installer package, and Xposed bridge in loaded libraries.
+     */
+    private fun checkFridaXposed() {
+        // Check Frida default port (27042)
+        val fridaPort = try {
+            java.net.Socket().use { socket ->
+                socket.connect(java.net.InetSocketAddress("127.0.0.1", 27042), 100)
+                true
+            }
+        } catch (_: Exception) { false }
+
+        // Check /proc/self/maps for frida-agent
+        val hasFridaInMaps = try {
+            java.io.File("/proc/self/maps").readLines().any {
+                it.contains("frida", ignoreCase = true) || it.contains("gadget", ignoreCase = true)
+            }
+        } catch (_: Exception) { false }
+
+        // Check for Xposed installer
+        val hasXposed = try {
+            Runtime.getRuntime().exec(arrayOf("pm", "path", "de.robv.android.xposed.installer")).inputStream.bufferedReader().readLine() != null
+        } catch (_: Exception) { false }
+
+        // Check for Xposed bridge in loaded native libraries
+        val hasXposedBridge = try {
+            java.io.File("/proc/self/maps").readLines().any {
+                it.contains("XposedBridge", ignoreCase = true)
+            }
+        } catch (_: Exception) { false }
+
+        if (fridaPort || hasFridaInMaps || hasXposed || hasXposedBridge) {
+            Log.e(TAG, "INTEGRITY: Hooking framework detected (frida=$fridaPort, fridaMaps=$hasFridaInMaps, xposed=$hasXposed, xposedBridge=$hasXposedBridge)")
         }
     }
 }
