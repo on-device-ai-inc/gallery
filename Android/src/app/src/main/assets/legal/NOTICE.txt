@@ -1,8 +1,33 @@
-OnDevice AI includes software developed by:
+OnDevice AI
+Copyright 2025-2026 On Device AI Inc. All rights reserved.
 
-Google AI Edge Gallery
-Copyright 2024 Google LLC
-Licensed under the Apache License, Version 2.0
-https://github.com/google-ai-edge/gallery
+OnDevice AI is a proprietary application. The enhancements, modifications,
+and additions made by On Device AI Inc. are confidential and may not be
+copied, distributed, or reverse-engineered without express written permission.
 
-This product includes software developed by The Android Open Source Project.
+This product includes software originally developed by:
+
+  Google AI Edge Gallery
+  Copyright 2024-2025 Google LLC
+  Licensed under the Apache License, Version 2.0
+  https://github.com/google-ai-edge/ai-edge-gallery
+
+  The Android Open Source Project
+  Licensed under the Apache License, Version 2.0
+
+Significant modifications by On Device AI Inc. include:
+- Complete rebrand and UI overhaul
+- On-device conversation persistence with Room database
+- Context compression via self-summarization (CompactionManager)
+- Secure token storage with AES-256-GCM encryption
+- Multi-provider model hosting (HuggingFace + custom CDN)
+- Deep-link license activation flow
+- Multi-currency payment integration (Stripe, M-Pesa)
+- Privacy-first analytics (local-only event tracking)
+- Audio input support for LLM inference
+- Anti-piracy and runtime integrity verification
+- Kenya and Africa-targeted geo distribution
+
+The original Google AI Edge Gallery source code is licensed under the
+Apache License, Version 2.0. A copy of this license is included in the
+LICENSE file at the root of this repository.
