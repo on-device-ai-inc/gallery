@@ -13,8 +13,27 @@
 -keep class com.google.firebase.crashlytics.** { *; }
 -dontwarn com.google.firebase.crashlytics.**
 
-# Keep line numbers for readable stack traces
+# Keep line numbers for Crashlytics stack traces only
 -keepattributes SourceFile,LineNumberTable
+
+# ===================================
+# Aggressive R8 optimization
+# ===================================
+
+# Multiple optimization passes
+-optimizationpasses 5
+
+# Remove unused code aggressively
+-allowaccessmodification
+
+# Don't preserve InnerClasses attribute unless needed for reflection
+-keepattributes Exceptions
+
+# Obfuscate resource file names in mapping
+-adaptresourcefilenames
+
+# Merge classes where possible
+-mergeinterfacesaggressively
 
 # Keep custom exception classes
 -keep public class * extends java.lang.Exception
