@@ -39,6 +39,9 @@ class GalleryApplication : Application() {
     // Load saved theme.
     ThemeSettings.setTheme(dataStoreRepository.readTheme())
 
+    // Run integrity checks (log-only, no hard blocks)
+    ai.ondevice.app.security.IntegrityChecker.runAll(this)
+
     // Initialize Firebase
     FirebaseApp.initializeApp(this)
 
