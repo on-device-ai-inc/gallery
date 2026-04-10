@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ main, development ]
 
+# Reusable snippet for generating google-services.json.
+# Validates the secret JSON before use; falls back to placeholder if invalid.
+env:
+  GS_PLACEHOLDER: '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"ai.ondevice.app"}},"api_key":[{"current_key":"placeholder"}]}],"configuration_version":"1"}'
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -27,11 +32,11 @@ jobs:
 
       - name: Create google-services.json
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+          if [ -n "$GOOGLE_SERVICES_JSON" ] && printf '%s' "$GOOGLE_SERVICES_JSON" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
           else
-            echo '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"ai.ondevice.app"}},"api_key":[{"current_key":"placeholder"}]}],"configuration_version":"1"}' > app/google-services.json
-            echo "WARNING: GOOGLE_SERVICES_JSON secret not set, using placeholder"
+            echo "WARNING: GOOGLE_SERVICES_JSON missing or invalid JSON, using placeholder"
+            printf '%s' "$GS_PLACEHOLDER" > app/google-services.json
           fi
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -60,11 +65,11 @@ jobs:
 
       - name: Create google-services.json
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+          if [ -n "$GOOGLE_SERVICES_JSON" ] && printf '%s' "$GOOGLE_SERVICES_JSON" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
           else
-            echo '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"ai.ondevice.app"}},"api_key":[{"current_key":"placeholder"}]}],"configuration_version":"1"}' > app/google-services.json
-            echo "WARNING: GOOGLE_SERVICES_JSON secret not set, using placeholder"
+            echo "WARNING: GOOGLE_SERVICES_JSON missing or invalid JSON, using placeholder"
+            printf '%s' "$GS_PLACEHOLDER" > app/google-services.json
           fi
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -93,11 +98,11 @@ jobs:
 
       - name: Create google-services.json
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+          if [ -n "$GOOGLE_SERVICES_JSON" ] && printf '%s' "$GOOGLE_SERVICES_JSON" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
           else
-            echo '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"ai.ondevice.app"}},"api_key":[{"current_key":"placeholder"}]}],"configuration_version":"1"}' > app/google-services.json
-            echo "WARNING: GOOGLE_SERVICES_JSON secret not set, using placeholder"
+            echo "WARNING: GOOGLE_SERVICES_JSON missing or invalid JSON, using placeholder"
+            printf '%s' "$GS_PLACEHOLDER" > app/google-services.json
           fi
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -138,11 +143,11 @@ jobs:
 
       - name: Create google-services.json
         run: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+          if [ -n "$GOOGLE_SERVICES_JSON" ] && printf '%s' "$GOOGLE_SERVICES_JSON" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
           else
-            echo '{"project_info":{"project_number":"000000000000","project_id":"placeholder","storage_bucket":"placeholder.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:000000000000:android:0000000000000000","android_client_info":{"package_name":"ai.ondevice.app"}},"api_key":[{"current_key":"placeholder"}]}],"configuration_version":"1"}' > app/google-services.json
-            echo "WARNING: GOOGLE_SERVICES_JSON secret not set, using placeholder"
+            echo "WARNING: GOOGLE_SERVICES_JSON missing or invalid JSON, using placeholder"
+            printf '%s' "$GS_PLACEHOLDER" > app/google-services.json
           fi
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -167,6 +172,20 @@ jobs:
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+
+      - name: Print release APK SHA-256
+        run: |
+          APK_PATH="app/build/outputs/apk/release/app-release.apk"
+          if [ -f "$APK_PATH" ]; then
+            SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
+            SIZE_MB=$(du -m "$APK_PATH" | awk '{print $1}')
+            echo "=== RELEASE APK ==="
+            echo "SHA-256: $SHA256"
+            echo "Size:    ${SIZE_MB}MB"
+            echo "Date:    $(date -u +%Y-%m-%d)"
+            echo "Update src/lib/apk-info.ts in gora-ai-web with these values."
+            echo "=================="
+          fi
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
