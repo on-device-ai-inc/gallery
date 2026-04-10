@@ -21,17 +21,26 @@ package ai.ondevice.app
 
 import android.app.Application
 import ai.ondevice.app.data.DataStoreRepository
+import ai.ondevice.app.security.LicenseManager
 import ai.ondevice.app.ui.theme.ThemeSettings
 import ai.ondevice.app.util.CrashlyticsLogger
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
 class GalleryApplication : Application() {
 
   @Inject lateinit var dataStoreRepository: DataStoreRepository
+
+  // Application-scoped coroutine scope for background license checks.
+  // SupervisorJob ensures one failed child doesn't cancel others.
+  private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   override fun onCreate() {
     super.onCreate()
@@ -41,6 +50,11 @@ class GalleryApplication : Application() {
 
     // Run integrity checks (log-only, no hard blocks)
     ai.ondevice.app.security.IntegrityChecker.runAll(this)
+
+    // Verify license on startup (log-only, fail-open on network errors)
+    appScope.launch {
+      LicenseManager.verify(applicationContext)
+    }
 
     // Initialize Firebase
     FirebaseApp.initializeApp(this)

@@ -20,8 +20,11 @@
 package ai.ondevice.app
 
 import android.animation.ObjectAnimator
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.DecelerateInterpolator
@@ -50,6 +53,7 @@ import androidx.core.animation.doOnEnd
 import androidx.core.os.bundleOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import ai.ondevice.app.security.LicenseManager
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import ai.ondevice.app.ui.theme.GalleryTheme
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -64,6 +68,9 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    // Handle license activation deep link (ai.ondevice.app://activate?order_id=...)
+    handleActivationIntent(intent)
 
     modelManagerViewModel.loadModelAllowlist()
 
@@ -115,6 +122,27 @@ class MainActivity : ComponentActivity() {
     }
     // Keep the screen on while the app is running for better demo experience.
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+  }
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    handleActivationIntent(intent)
+  }
+
+  private fun handleActivationIntent(intent: Intent?) {
+    val data: Uri = intent?.data ?: return
+    if (data.scheme != "ai.ondevice.app" || data.host != "activate") return
+    val orderId = data.getQueryParameter("order_id")
+    if (orderId.isNullOrBlank()) {
+      Log.w(TAG, "Activation deep link missing order_id")
+      return
+    }
+    lifecycleScope.launch {
+      val result = LicenseManager.activate(applicationContext, orderId)
+      result.onFailure { err ->
+        Log.w(TAG, "Activation failed for order=$orderId: ${err.message}")
+      }
+    }
   }
 
   override fun onResume() {

@@ -100,6 +100,22 @@
                     android:host="model"
                     android:pathPrefix="/" />
             </intent-filter>
+
+            <!--
+              License activation deep link. Sent to the user's email after purchase.
+              Format: ai.ondevice.app://activate?order_id=<orderId>
+              MainActivity extracts order_id and calls LicenseManager.activate().
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="ai.ondevice.app"
+                    android:host="activate" />
+            </intent-filter>
         </activity>
 
         <!-- Set themes for activities that are used for viewing open source licenses -->
