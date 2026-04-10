@@ -97,4 +97,4 @@ For the complete source code of OnDevice AI's open-source foundation, visit:
 https://github.com/google-ai-edge/gallery
 
 For questions about OnDevice AI specifically, contact:
-support@ondevice.ai (or your support email)
+admin@on-device.app

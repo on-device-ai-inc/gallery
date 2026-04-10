@@ -40,7 +40,7 @@ fun TosDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    "OnDevice AI is built on open-source technology (Apache 2.0). " +
+                    "OnDevice AI is built on Google AI Edge Gallery (Apache 2.0). " +
                     "Your purchase supports professional packaging, testing, updates, and customer support.",
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -63,7 +63,7 @@ fun TosDialog(
                 
                 TextButton(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device-ai-inc.github.io/ondevice-legal-pages/terms.html"))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device.org/terms"))
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -73,7 +73,7 @@ fun TosDialog(
                 
                 TextButton(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device-ai-inc.github.io/ondevice-legal-pages/privacy.html"))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://on-device.org/privacy"))
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
