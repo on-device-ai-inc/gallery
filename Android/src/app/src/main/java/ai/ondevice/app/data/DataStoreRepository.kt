@@ -27,10 +27,15 @@ import ai.ondevice.app.proto.Settings
 import ai.ondevice.app.proto.TextSize
 import ai.ondevice.app.proto.Theme
 import ai.ondevice.app.proto.UserData
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-// TODO(b/423700720): Change to async (suspend) functions
 interface DataStoreRepository {
   fun saveTextInputHistory(history: List<String>)
 
@@ -86,245 +91,185 @@ interface DataStoreRepository {
   fun readUserNickname(): String
 }
 
-/** Repository for managing data using Proto DataStore and EncryptedSharedPreferences. */
+/**
+ * Repository for managing data using Proto DataStore and EncryptedSharedPreferences.
+ *
+ * ANR fix: All reads are served from in-memory [StateFlow] snapshots — O(1), never blocking the
+ * calling thread. Writes are fire-and-forget on [Dispatchers.IO]. The StateFlow is populated
+ * eagerly when this repository is created (via Hilt), so values are available almost immediately.
+ * On the rare first read before disk-load completes, the DataStore default instance is returned
+ * (empty/unspecified values), which are all handled safely by the enum defaulting below.
+ */
 class DefaultDataStoreRepository(
   private val dataStore: DataStore<Settings>,
   private val userDataDataStore: DataStore<UserData>,
   private val secureTokenStorage: SecureTokenStorage,
 ) : DataStoreRepository {
-  override fun saveTextInputHistory(history: List<String>) {
-    runBlocking {
-      dataStore.updateData { settings ->
-        settings.toBuilder().clearTextInputHistory().addAllTextInputHistory(history).build()
-      }
-    }
+
+  // Single background scope for all async writes. SupervisorJob prevents one failure from
+  // cancelling the scope, and Dispatchers.IO avoids any main-thread blocking.
+  private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+  // Eagerly-started StateFlow — subscribes to the DataStore immediately and caches the latest
+  // value. All read methods below call .value (instant, non-blocking).
+  private val settingsState: StateFlow<Settings> = dataStore.data
+    .catch { emit(Settings.getDefaultInstance()) }
+    .stateIn(repoScope, SharingStarted.Eagerly, Settings.getDefaultInstance())
+
+  private val userDataState: StateFlow<UserData> = userDataDataStore.data
+    .catch { emit(UserData.getDefaultInstance()) }
+    .stateIn(repoScope, SharingStarted.Eagerly, UserData.getDefaultInstance())
+
+  // ── Reads (all instant from in-memory StateFlow) ──────────────────────────
+
+  override fun readTextInputHistory(): List<String> =
+    settingsState.value.textInputHistoryList
+
+  override fun readTheme(): Theme {
+    val theme = settingsState.value.theme
+    return if (theme == Theme.THEME_UNSPECIFIED) Theme.THEME_AUTO else theme
   }
 
-  override fun readTextInputHistory(): List<String> {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.textInputHistoryList
+  override fun readAccessTokenData(): AccessTokenData? {
+    // Primary storage: EncryptedSharedPreferences (synchronous, non-blocking).
+    val secure = secureTokenStorage.readTokens()
+    if (secure != null) return secure
+
+    // Migration path: tokens in old Proto DataStore. Read from cached StateFlow.
+    val protoTokens = userDataState.value.accessTokenData
+    if (protoTokens != null && protoTokens.accessToken.isNotEmpty()) {
+      // Migrate to EncryptedSharedPreferences and clear old DataStore entry.
+      secureTokenStorage.saveTokens(
+        protoTokens.accessToken,
+        protoTokens.refreshToken,
+        protoTokens.expiresAtMs,
+      )
+      repoScope.launch {
+        userDataDataStore.updateData { it.toBuilder().clearAccessTokenData().build() }
+      }
+      return protoTokens
+    }
+    return null
+  }
+
+  override fun readImportedModels(): List<ImportedModel> =
+    settingsState.value.importedModelList
+
+  override fun isTosAccepted(): Boolean =
+    settingsState.value.isTosAccepted
+
+  override fun isGemmaTermsAccepted(): Boolean =
+    settingsState.value.gemmaTermsAcceptedTimestamp > 0
+
+  override fun getGemmaTermsAcceptanceTimestamp(): Long =
+    settingsState.value.gemmaTermsAcceptedTimestamp
+
+  override fun readTextSize(): TextSize {
+    val size = settingsState.value.textSize
+    return if (size == TextSize.TEXT_SIZE_UNSPECIFIED) TextSize.TEXT_SIZE_MEDIUM else size
+  }
+
+  override fun readAutoCleanup(): AutoCleanup {
+    val cleanup = settingsState.value.autoCleanup
+    return if (cleanup == AutoCleanup.AUTO_CLEANUP_UNSPECIFIED) AutoCleanup.AUTO_CLEANUP_NEVER else cleanup
+  }
+
+  override fun readStorageBudget(): Long {
+    val budget = settingsState.value.storageBudgetBytes
+    return if (budget == 0L) DEFAULT_STORAGE_BUDGET_BYTES else budget
+  }
+
+  override fun readCustomInstructions(): String =
+    settingsState.value.customInstructions
+
+  override fun readUserFullName(): String =
+    settingsState.value.userFullName
+
+  override fun readUserNickname(): String =
+    settingsState.value.userNickname
+
+  // ── Writes (fire-and-forget on Dispatchers.IO) ───────────────────────────
+
+  override fun saveTextInputHistory(history: List<String>) {
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().clearTextInputHistory().addAllTextInputHistory(history).build() }
     }
   }
 
   override fun saveTheme(theme: Theme) {
-    runBlocking {
-      dataStore.updateData { settings -> settings.toBuilder().setTheme(theme).build() }
-    }
-  }
-
-  override fun readTheme(): Theme {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      val curTheme = settings.theme
-      // Use "auto" as the default theme.
-      if (curTheme == Theme.THEME_UNSPECIFIED) Theme.THEME_AUTO else curTheme
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setTheme(theme).build() }
     }
   }
 
   override fun saveAccessTokenData(accessToken: String, refreshToken: String, expiresAt: Long) {
-    // Save to EncryptedSharedPreferences (primary storage)
     secureTokenStorage.saveTokens(accessToken, refreshToken, expiresAt)
-
-    runBlocking {
-      // Clear tokens from old Proto DataStore (migration cleanup)
-      dataStore.updateData { settings ->
-        settings.toBuilder().setAccessTokenData(AccessTokenData.getDefaultInstance()).build()
-      }
-      userDataDataStore.updateData { userData ->
-        userData.toBuilder().clearAccessTokenData().build()
-      }
+    // Clear stale copies from old Proto DataStore locations.
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setAccessTokenData(AccessTokenData.getDefaultInstance()).build() }
+      userDataDataStore.updateData { it.toBuilder().clearAccessTokenData().build() }
     }
   }
 
   override fun clearAccessTokenData() {
-    // Clear from EncryptedSharedPreferences (primary storage)
     secureTokenStorage.clearTokens()
-
-    runBlocking {
-      // Also clear from old Proto DataStore (migration cleanup)
-      dataStore.updateData { settings -> settings.toBuilder().clearAccessTokenData().build() }
-      userDataDataStore.updateData { userData ->
-        userData.toBuilder().clearAccessTokenData().build()
-      }
-    }
-  }
-
-  override fun readAccessTokenData(): AccessTokenData? {
-    // Try reading from EncryptedSharedPreferences first (primary storage)
-    val secureTokens = secureTokenStorage.readTokens()
-    if (secureTokens != null) {
-      return secureTokens
-    }
-
-    // Migration: Check if tokens exist in old Proto DataStore
-    return runBlocking {
-      val userData = userDataDataStore.data.first()
-      val protoTokens = userData.accessTokenData
-
-      // If tokens exist in Proto DataStore, migrate to EncryptedSharedPreferences
-      if (protoTokens != null && protoTokens.accessToken.isNotEmpty()) {
-        secureTokenStorage.saveTokens(
-          protoTokens.accessToken,
-          protoTokens.refreshToken,
-          protoTokens.expiresAtMs
-        )
-        // Clear from Proto DataStore after migration
-        userDataDataStore.updateData { data ->
-          data.toBuilder().clearAccessTokenData().build()
-        }
-        return@runBlocking protoTokens
-      }
-
-      null
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().clearAccessTokenData().build() }
+      userDataDataStore.updateData { it.toBuilder().clearAccessTokenData().build() }
     }
   }
 
   override fun saveImportedModels(importedModels: List<ImportedModel>) {
-    runBlocking {
-      dataStore.updateData { settings ->
-        settings.toBuilder().clearImportedModel().addAllImportedModel(importedModels).build()
-      }
-    }
-  }
-
-  override fun readImportedModels(): List<ImportedModel> {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.importedModelList
-    }
-  }
-
-  override fun isTosAccepted(): Boolean {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.isTosAccepted
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().clearImportedModel().addAllImportedModel(importedModels).build() }
     }
   }
 
   override fun acceptTos() {
-    runBlocking {
-      dataStore.updateData { settings -> settings.toBuilder().setIsTosAccepted(true).build() }
-    }
-  }
-
-  // Self-hosted Gemma: Terms acceptance tracking implementation
-
-  override fun isGemmaTermsAccepted(): Boolean {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.gemmaTermsAcceptedTimestamp > 0
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setIsTosAccepted(true).build() }
     }
   }
 
   override fun acceptGemmaTerms() {
-    runBlocking {
-      dataStore.updateData { settings ->
-        settings.toBuilder()
-          .setGemmaTermsAcceptedTimestamp(System.currentTimeMillis())
-          .build()
-      }
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setGemmaTermsAcceptedTimestamp(System.currentTimeMillis()).build() }
     }
   }
-
-  override fun getGemmaTermsAcceptanceTimestamp(): Long {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.gemmaTermsAcceptedTimestamp
-    }
-  }
-
-  // Epic 5: Settings & Data Management implementation
 
   override fun saveTextSize(textSize: TextSize) {
-    runBlocking {
-      dataStore.updateData { settings -> settings.toBuilder().setTextSize(textSize).build() }
-    }
-  }
-
-  override fun readTextSize(): TextSize {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      val textSize = settings.textSize
-      // Default to MEDIUM if unspecified
-      if (textSize == TextSize.TEXT_SIZE_UNSPECIFIED) TextSize.TEXT_SIZE_MEDIUM else textSize
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setTextSize(textSize).build() }
     }
   }
 
   override fun saveAutoCleanup(autoCleanup: AutoCleanup) {
-    runBlocking {
-      dataStore.updateData { settings -> settings.toBuilder().setAutoCleanup(autoCleanup).build() }
-    }
-  }
-
-  override fun readAutoCleanup(): AutoCleanup {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      val autoCleanup = settings.autoCleanup
-      // Default to NEVER if unspecified
-      if (autoCleanup == AutoCleanup.AUTO_CLEANUP_UNSPECIFIED) AutoCleanup.AUTO_CLEANUP_NEVER else autoCleanup
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setAutoCleanup(autoCleanup).build() }
     }
   }
 
   override fun saveStorageBudget(budgetBytes: Long) {
-    runBlocking {
-      dataStore.updateData { settings -> settings.toBuilder().setStorageBudgetBytes(budgetBytes).build() }
-    }
-  }
-
-  override fun readStorageBudget(): Long {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      val budget = settings.storageBudgetBytes
-      // Default to 4GB if not set (0)
-      if (budget == 0L) DEFAULT_STORAGE_BUDGET_BYTES else budget
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setStorageBudgetBytes(budgetBytes).build() }
     }
   }
 
   override fun saveCustomInstructions(instructions: String) {
-    runBlocking {
-      dataStore.updateData { settings ->
-        settings.toBuilder().setCustomInstructions(instructions).build()
-      }
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setCustomInstructions(instructions).build() }
     }
   }
-
-  override fun readCustomInstructions(): String {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.customInstructions
-    }
-  }
-
-  // User Profile implementation
 
   override fun saveUserFullName(fullName: String) {
-    runBlocking {
-      dataStore.updateData { settings ->
-        settings.toBuilder().setUserFullName(fullName).build()
-      }
-    }
-  }
-
-  override fun readUserFullName(): String {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.userFullName
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setUserFullName(fullName).build() }
     }
   }
 
   override fun saveUserNickname(nickname: String) {
-    runBlocking {
-      dataStore.updateData { settings ->
-        settings.toBuilder().setUserNickname(nickname).build()
-      }
-    }
-  }
-
-  override fun readUserNickname(): String {
-    return runBlocking {
-      val settings = dataStore.data.first()
-      settings.userNickname
+    repoScope.launch {
+      dataStore.updateData { it.toBuilder().setUserNickname(nickname).build() }
     }
   }
 
