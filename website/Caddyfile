@@ -1,0 +1,40 @@
+# Caddyfile — OnDevice AI Web Platform
+# Auto-HTTPS via Let's Encrypt
+# Run: caddy run --config Caddyfile
+
+{
+    email admin@on-device.app
+}
+
+on-device.org, www.on-device.org {
+    reverse_proxy localhost:3002
+
+    encode gzip zstd
+
+    header {
+        # Security headers
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        # Remove server identification
+        -Server
+    }
+
+    # Cache static assets aggressively
+    @static {
+        path *.js *.css *.png *.jpg *.jpeg *.webp *.avif *.svg *.woff2 *.ico
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # API routes — no cache
+    @api path /api/*
+    header @api Cache-Control "no-store"
+
+    log {
+        output file /var/log/caddy/ondevice.log
+        format json
+    }
+}

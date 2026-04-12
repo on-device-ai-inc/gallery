@@ -1,0 +1,1 @@
+ALTER TABLE "device_licenses" ADD CONSTRAINT "device_licenses_order_id_unique" UNIQUE("order_id");

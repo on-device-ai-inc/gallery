@@ -1,0 +1,49 @@
+name: Deploy to DGX Spark
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ARM64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          tags: ondevice-web:latest
+          outputs: type=docker,dest=/tmp/ondevice-web.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Copy image to Spark
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SPARK_HOST }}
+          username: ${{ secrets.SPARK_USER }}
+          key: ${{ secrets.SPARK_SSH_KEY }}
+          source: /tmp/ondevice-web.tar
+          target: /tmp/
+
+      - name: Deploy on Spark
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SPARK_HOST }}
+          username: ${{ secrets.SPARK_USER }}
+          key: ${{ secrets.SPARK_SSH_KEY }}
+          script: |
+            docker load -i /tmp/ondevice-web.tar
+            cd /home/nashie/Development/gora-ai-web
+            docker compose up -d --no-build
+            docker image prune -f
+            rm /tmp/ondevice-web.tar
+            echo "Deployed at $(date)"
