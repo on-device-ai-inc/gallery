@@ -1,0 +1,120 @@
+---
+title: "We Built an AI That Works Without Internet. Here's Why."
+slug: why-we-built-offline-ai
+description: "OnDevice AI runs Gemma entirely on your Android phone — no data, no subscription, no server. Here's the story of why we built it and who we built it for."
+publishedAt: 2026-03-21
+category: story
+author: OnDevice AI Team
+readingTime: "6 min read"
+featured: true
+---
+
+# We Built an AI That Works Without Internet. Here's Why.
+
+**6 min read**
+
+---
+
+There is a version of this story that starts in a boardroom in San Francisco. Ours starts somewhere more honest: with the realization that the most transformative technology of the decade is inaccessible to most of the people on earth.
+
+Not because they lack intelligence. Not because they lack need. Because they lack a fast Wi-Fi connection, a $20 monthly budget, or a credit card that works with foreign payment processors.
+
+We are a small company from Ottawa, Canada — rooted in Africa, building for the world. And we built **OnDevice AI** because we believed, deeply, that real AI should run on the phone already in your pocket.
+
+---
+
+## The Problem We Kept Running Into
+
+ChatGPT is extraordinary. We use it. We admire it. But here is what it costs to use it consistently in Nairobi, Lagos, or Johannesburg:
+
+- **$5 to $20 per month**, billed in USD, requiring a card that works with international payments
+- **Data consumption per session** — every message you send travels to a server in the United States and back
+- **Dependency on uptime** — if your connection is slow or the service is down, you get nothing
+
+For a developer in Kenya earning a realistic tech salary, $20/month is not a rounding error. It is a deliberate choice. For a student at University of Lagos using 2GB of mobile data per week, every chat session costs money twice: once for the subscription and once for the data to run it.
+
+This is not a small inconvenience. It is a structural barrier. And it means the people who arguably stand to gain the most from AI — those building businesses in high-growth emerging markets, students preparing for competitive job markets, professionals navigating multi-language work environments — are the people paying the highest effective price to access it.
+
+We kept running into this. And we kept asking: does it have to be this way?
+
+---
+
+## The Insight That Changed Everything
+
+Modern smartphones are, by any engineering measure, remarkable computers.
+
+A Tecno Spark 20 ships with an octa-core processor and 4GB of RAM. An Infinix Hot 40 Pro has a dedicated neural processing unit. Samsung's A-series devices run machine learning workloads at speeds that would have required a workstation five years ago.
+
+Your phone already has enough compute to run real AI. The question was never hardware. The question was software architecture.
+
+The dominant model for AI products — send a prompt to a cloud server, return a response — was designed for a world where phones were thin clients and servers were where the intelligence lived. That world is over. The intelligence can live on the device.
+
+Google understood this. They built **LiteRT** (formerly TensorFlow Lite Runtime) — a high-performance inference engine optimized for mobile and edge hardware. They built **Gemma**, a family of open-weight language models specifically designed to run efficiently on constrained hardware. They built **MediaPipe LLM inference** to wire it all together into a coherent pipeline.
+
+The pieces existed. What was needed was an app that put them together in a form that anyone could use — not just ML researchers or engineers with time to spare.
+
+---
+
+## What We Built
+
+**OnDevice AI** takes Google's LiteRT inference engine and Gemma language model, wraps them in a clean, fast Android interface, and ships it as a single APK that runs entirely on your device.
+
+Here is what that means in practice:
+
+- **After the initial model download** (done once, over Wi-Fi), the app needs **zero internet access** to function. Every conversation happens locally — processed by your phone's CPU and NPU, stored only on your device.
+- **Zero data cost per conversation.** You can have a thousand conversations and not use a single kilobyte of mobile data.
+- **Zero servers receive your messages.** There is no prompt logging, no training data collection, no third party that sees what you ask.
+- **One-time payment.** $3.99. Not $3.99 per month. $3.99, full stop. You buy it once. You own it forever.
+
+The payment works via M-Pesa, MTN MoMo, card, or any method Google Play supports. We accepted local payment methods intentionally. If you are in Kenya, you should be able to pay the way Kenyans pay.
+
+---
+
+## Why the Price Is a Values Statement
+
+We could have launched a subscription. Subscriptions are how you build a company that investors find legible and recurring revenue that scales predictably.
+
+We chose not to, for a reason that felt more important: **a subscription on an AI tool creates a permanent tax on thinking.**
+
+Every time you open a subscription app, you are reminded that you are renting access to your own productivity. The moment you stop paying, the access stops. Your history, your saved conversations, your muscle memory around the tool — all of it is hostage to a recurring charge.
+
+**Pay once, own it forever** is not just a pricing decision. It is a statement about who the product is for and what kind of relationship we want to have with our users. You are not a subscriber. You are an owner.
+
+At $3.99, the launch promo price, we are below the cost of a single month of ChatGPT's most affordable tier. After one month, you are ahead. After one year, you have spent $3.99 against someone else's $60.
+
+---
+
+## Who This Is For
+
+We built this for:
+
+- **Developers and builders in Africa** who want AI in their workflow without the overhead of cloud dependency
+- **Students** who need a writing assistant, a tutor, a thinking partner — and cannot justify $5/month on top of tuition and data costs
+- **Biashara owners** who need to draft invoices, write client emails, summarize contracts — offline, in private
+- **Anyone** who is tired of subscriptions and wants to own something, not rent it
+
+We also built it for users who value privacy in a serious way. Not the marketing-brochure version of privacy — the actual, verifiable kind. The kind where you can check your network traffic and confirm: zero bytes sent to any external server during a conversation. The kind where the answer to "what does OnDevice AI know about my conversations?" is genuinely "nothing, because they never leave your device."
+
+---
+
+## The Technical Reality, Briefly
+
+Gemma models run efficiently on phones because they are designed to. Through **quantization** — a technique that reduces model precision from 32-bit to 4-bit or 8-bit weights — the model compresses from several gigabytes to a size that fits in phone storage and can run in a few gigabytes of RAM. LiteRT is purpose-built to execute these quantized models with hardware acceleration.
+
+The result is real language model inference at 15–30 tokens per second on a mid-range Android phone. That is fast enough to feel responsive. That is fast enough to be useful.
+
+---
+
+## What Comes Next
+
+We are launching March 26, 2026. The app is available as a direct APK download and will be coming to Google Play.
+
+This is version 1. We are building quickly. The roadmap includes support for more Gemma model sizes, voice input, document analysis, and extended context length. All of it will remain on-device. None of it will require a subscription.
+
+Africa does not need to wait for AI. The AI is ready to run on the phones already in people's hands. We built the app to prove it.
+
+---
+
+**Download the APK at [on-device.org](https://on-device.org) — launching March 26, 2026.**
+
+$3.99 one-time. No subscription. No data cost per conversation. Yours forever.

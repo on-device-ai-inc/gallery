@@ -1,0 +1,41 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://gora:${DB_PASSWORD}@db:5432/ondevice_web
+      - NEXTAUTH_URL=${SITE_URL}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - NEXT_PUBLIC_PLAUSIBLE_DOMAIN=${PLAUSIBLE_DOMAIN}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    platform: linux/arm64
+
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=ondevice_web
+      - POSTGRES_USER=ondevice
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ondevice -d ondevice_web"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
