@@ -4,7 +4,7 @@ import { db, orders, downloadTokens, promoRedemptions } from '@/lib/db'
 import { and, eq } from 'drizzle-orm'
 import { SignJWT } from 'jose'
 import { createHash } from 'crypto'
-import { sendReceiptEmail } from '@/lib/email'
+import { sendReceiptEmail, sendAdminSaleNotification } from '@/lib/email'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isValidOrigin } from '@/lib/origin-check'
 
@@ -110,6 +110,13 @@ export async function POST(req: NextRequest) {
 
     try {
       await sendReceiptEmail({ to: email, downloadUrl, orderId })
+      await sendAdminSaleNotification({
+        customerEmail: email,
+        orderId,
+        amount: 0,
+        currency: 'USD',
+        provider: 'promo',
+      })
     } catch (emailErr) {
       console.error('[promo/redeem] email failed:', emailErr)
     }

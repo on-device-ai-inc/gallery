@@ -4,7 +4,7 @@ import { db, orders, downloadTokens } from '@/lib/db'
 import { eq } from 'drizzle-orm'
 import { SignJWT } from 'jose'
 import { createHash, timingSafeEqual } from 'crypto'
-import { sendReceiptEmail } from '@/lib/email'
+import { sendReceiptEmail, sendAdminSaleNotification } from '@/lib/email'
 
 // M-Pesa requires ResultCode 0 in ALL responses — even errors — or it will retry indefinitely
 const ack = () => NextResponse.json({ ResultCode: 0, ResultDesc: 'Accepted' })
@@ -76,6 +76,13 @@ export async function POST(req: NextRequest) {
         to: order.email,
         downloadUrl: `${process.env.SITE_URL}/download?token=${token}`,
         orderId: order.id,
+      })
+      await sendAdminSaleNotification({
+        customerEmail: order.email,
+        orderId: order.id,
+        amount: order.amountCents,
+        currency: order.currency,
+        provider: 'mpesa',
       })
     } catch (emailErr) {
       console.error('[webhooks/mpesa] email failed:', emailErr)

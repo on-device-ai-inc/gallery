@@ -123,3 +123,43 @@ export async function sendReceiptEmail({
     `,
   })
 }
+
+export async function sendAdminSaleNotification({
+  customerEmail,
+  orderId,
+  amount,
+  currency,
+  provider,
+}: {
+  customerEmail: string
+  orderId: string
+  amount: number
+  currency: string
+  provider: string
+}) {
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (!adminEmail) return
+
+  await resend().emails.send({
+    from: process.env.EMAIL_FROM ?? 'OnDevice AI <admin@on-device.org>',
+    to: adminEmail,
+    subject: `New sale — ${currency} ${(amount / 100).toFixed(2)} via ${provider}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #f8fafc; padding: 40px 20px; margin: 0;">
+  <div style="max-width: 480px; margin: 0 auto; background: #111; border-radius: 16px; padding: 32px; border: 1px solid #1e293b;">
+    <h2 style="margin: 0 0 20px; font-size: 20px;">New Sale</h2>
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #cbd5e1;">
+      <tr><td style="padding: 8px 0; color: #64748b;">Customer</td><td style="padding: 8px 0;">${customerEmail}</td></tr>
+      <tr><td style="padding: 8px 0; color: #64748b;">Amount</td><td style="padding: 8px 0;">${currency} ${(amount / 100).toFixed(2)}</td></tr>
+      <tr><td style="padding: 8px 0; color: #64748b;">Provider</td><td style="padding: 8px 0;">${provider}</td></tr>
+      <tr><td style="padding: 8px 0; color: #64748b;">Order ID</td><td style="padding: 8px 0; font-family: monospace; font-size: 12px;">${orderId}</td></tr>
+    </table>
+  </div>
+</body>
+</html>
+    `,
+  })
+}

@@ -4,7 +4,7 @@ import { db, orders, downloadTokens } from '@/lib/db'
 import { eq } from 'drizzle-orm'
 import { SignJWT } from 'jose'
 import { createHash } from 'crypto'
-import { sendReceiptEmail } from '@/lib/email'
+import { sendReceiptEmail, sendAdminSaleNotification } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const payload = await req.text()
@@ -57,6 +57,13 @@ export async function POST(req: NextRequest) {
         to: order.email,
         downloadUrl: `${process.env.SITE_URL}/download?token=${token}`,
         orderId: order.id,
+      })
+      await sendAdminSaleNotification({
+        customerEmail: order.email,
+        orderId: order.id,
+        amount: order.amountCents,
+        currency: order.currency,
+        provider: 'stripe',
       })
     } catch (emailErr) {
       console.error('[webhooks/stripe] email failed:', emailErr)
