@@ -1,6 +1,8 @@
 package ai.ondevice.app.ui.conversationlist
 
+import ai.ondevice.app.firebaseAnalytics
 import android.util.Log
+import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.ondevice.app.data.ConversationDao

@@ -9,6 +9,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import ai.ondevice.app.firebaseAnalytics
+import androidx.core.os.bundleOf
+import kotlinx.coroutines.CancellationException
 
 @HiltViewModel
 class ConversationDetailViewModel @Inject constructor(
@@ -29,6 +32,15 @@ class ConversationDetailViewModel @Inject constructor(
         conversationDao.getThreadById(threadId)?.let { thread ->
             conversationDao.getMessagesForThreadFlow(threadId)
                 .catch { e ->
+                    if (e is CancellationException) throw e
+                    firebaseAnalytics?.logEvent(
+                        "error_occurred",
+                        bundleOf(
+                            "error_type" to e::class.simpleName,
+                            "source_class" to "ConversationDetailViewModel",
+                            "error_message" to e.message.orEmpty()
+                        )
+                    )
                     Log.e(TAG, "Message flow error", e)
                     _uiState.value = ConversationDetailUiState.Error
                 }
