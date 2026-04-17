@@ -127,14 +127,6 @@ class CompactionManager(
             conversationDao.deleteMessage(msg.id)
         }
 
-        val messagesAfter = messages.size - toEvict.size
-        trace.putMetric("messages_after", messagesAfter.toLong())
-        if (messagesAfter > 0) {
-            val compressionRatio = (messagesBefore.toFloat() / messagesAfter * 100).toLong()
-            trace.putMetric("compression_ratio_percent", compressionRatio)
-        }
-        trace.stop()
-
         Log.d(TAG, "Compaction complete: evicted ${toEvict.size} turns, summary: ${newSummary.length} chars")
         return CompactionResult.Success(
             evictedCount = toEvict.size,
