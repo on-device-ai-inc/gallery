@@ -42,7 +42,10 @@ import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.firebase.Firebase
+import com.google.firebase.perf.performance
 import java.io.ByteArrayOutputStream
+import java.io.File
 import kotlinx.coroutines.CancellationException
 
 private const val TAG = "AGLlmChatModelHelper"
@@ -104,9 +107,20 @@ object LlmChatModelHelper {
       )
 
     // Create an instance of LiteRT LM engine and conversation.
+    val trace = Firebase.performance.newTrace("model_initialization")
+    trace.putAttribute("model_name", model.name)
+    trace.putAttribute("backend", preferredBackend.name)
+    trace.start()
     try {
       val engine = Engine(engineConfig)
       engine.initialize()
+
+      // Calculate model size
+      val modelFile = File(modelPath)
+      val modelSizeMb = if (modelFile.exists()) {
+        modelFile.length() / (1024 * 1024)
+      } else 0L
+      trace.putMetric("model_size_mb", modelSizeMb)
 
       val conversation = synchronized(ExperimentalFlags::class.java) {
         ExperimentalFlags.enableConversationConstrainedDecoding = enableConversationConstrainedDecoding
@@ -127,7 +141,9 @@ object LlmChatModelHelper {
       ModelRuntimeStateManager.update(model.name) {
         it.copy(instance = LlmModelInstance(engine = engine, conversation = conversation))
       }
+      trace.stop()
     } catch (e: Exception) {
+      trace.stop()
       if (e is CancellationException) throw e
       onDone(cleanUpMediapipeTaskErrorMessage(e.message ?: "Unknown error"))
       return

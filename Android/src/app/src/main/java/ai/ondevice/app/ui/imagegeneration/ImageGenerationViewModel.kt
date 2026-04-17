@@ -34,6 +34,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.ondevice.app.helper.GenerationResult
 import ai.ondevice.app.helper.ImageGenerationHelper
+import com.google.firebase.Firebase
+import com.google.firebase.perf.performance
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import java.io.FileOutputStream
@@ -49,6 +51,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import ai.ondevice.app.firebaseAnalytics
+import androidx.core.os.bundleOf
 
 private const val TAG = "ImageGenerationViewModel"
 
@@ -93,6 +97,12 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
 
     // Start generation coroutine
     generationJob = viewModelScope.launch {
+      val startTime = System.currentTimeMillis()
+      val trace = Firebase.performance.newTrace("image_generation")
+      trace.putAttribute("model_name", modelPath.substringAfterLast("/"))
+      trace.putAttribute("resolution", "512x512")
+      trace.putMetric("steps", iterations.toLong())
+      trace.start()
       try {
         ImageGenerationHelper.generateImage(
           context = context,
@@ -116,6 +126,20 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
 
             is GenerationResult.Success -> {
               // Generation completed successfully
+              val generationTimeMs = System.currentTimeMillis() - startTime
+              trace.stop()
+
+              // Track successful image generation
+              firebaseAnalytics?.logEvent(
+                "image_generated",
+                bundleOf(
+                  "model_name" to modelPath.substringAfterLast("/"),
+                  "iterations" to iterations,
+                  "seed" to seed,
+                  "generation_time_ms" to generationTimeMs
+                )
+              )
+
               _uiState.update { state ->
                 state.copy(
                   isGenerating = false,
@@ -129,6 +153,7 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
 
             is GenerationResult.Error -> {
               // Generation failed
+              trace.stop()
               _uiState.update { state ->
                 state.copy(
                   isGenerating = false,
@@ -140,7 +165,16 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
           }
         }
       } catch (e: Exception) {
+        trace.stop()
         if (e is CancellationException) throw e
+        firebaseAnalytics?.logEvent(
+          "error_occurred",
+          bundleOf(
+            "error_type" to e::class.simpleName,
+            "source_class" to "ImageGenerationViewModel",
+            "error_message" to e.message.orEmpty()
+          )
+        )
         _uiState.update { state ->
           state.copy(
             isGenerating = false,

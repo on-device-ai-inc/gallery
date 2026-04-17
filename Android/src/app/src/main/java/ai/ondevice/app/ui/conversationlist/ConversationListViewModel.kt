@@ -14,6 +14,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
+import ai.ondevice.app.firebaseAnalytics
+import androidx.core.os.bundleOf
 
 @HiltViewModel
 class ConversationListViewModel @Inject constructor(
@@ -61,6 +63,14 @@ class ConversationListViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
+            firebaseAnalytics?.logEvent(
+                "error_occurred",
+                bundleOf(
+                    "error_type" to e::class.simpleName,
+                    "source_class" to "ConversationListViewModel",
+                    "error_message" to e.message.orEmpty()
+                )
+            )
             Log.e(TAG, "Search error", e)
             _uiState.value = ConversationListUiState.Error(e.message ?: "Search failed")
         }
@@ -90,6 +100,15 @@ class ConversationListViewModel @Inject constructor(
                 }
             }
             .catch { e ->
+                if (e is CancellationException) throw e
+                firebaseAnalytics?.logEvent(
+                    "error_occurred",
+                    bundleOf(
+                        "error_type" to e::class.simpleName,
+                        "source_class" to "ConversationListViewModel",
+                        "error_message" to e.message.orEmpty()
+                    )
+                )
                 Log.e(TAG, "Load error", e)
                 emit(ConversationListUiState.Error(e.message ?: "Unknown error"))
             }

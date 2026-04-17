@@ -45,6 +45,8 @@ import kotlinx.serialization.json.Json
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
+import ai.ondevice.app.firebaseAnalytics
+import androidx.core.os.bundleOf
 
 private const val TAG = "AGSettingsViewModel"
 
@@ -110,6 +112,14 @@ class SettingsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                firebaseAnalytics?.logEvent(
+                    "error_occurred",
+                    bundleOf(
+                        "error_type" to e::class.simpleName,
+                        "source_class" to "SettingsViewModel",
+                        "error_message" to e.message.orEmpty()
+                    )
+                )
                 Log.e(TAG, "Error loading storage info", e)
             }
         }
@@ -118,6 +128,13 @@ class SettingsViewModel @Inject constructor(
     // Story 5.4: Text Size Adjustment
     fun setTextSize(textSize: TextSize) {
         viewModelScope.launch(Dispatchers.IO) {
+            firebaseAnalytics?.logEvent(
+                "settings_changed",
+                bundleOf(
+                    "setting_name" to "text_size",
+                    "new_value" to textSize.name
+                )
+            )
             dataStoreRepository.saveTextSize(textSize)
             _uiState.update { it.copy(textSize = textSize) }
         }
@@ -126,6 +143,13 @@ class SettingsViewModel @Inject constructor(
     // Story 5.3: Auto-Cleanup Configuration
     fun setAutoCleanup(autoCleanup: AutoCleanup) {
         viewModelScope.launch(Dispatchers.IO) {
+            firebaseAnalytics?.logEvent(
+                "settings_changed",
+                bundleOf(
+                    "setting_name" to "auto_cleanup",
+                    "new_value" to autoCleanup.name
+                )
+            )
             dataStoreRepository.saveAutoCleanup(autoCleanup)
             _uiState.update { it.copy(autoCleanup = autoCleanup) }
         }
@@ -134,6 +158,13 @@ class SettingsViewModel @Inject constructor(
     // Story 5.2: Storage Budget
     fun setStorageBudget(budgetBytes: Long) {
         viewModelScope.launch(Dispatchers.IO) {
+            firebaseAnalytics?.logEvent(
+                "settings_changed",
+                bundleOf(
+                    "setting_name" to "storage_budget",
+                    "new_value" to budgetBytes.toString()
+                )
+            )
             dataStoreRepository.saveStorageBudget(budgetBytes)
             _uiState.update { it.copy(storageBudgetBytes = budgetBytes) }
         }
@@ -177,6 +208,10 @@ class SettingsViewModel @Inject constructor(
 
     fun updateUserFullName(fullName: String) {
         viewModelScope.launch(Dispatchers.IO) {
+            firebaseAnalytics?.logEvent(
+                "settings_changed",
+                bundleOf("setting_name" to "user_full_name")
+            )
             dataStoreRepository.saveUserFullName(fullName)
             _uiState.update { it.copy(userFullName = fullName) }
         }
@@ -184,6 +219,10 @@ class SettingsViewModel @Inject constructor(
 
     fun updateUserNickname(nickname: String) {
         viewModelScope.launch(Dispatchers.IO) {
+            firebaseAnalytics?.logEvent(
+                "settings_changed",
+                bundleOf("setting_name" to "user_nickname")
+            )
             dataStoreRepository.saveUserNickname(nickname)
             _uiState.update { it.copy(userNickname = nickname) }
         }
@@ -253,6 +292,14 @@ class SettingsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                firebaseAnalytics?.logEvent(
+                    "error_occurred",
+                    bundleOf(
+                        "error_type" to e::class.simpleName,
+                        "source_class" to "SettingsViewModel",
+                        "error_message" to e.message.orEmpty()
+                    )
+                )
                 Log.e(TAG, "Export failed", e)
                 _events.emit(SettingsEvent.ExportError(e.message ?: "Export failed"))
                 _uiState.update {
@@ -335,6 +382,14 @@ class SettingsViewModel @Inject constructor(
                 loadStorageInfo()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
+                firebaseAnalytics?.logEvent(
+                    "error_occurred",
+                    bundleOf(
+                        "error_type" to e::class.simpleName,
+                        "source_class" to "SettingsViewModel",
+                        "error_message" to e.message.orEmpty()
+                    )
+                )
                 Log.e(TAG, "Error clearing data", e)
             }
         }

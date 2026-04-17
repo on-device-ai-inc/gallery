@@ -44,8 +44,12 @@ import ai.ondevice.app.AppLifecycleProvider
 import ai.ondevice.app.R
 import ai.ondevice.app.firebaseAnalytics
 import ai.ondevice.app.worker.DownloadWorker
+import com.google.firebase.Firebase
+import com.google.firebase.perf.performance
+import com.google.firebase.perf.metrics.Trace
 import kotlinx.coroutines.CancellationException
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
 private const val TAG = "AGDownloadRepository"
@@ -94,6 +98,9 @@ class DefaultDownloadRepository(
    */
   private val downloadStartTimeSharedPreferences =
     context.getSharedPreferences("download_start_time_ms", Context.MODE_PRIVATE)
+
+  // Track Firebase Performance traces for downloads
+  private val downloadTraces = ConcurrentHashMap<String, Trace>()
 
   override fun downloadModel(
     task: Task,
@@ -184,6 +191,11 @@ class DefaultDownloadRepository(
             downloadStartTimeSharedPreferences.edit {
               putLong(model.name, System.currentTimeMillis())
             }
+            // Start performance trace
+            val trace = Firebase.performance.newTrace("model_download")
+            trace.putAttribute("model_name", model.name)
+            trace.start()
+            downloadTraces[model.name] = trace
             firebaseAnalytics?.logEvent(
               "model_download",
               bundleOf("event_type" to "start", "model_id" to model.name),
@@ -230,6 +242,19 @@ class DefaultDownloadRepository(
             val startTime = downloadStartTimeSharedPreferences.getLong(model.name, 0L)
             val duration = System.currentTimeMillis() - startTime
 
+            // Stop performance trace with metrics
+            val trace = downloadTraces.remove(model.name)
+            if (trace != null) {
+              val totalBytes = ModelRuntimeStateManager.getValue(model.name).totalBytes
+              val fileSizeMb = totalBytes / (1024 * 1024)
+              val downloadSpeedMbps = if (duration > 0) {
+                (totalBytes * 8 / 1000 / duration)
+              } else 0L
+              trace.putMetric("file_size_mb", fileSizeMb)
+              trace.putMetric("download_speed_mbps", downloadSpeedMbps)
+              trace.stop()
+            }
+
             // Enhanced analytics with source tracking (non-blocking)
             try {
               val downloadSource = when {
@@ -259,6 +284,9 @@ class DefaultDownloadRepository(
 
           WorkInfo.State.FAILED,
           WorkInfo.State.CANCELLED -> {
+            // Stop performance trace on failure
+            downloadTraces.remove(model.name)?.stop()
+
             var status = ModelDownloadStatusType.FAILED
             val errorMessage = workInfo.outputData.getString(KEY_MODEL_DOWNLOAD_ERROR_MESSAGE) ?: ""
             Log.d(

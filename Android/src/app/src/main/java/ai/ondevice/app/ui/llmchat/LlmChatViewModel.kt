@@ -46,6 +46,8 @@ import ai.ondevice.app.ui.common.chat.ChatSide
 import ai.ondevice.app.ui.common.chat.ChatViewModel
 import ai.ondevice.app.ui.common.chat.Stat
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.perf.performance
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.resume
@@ -55,6 +57,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ai.ondevice.app.firebaseAnalytics
+import androidx.core.os.bundleOf
 
 private const val TAG = "AGLlmChatViewModel"
 private val STATS =
@@ -86,6 +90,16 @@ open class LlmChatViewModelBase(
     val accelerator = model.getStringConfigValue(key = ConfigKeys.ACCELERATOR, defaultValue = "")
 
     viewModelScope.launch(Dispatchers.Default) {
+      // Track chat message sent
+      firebaseAnalytics?.logEvent(
+        "chat_message_sent",
+        bundleOf(
+          "model_name" to model.name,
+          "has_images" to (images.isNotEmpty()),
+          "has_audio" to (audioMessages.isNotEmpty())
+        )
+      )
+
       setInProgress(true)
       setPreparing(true)
 
@@ -247,6 +261,14 @@ open class LlmChatViewModelBase(
         }
       } catch (e: Exception) {
         if (e is CancellationException) throw e
+        firebaseAnalytics?.logEvent(
+          "error_occurred",
+          bundleOf(
+            "error_type" to e::class.simpleName,
+            "source_class" to "LlmChatViewModel",
+            "error_message" to e.message.orEmpty()
+          )
+        )
         Log.w(TAG, "Compaction check failed, continuing without compression", e)
         setIsCompacting(false)  // Ensure indicator is hidden on error
       }
@@ -277,6 +299,10 @@ open class LlmChatViewModelBase(
       val isLongResponse = isLongRequest
       var accumulatedResponse = ""
 
+      val trace = Firebase.performance.newTrace("llm_inference")
+      trace.putAttribute("model_name", model.name)
+      trace.start()
+
       try {
         LlmChatModelHelper.runInference(
           model = model,
@@ -292,6 +318,8 @@ open class LlmChatViewModelBase(
               prefillSpeed = prefillTokens / timeToFirstToken
               firstRun = false
               setPreparing(false)
+              // Record TTFT metric
+              trace.putMetric("ttft_ms", (firstTokenTs - start))
             }
 
             if (isLongResponse) {
@@ -348,6 +376,23 @@ open class LlmChatViewModelBase(
                 decodeSpeed = 0f
               }
 
+              // Track chat message received
+              val responseTokenCount = if (isLongResponse) {
+                accumulatedResponse.split(" ").size
+              } else {
+                decodeTokens
+              }
+              trace.putMetric("total_tokens", responseTokenCount.toLong())
+              trace.stop()
+              firebaseAnalytics?.logEvent(
+                "chat_message_received",
+                bundleOf(
+                  "model_name" to model.name,
+                  "token_count" to responseTokenCount,
+                  "latency_ms" to (curTs - start)
+                )
+              )
+
               val lastMessageForBenchmark = getLastMessage(model = model)
               if (lastMessageForBenchmark is ChatMessageText) {
                 updateLastTextMessageLlmBenchmarkResult(
@@ -391,6 +436,14 @@ open class LlmChatViewModelBase(
                     }
                   } catch (e: Exception) {
                     if (e is CancellationException) throw e
+                    firebaseAnalytics?.logEvent(
+                      "error_occurred",
+                      bundleOf(
+                        "error_type" to e::class.simpleName,
+                        "source_class" to "LlmChatViewModel",
+                        "error_message" to e.message.orEmpty()
+                      )
+                    )
                     Log.e(TAG, "Failed to update agent message in database", e)
                   }
                 }
@@ -401,9 +454,22 @@ open class LlmChatViewModelBase(
             setInProgress(false)
             setPreparing(false)
           },
+          onError = { message ->
+            trace.stop()
+            // Handle error
+          }
         )
       } catch (e: Exception) {
+        trace.stop()
         if (e is CancellationException) throw e
+        firebaseAnalytics?.logEvent(
+          "error_occurred",
+          bundleOf(
+            "error_type" to e::class.simpleName,
+            "source_class" to "LlmChatViewModel",
+            "error_message" to e.message.orEmpty()
+          )
+        )
         Log.e(TAG, "Error occurred while running inference", e)
         setInProgress(false)
         setPreparing(false)

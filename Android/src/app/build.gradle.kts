@@ -29,6 +29,7 @@ plugins {
   // Firebase enabled - google-services.json configured
   alias(libs.plugins.google.services)
   alias(libs.plugins.firebase.crashlytics)
+  alias(libs.plugins.firebase.perf)
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
@@ -153,6 +154,7 @@ dependencies {
   implementation(platform(libs.firebase.bom))
   implementation(libs.firebase.analytics)
   implementation(libs.firebase.crashlytics)
+  implementation("com.google.firebase:firebase-perf-ktx")
   implementation(libs.androidx.exifinterface)
   kapt(libs.hilt.android.compiler)
   testImplementation(libs.junit)

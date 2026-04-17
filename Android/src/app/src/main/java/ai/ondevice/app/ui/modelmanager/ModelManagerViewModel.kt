@@ -237,6 +237,12 @@ constructor(
   }
 
   fun deleteModel(task: Task, model: Model) {
+    // Track model deletion
+    firebaseAnalytics?.logEvent(
+      "model_deleted",
+      bundleOf("model_name" to model.name)
+    )
+
     if (model.imported) {
       deleteFileFromExternalFilesDir(model.downloadFileName)
     } else {

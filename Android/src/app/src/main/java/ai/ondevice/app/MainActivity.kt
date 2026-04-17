@@ -56,7 +56,10 @@ import androidx.lifecycle.lifecycleScope
 import ai.ondevice.app.security.LicenseManager
 import ai.ondevice.app.ui.modelmanager.ModelManagerViewModel
 import ai.ondevice.app.ui.theme.GalleryTheme
+import com.google.firebase.Firebase
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.perf.performance
+import com.google.firebase.perf.metrics.Trace
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -65,8 +68,14 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
   private val modelManagerViewModel: ModelManagerViewModel by viewModels()
+  private var coldStartTrace: Trace? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    // Track cold start time (first launch only)
+    if (savedInstanceState == null) {
+      coldStartTrace = Firebase.performance.newTrace("cold_start")
+      coldStartTrace?.start()
+    }
     super.onCreate(savedInstanceState)
 
     // Handle license activation deep link (ai.ondevice.app://activate?order_id=...)
@@ -147,6 +156,9 @@ class MainActivity : ComponentActivity() {
 
   override fun onResume() {
     super.onResume()
+
+    coldStartTrace?.stop()
+    coldStartTrace = null
 
     firebaseAnalytics?.logEvent(
       FirebaseAnalytics.Event.APP_OPEN,
