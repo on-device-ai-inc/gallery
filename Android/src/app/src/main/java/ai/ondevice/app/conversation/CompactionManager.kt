@@ -25,6 +25,9 @@ import ai.ondevice.app.data.ConversationState
 import ai.ondevice.app.data.Model
 import ai.ondevice.app.ui.llmchat.LlmChatModelHelper
 import android.util.Log
+import androidx.core.os.bundleOf
+import com.google.firebase.Firebase
+import com.google.firebase.perf.performance
 import kotlinx.coroutines.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException

@@ -24,11 +24,13 @@ import android.util.Log
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.Stable
 import androidx.core.net.toUri
+import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ai.ondevice.app.AppLifecycleProvider
 import ai.ondevice.app.BuildConfig
 import ai.ondevice.app.R
+import ai.ondevice.app.firebaseAnalytics
 import ai.ondevice.app.common.ProjectConfig
 import ai.ondevice.app.common.getJsonResponse
 import ai.ondevice.app.customtasks.common.CustomTask
