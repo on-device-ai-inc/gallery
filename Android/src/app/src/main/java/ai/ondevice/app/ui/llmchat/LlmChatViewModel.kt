@@ -18,6 +18,10 @@
  */
 
 package ai.ondevice.app.ui.llmchat
+nimport ai.ondevice.app.safePerformanceTrace
+import ai.ondevice.app.safeStart
+import ai.ondevice.app.safeStop
+import ai.ondevice.app.safePutMetric
 
 import ai.ondevice.app.R
 import ai.ondevice.app.data.AnalyticsTracker

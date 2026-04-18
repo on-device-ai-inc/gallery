@@ -18,6 +18,10 @@
  */
 
 package ai.ondevice.app.ui.imagegeneration
+nimport ai.ondevice.app.safePerformanceTrace
+import ai.ondevice.app.safeStart
+import ai.ondevice.app.safeStop
+import ai.ondevice.app.safePutMetric
 
 import android.content.ContentValues
 import android.content.Context

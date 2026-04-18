@@ -18,6 +18,10 @@
  */
 
 package ai.ondevice.app.data
+nimport ai.ondevice.app.safePerformanceTrace
+import ai.ondevice.app.safeStart
+import ai.ondevice.app.safeStop
+import ai.ondevice.app.safePutMetric
 
 import android.Manifest
 import android.app.NotificationChannel
