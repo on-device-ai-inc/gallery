@@ -23,6 +23,7 @@ import ai.ondevice.app.safePerformanceTrace
 import ai.ondevice.app.safeStart
 import ai.ondevice.app.safeStop
 import ai.ondevice.app.safePutMetric
+import ai.ondevice.app.safePutAttribute
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -103,8 +104,8 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
     generationJob = viewModelScope.launch {
       val startTime = System.currentTimeMillis()
       val trace = safePerformanceTrace("image_generation")
-      trace.putAttribute("model_name", modelPath.substringAfterLast("/"))
-      trace.putAttribute("resolution", "512x512")
+      trace.safePutAttribute("model_name", modelPath.substringAfterLast("/"))
+      trace.safePutAttribute("resolution", "512x512")
       trace.safePutMetric("steps", iterations.toLong())
       trace.safeStart()
       try {

@@ -23,6 +23,7 @@ import ai.ondevice.app.safePerformanceTrace
 import ai.ondevice.app.safeStart
 import ai.ondevice.app.safeStop
 import ai.ondevice.app.safePutMetric
+import ai.ondevice.app.safePutAttribute
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -197,9 +198,9 @@ class DefaultDownloadRepository(
             }
             // Start performance trace
             val trace = safePerformanceTrace("model_download")
-            trace.putAttribute("model_name", model.name)
+            trace.safePutAttribute("model_name", model.name)
             trace.safeStart()
-            downloadTraces[model.name] = trace
+            trace?.let { downloadTraces[model.name] = it }
             firebaseAnalytics?.logEvent(
               "model_download",
               bundleOf("event_type" to "start", "model_id" to model.name),

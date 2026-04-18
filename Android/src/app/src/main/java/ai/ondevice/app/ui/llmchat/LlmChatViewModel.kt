@@ -22,6 +22,7 @@ import ai.ondevice.app.safePerformanceTrace
 import ai.ondevice.app.safeStart
 import ai.ondevice.app.safeStop
 import ai.ondevice.app.safePutMetric
+import ai.ondevice.app.safePutAttribute
 
 import ai.ondevice.app.R
 import ai.ondevice.app.data.AnalyticsTracker
@@ -304,7 +305,7 @@ open class LlmChatViewModelBase(
       var accumulatedResponse = ""
 
       val trace = safePerformanceTrace("llm_inference")
-      trace.putAttribute("model_name", model.name)
+      trace.safePutAttribute("model_name", model.name)
       trace.safeStart()
 
       try {

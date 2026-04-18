@@ -46,3 +46,10 @@ fun Trace?.safeStop() {
 fun Trace?.safePutMetric(name: String, value: Long) {
     this?.putMetric(name, value)
 }
+
+/**
+ * Extension to safely add an attribute to a trace (no-op if null).
+ */
+fun Trace?.safePutAttribute(name: String, value: String) {
+    this?.putAttribute(name, value)
+}

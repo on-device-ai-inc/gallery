@@ -22,6 +22,7 @@ import ai.ondevice.app.safePerformanceTrace
 import ai.ondevice.app.safeStart
 import ai.ondevice.app.safeStop
 import ai.ondevice.app.safePutMetric
+import ai.ondevice.app.safePutAttribute
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -112,8 +113,8 @@ object LlmChatModelHelper {
 
     // Create an instance of LiteRT LM engine and conversation.
     val trace = safePerformanceTrace("model_initialization")
-    trace.putAttribute("model_name", model.name)
-    trace.putAttribute("backend", preferredBackend.name)
+    trace.safePutAttribute("model_name", model.name)
+    trace.safePutAttribute("backend", preferredBackend.name)
     trace.safeStart()
     try {
       val engine = Engine(engineConfig)
