@@ -52,6 +52,13 @@
         android:theme="@style/Theme.Gallery"
         tools:targetApi="31">
 
+        <!-- Disable Firebase Performance automatic data collection in debug builds
+             (when google-services.json has placeholder values). This prevents crashes
+             when Firebase attempts to sync performance metrics without valid credentials. -->
+        <meta-data
+            android:name="firebase_performance_collection_enabled"
+            android:value="false" />
+
         <!-- OpenCL native libraries for GPU-accelerated image generation (Android 12+) -->
         <!-- android:required="false" allows app to work on devices without OpenCL support -->
         <uses-native-library android:name="libOpenCL.so" android:required="false" />
