@@ -73,8 +73,8 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     // Track cold start time (first launch only)
     if (savedInstanceState == null) {
-      coldStartTrace = Firebase.performance.newTrace("cold_start")
-      coldStartTrace?.start()
+      coldStartTrace = safePerformanceTrace("cold_start")
+      coldStartTrace.safeStart()
     }
     super.onCreate(savedInstanceState)
 
@@ -157,7 +157,7 @@ class MainActivity : ComponentActivity() {
   override fun onResume() {
     super.onResume()
 
-    coldStartTrace?.stop()
+    coldStartTrace.safeStop()
     coldStartTrace = null
 
     firebaseAnalytics?.logEvent(

@@ -192,9 +192,9 @@ class DefaultDownloadRepository(
               putLong(model.name, System.currentTimeMillis())
             }
             // Start performance trace
-            val trace = Firebase.performance.newTrace("model_download")
+            val trace = safePerformanceTrace("model_download")
             trace.putAttribute("model_name", model.name)
-            trace.start()
+            trace.safeStart()
             downloadTraces[model.name] = trace
             firebaseAnalytics?.logEvent(
               "model_download",
@@ -250,9 +250,9 @@ class DefaultDownloadRepository(
               val downloadSpeedMbps = if (duration > 0) {
                 (totalBytes * 8 / 1000 / duration)
               } else 0L
-              trace.putMetric("file_size_mb", fileSizeMb)
-              trace.putMetric("download_speed_mbps", downloadSpeedMbps)
-              trace.stop()
+              trace.safePutMetric("file_size_mb", fileSizeMb)
+              trace.safePutMetric("download_speed_mbps", downloadSpeedMbps)
+              trace.safeStop()
             }
 
             // Enhanced analytics with source tracking (non-blocking)

@@ -98,11 +98,11 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
     // Start generation coroutine
     generationJob = viewModelScope.launch {
       val startTime = System.currentTimeMillis()
-      val trace = Firebase.performance.newTrace("image_generation")
+      val trace = safePerformanceTrace("image_generation")
       trace.putAttribute("model_name", modelPath.substringAfterLast("/"))
       trace.putAttribute("resolution", "512x512")
-      trace.putMetric("steps", iterations.toLong())
-      trace.start()
+      trace.safePutMetric("steps", iterations.toLong())
+      trace.safeStart()
       try {
         ImageGenerationHelper.generateImage(
           context = context,
@@ -127,7 +127,7 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
             is GenerationResult.Success -> {
               // Generation completed successfully
               val generationTimeMs = System.currentTimeMillis() - startTime
-              trace.stop()
+              trace.safeStop()
 
               // Track successful image generation
               firebaseAnalytics?.logEvent(
@@ -153,7 +153,7 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
 
             is GenerationResult.Error -> {
               // Generation failed
-              trace.stop()
+              trace.safeStop()
               _uiState.update { state ->
                 state.copy(
                   isGenerating = false,
@@ -165,7 +165,7 @@ class ImageGenerationViewModel @Inject constructor() : ViewModel() {
           }
         }
       } catch (e: Exception) {
-        trace.stop()
+        trace.safeStop()
         if (e is CancellationException) throw e
         firebaseAnalytics?.logEvent(
           "error_occurred",

@@ -107,10 +107,10 @@ object LlmChatModelHelper {
       )
 
     // Create an instance of LiteRT LM engine and conversation.
-    val trace = Firebase.performance.newTrace("model_initialization")
+    val trace = safePerformanceTrace("model_initialization")
     trace.putAttribute("model_name", model.name)
     trace.putAttribute("backend", preferredBackend.name)
-    trace.start()
+    trace.safeStart()
     try {
       val engine = Engine(engineConfig)
       engine.initialize()
@@ -120,7 +120,7 @@ object LlmChatModelHelper {
       val modelSizeMb = if (modelFile.exists()) {
         modelFile.length() / (1024 * 1024)
       } else 0L
-      trace.putMetric("model_size_mb", modelSizeMb)
+      trace.safePutMetric("model_size_mb", modelSizeMb)
 
       val conversation = synchronized(ExperimentalFlags::class.java) {
         ExperimentalFlags.enableConversationConstrainedDecoding = enableConversationConstrainedDecoding
@@ -141,9 +141,9 @@ object LlmChatModelHelper {
       ModelRuntimeStateManager.update(model.name) {
         it.copy(instance = LlmModelInstance(engine = engine, conversation = conversation))
       }
-      trace.stop()
+      trace.safeStop()
     } catch (e: Exception) {
-      trace.stop()
+      trace.safeStop()
       if (e is CancellationException) throw e
       onDone(cleanUpMediapipeTaskErrorMessage(e.message ?: "Unknown error"))
       return

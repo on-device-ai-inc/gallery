@@ -299,9 +299,9 @@ open class LlmChatViewModelBase(
       val isLongResponse = isLongRequest
       var accumulatedResponse = ""
 
-      val trace = Firebase.performance.newTrace("llm_inference")
+      val trace = safePerformanceTrace("llm_inference")
       trace.putAttribute("model_name", model.name)
-      trace.start()
+      trace.safeStart()
 
       try {
         LlmChatModelHelper.runInference(
@@ -319,7 +319,7 @@ open class LlmChatViewModelBase(
               firstRun = false
               setPreparing(false)
               // Record TTFT metric
-              trace.putMetric("ttft_ms", (firstTokenTs - start))
+              trace.safePutMetric("ttft_ms", (firstTokenTs - start))
             }
 
             if (isLongResponse) {
@@ -382,8 +382,8 @@ open class LlmChatViewModelBase(
               } else {
                 decodeTokens
               }
-              trace.putMetric("total_tokens", responseTokenCount.toLong())
-              trace.stop()
+              trace.safePutMetric("total_tokens", responseTokenCount.toLong())
+              trace.safeStop()
               firebaseAnalytics?.logEvent(
                 "chat_message_received",
                 bundleOf(
@@ -455,12 +455,12 @@ open class LlmChatViewModelBase(
             setPreparing(false)
           },
           onError = { message ->
-            trace.stop()
+            trace.safeStop()
             // Handle error
           }
         )
       } catch (e: Exception) {
-        trace.stop()
+        trace.safeStop()
         if (e is CancellationException) throw e
         firebaseAnalytics?.logEvent(
           "error_occurred",
